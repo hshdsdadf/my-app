@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Rocktato</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1496,19 +1499,29 @@
             #tutorial-tooltip.tut-slim .tut-dismiss { margin-top: 0 !important; }
         }
 
-        /* ══ Mobile button & top-bar fixes ══ */
+        /* ══ Mobile overlay + button fixes ══ */
         @media (pointer: coarse), (hover: none) {
-            /* Pin top-UI to viewport top so it's never offset */
+            /* Pin top-UI with safe-area support */
             #top-ui {
                 position: fixed !important;
                 top: 0 !important; left: 0 !important; right: 0 !important;
                 padding: 4px 12px 8px !important;
             }
-            /* Touch-action on every tappable thing so browser generates fast taps */
+            /* Overlays: use dynamic vh so they match the actual visible area */
+            #level-up-overlay,
+            #boss-warning-overlay,
+            #game-over-screen,
+            #inventory-overlay {
+                height: 100dvh !important;         /* modern iOS 15.4+ */
+                height: var(--wh, 100vh) !important; /* JS fallback */
+                top: 0 !important;
+            }
+            /* Fast-tap on all interactive elements */
             button, .card, #go-retry-btn, .boss-collect-btn,
             #tut-dismiss button, [onclick] {
                 touch-action: manipulation !important;
                 cursor: pointer !important;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
             }
         }
     </style>
@@ -11761,39 +11774,66 @@
                 tut.hasShot = true;
             }
 
-            // ── iOS button fix: intercept touchend and fire .click() directly ──
-            // iOS Safari can misalign fixed-overlay hit-areas with visual positions.
-            // We bypass this by catching touchend on overlay containers and calling
-            // .click() on the element at the touch point ourselves.
-            var OVERLAY_IDS = [
-                'level-up-overlay','boss-warning-overlay',
-                'game-over-screen','inventory-overlay','tutorial-tooltip'
-            ];
-            document.addEventListener('touchend', function(iE) {
-                var t = iE.changedTouches[0];
-                // Check if touch is inside one of our overlays
-                var el = document.elementFromPoint(t.clientX, t.clientY);
-                if (!el) return;
-                var inOverlay = false;
-                for (var i = 0; i < OVERLAY_IDS.length; i++) {
-                    var ov = document.getElementById(OVERLAY_IDS[i]);
-                    if (ov && ov.contains(el)) { inOverlay = true; break; }
+            // ── iOS button fix: robust touchend interceptor ───────────────────
+            // iOS Safari URL bar causes fixed-overlay touch targets to be offset
+            // from their visual positions (inconsistently, depends on bar state).
+            // We try the touch point AND common iOS chrome offsets to find the
+            // correct button regardless of URL bar state.
+            var OV_IDS = ['level-up-overlay','boss-warning-overlay',
+                           'game-over-screen','inventory-overlay','tutorial-tooltip'];
+
+            // Sync --wh CSS var = actual visible height (fixes 100vh on iOS)
+            function syncWH() {
+                document.documentElement.style.setProperty(
+                    '--wh', (window.visualViewport ? window.visualViewport.height
+                                                   : window.innerHeight) + 'px');
+            }
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncWH);
+                window.visualViewport.addEventListener('scroll', syncWH);
+            }
+            window.addEventListener('resize', syncWH);
+            syncWH();
+
+            function findClickable(x, y) {
+                var el = document.elementFromPoint(x, y);
+                if (!el) return null;
+                // Must be inside an overlay
+                var inOv = false;
+                for (var i = 0; i < OV_IDS.length; i++) {
+                    var ov = document.getElementById(OV_IDS[i]);
+                    if (ov && ov.contains(el)) { inOv = true; break; }
                 }
-                if (!inOverlay) return;
-                // Walk up to find the nearest clickable ancestor
+                if (!inOv) return null;
+                // Walk up for clickable
                 var node = el;
                 while (node && node.tagName !== 'BODY') {
                     if (node.tagName === 'BUTTON' ||
                         (node.getAttribute && node.getAttribute('onclick')) ||
                         node.classList.contains('card') ||
-                        node.classList.contains('boss-collect-btn')) {
-                        iE.preventDefault(); // prevent browser's own (offset) click
+                        node.classList.contains('boss-collect-btn')) return node;
+                    node = node.parentElement;
+                }
+                return null;
+            }
+
+            document.addEventListener('touchend', function(iE) {
+                var t = iE.changedTouches[0];
+                var cx = t.clientX, cy = t.clientY;
+                // VV offset: if iOS URL bar is showing, VV is shifted below layout top
+                var vvOff = (window.visualViewport && window.visualViewport.offsetTop > 0)
+                             ? window.visualViewport.offsetTop : 0;
+                // Try original Y, VV-corrected Y, and common iOS chrome heights as fallback
+                var tries = [cy, cy + vvOff, cy + 44, cy + 50, cy + 56, cy + 84];
+                for (var i = 0; i < tries.length; i++) {
+                    var node = findClickable(cx, tries[i]);
+                    if (node) {
+                        iE.preventDefault();
                         node.click();
                         return;
                     }
-                    node = node.parentElement;
                 }
-            }, false); // non-passive so we can preventDefault
+            }, false);
 
                 });
 
