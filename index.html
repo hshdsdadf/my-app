@@ -1524,6 +1524,156 @@
                 -webkit-tap-highlight-color: rgba(0,0,0,0.1);
             }
         }
+
+        /* ══════════════════════════════════════════
+           CARD VISUAL OVERHAUL — rarity glows, trait prominence
+        ══════════════════════════════════════════ */
+
+        /* Per-rarity card backgrounds + glow intensity */
+        .glow-common {
+            --rarity-color: #bdc3c7;
+            border-color: rgba(189,195,199,0.12) !important;
+            box-shadow: 0 4px 28px rgba(0,0,0,0.65) !important;
+        }
+        .glow-uncommon {
+            --rarity-color: #2ecc71;
+            border-color: rgba(46,204,113,0.22) !important;
+            box-shadow: 0 4px 28px rgba(0,0,0,0.65), 0 0 20px rgba(46,204,113,0.22) !important;
+        }
+        .glow-rare {
+            --rarity-color: #3498db;
+            background: linear-gradient(160deg, #070f18 0%, #100e0c 55%, #070f18 100%) !important;
+            border-color: rgba(52,152,219,0.32) !important;
+            box-shadow: 0 4px 28px rgba(0,0,0,0.65), 0 0 28px rgba(52,152,219,0.32) !important;
+        }
+        .glow-epic {
+            --rarity-color: #9b59b6;
+            background: linear-gradient(160deg, #140920 0%, #100e0c 55%, #140920 100%) !important;
+            border-color: rgba(155,89,182,0.42) !important;
+            animation: epicCardPulse 2.8s ease-in-out infinite !important;
+        }
+        .glow-legendary {
+            --rarity-color: #f1c40f;
+            background: linear-gradient(160deg, #1c1400 0%, #12100a 55%, #1c1400 100%) !important;
+            border-width: 1.5px !important;
+            border-color: rgba(241,196,15,0.6) !important;
+            animation: legendaryCardPulse 2s ease-in-out infinite !important;
+        }
+
+        /* Legendary shimmer sweep overlay */
+        .glow-legendary::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 25%, rgba(241,196,15,0.07) 50%, transparent 75%);
+            animation: legendarySwipe 3.5s ease-in-out infinite;
+            pointer-events: none;
+            border-radius: inherit;
+            z-index: 0;
+        }
+        @keyframes legendarySwipe {
+            0%   { transform: translateX(-120%) skewX(-12deg); }
+            100% { transform: translateX(220%)  skewX(-12deg); }
+        }
+
+        /* Epic pulse */
+        @keyframes epicCardPulse {
+            0%,100% {
+                box-shadow: 0 4px 28px rgba(0,0,0,0.65),
+                            0 0 30px rgba(155,89,182,0.42),
+                            0 0 5px  rgba(155,89,182,0.12) inset;
+                border-color: rgba(155,89,182,0.42);
+            }
+            50% {
+                box-shadow: 0 4px 28px rgba(0,0,0,0.65),
+                            0 0 55px rgba(155,89,182,0.72),
+                            0 0 10px rgba(155,89,182,0.28) inset;
+                border-color: rgba(155,89,182,0.7);
+            }
+        }
+        /* Legendary pulse */
+        @keyframes legendaryCardPulse {
+            0%,100% {
+                box-shadow: 0 4px 28px rgba(0,0,0,0.65),
+                            0 0 45px rgba(241,196,15,0.55),
+                            0 0 90px rgba(241,196,15,0.22);
+                border-color: rgba(241,196,15,0.6);
+            }
+            50% {
+                box-shadow: 0 4px 28px rgba(0,0,0,0.65),
+                            0 0 75px rgba(241,196,15,0.85),
+                            0 0 140px rgba(241,196,15,0.38),
+                            0 0 8px  rgba(241,196,15,0.35) inset;
+                border-color: rgba(241,196,15,0.95);
+            }
+        }
+
+        /* Hover — more dramatic lift by rarity */
+        .card:hover { transform: translateY(-14px) scale(1.05) !important; z-index: 20 !important; }
+        .glow-epic:hover {
+            box-shadow: 0 12px 40px rgba(0,0,0,0.75),
+                        0 0 60px rgba(155,89,182,0.8),
+                        0 0 10px rgba(155,89,182,0.3) inset !important;
+        }
+        .glow-legendary:hover {
+            box-shadow: 0 12px 40px rgba(0,0,0,0.75),
+                        0 0 80px rgba(241,196,15,0.9),
+                        0 0 150px rgba(241,196,15,0.4),
+                        0 0 14px rgba(241,196,15,0.45) inset !important;
+            border-color: rgba(241,196,15,1) !important;
+        }
+
+        /* Rarity label upgrades */
+        .glow-epic .card-rarity     { font-size: 16px !important; letter-spacing: 3px !important; }
+        .glow-legendary .card-rarity {
+            font-size: 17px !important; letter-spacing: 3px !important;
+            animation: rarityNameGlow 1.6s ease-in-out infinite !important;
+        }
+        @keyframes rarityNameGlow {
+            0%,100% { text-shadow: 0 0 14px var(--rarity-color); }
+            50%     { text-shadow: 0 0 28px var(--rarity-color), 0 0 56px var(--rarity-color); }
+        }
+
+        /* Icon glow stronger at high rarities */
+        .glow-rare .card-glow-bg       { opacity: 0.28 !important; filter: blur(28px) !important; }
+        .glow-epic .card-glow-bg       { opacity: 0.40 !important; filter: blur(32px) !important; }
+        .glow-legendary .card-glow-bg  { opacity: 0.55 !important; filter: blur(38px) !important; }
+
+        /* ══ Trait section — much more prominent ══ */
+        .trait-banner {
+            padding: 10px 16px !important;
+            border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+        }
+        .trait-banner::before { opacity: 0.28 !important; }
+        .trait-icon  { font-size: 16px !important; }
+        .trait-name  { font-size: 12px !important; letter-spacing: 2px !important; }
+        .trait-tier  {
+            font-size: 7px !important; font-weight: 900 !important;
+            padding: 2px 6px !important;
+        }
+        .trait-effect-line {
+            border-left-width: 3px !important;
+            font-size: 11px !important;
+            padding: 7px 11px !important;
+            background: rgba(0,0,0,0.45) !important;
+            margin-bottom: 8px !important;
+        }
+        /* Trait banner on epic/legendary gets extra opacity */
+        .glow-epic    .trait-banner::before { opacity: 0.32 !important; }
+        .glow-legendary .trait-banner::before { opacity: 0.38 !important; }
+
+        /* Has-trait cards: intensify combined glow */
+        .card.has-trait {
+            box-shadow: 0 0 20px rgba(0,0,0,0.5),
+                        0 0 18px var(--trait-color, transparent),
+                        0 0 5px  var(--rarity-color, transparent) !important;
+        }
+        .card.trait-uncommon {
+            box-shadow: 0 0 20px rgba(0,0,0,0.5),
+                        0 0 32px var(--trait-color, transparent),
+                        0 0 8px  var(--rarity-color, transparent),
+                        0 0 4px  var(--trait-color, transparent) inset !important;
+        }
     </style>
 </head>
 <body>
@@ -1837,21 +1987,21 @@
         let roomEntranceDoor = null; // { cx, cy, dir } — where player entered
 
         const raritySettings = [
-            { id: 'rifle_common', name: 'Rifle', type: 'rifle', chance: 0.60, color: '#bdc3c7', effect: 'Standard semi-auto rifle.', cooldown: 0.85, dmg: 14, stats: { dmg: 30, fire: 30, range: 60 } },
+            { id: 'rifle_common', name: 'Rifle', type: 'rifle', chance: 0.55, color: '#bdc3c7', effect: 'Standard semi-auto rifle.', cooldown: 0.85, dmg: 14, stats: { dmg: 30, fire: 30, range: 60 } },
             { id: 'rifle_uncommon', name: 'Rifle', type: 'rifle', chance: 0.20, color: '#2ecc71', effect: 'Improved rifle cycling.', cooldown: 0.8, dmg: 16, stats: { dmg: 35, fire: 35, range: 65 } },
             { id: 'rifle_rare', name: 'Rifle', type: 'rifle', chance: 0.10, color: '#3498db', effect: 'Precision tuned rifle.', cooldown: 0.75, dmg: 18, stats: { dmg: 40, fire: 40, range: 70 } },
             { id: 'rifle_epic', name: 'Rifle', type: 'rifle', chance: 0.07, color: '#9b59b6', effect: '+30% fire, +1 pierce.', cooldown: 0.56, dmg: 25, pierce: 1, stats: { dmg: 60, fire: 70, range: 65 } },
-            { id: 'rifle_legendary', name: 'Rifle', type: 'rifle', chance: 0.03, color: '#f1c40f', effect: 'High capacity burst rifle.', cooldown: 0.9, dmg: 24, burst: 3, stats: { dmg: 70, fire: 85, range: 75 } },
-            { id: 'shotgun_common', name: 'Shotgun', type: 'shotgun', chance: 0.60, color: '#bdc3c7', effect: 'Basic crowd control.', cooldown: 1.4, dmg: 6, pellets: 4, stats: { dmg: 50, fire: 15, range: 20 } },
+            { id: 'rifle_legendary', name: 'Rifle', type: 'rifle', chance: 0.08, color: '#f1c40f', effect: 'High capacity burst rifle.', cooldown: 0.9, dmg: 24, burst: 3, stats: { dmg: 70, fire: 85, range: 75 } },
+            { id: 'shotgun_common', name: 'Shotgun', type: 'shotgun', chance: 0.55, color: '#bdc3c7', effect: 'Basic crowd control.', cooldown: 1.4, dmg: 6, pellets: 4, stats: { dmg: 50, fire: 15, range: 20 } },
             { id: 'shotgun_uncommon', name: 'Shotgun', type: 'shotgun', chance: 0.20, color: '#2ecc71', effect: '+1 pellet count.', cooldown: 1.3, dmg: 7, pellets: 5, stats: { dmg: 60, fire: 18, range: 20 } },
             { id: 'shotgun_rare', name: 'Shotgun', type: 'shotgun', chance: 0.10, color: '#3498db', effect: '+2 pellet count.', cooldown: 1.2, dmg: 8, pellets: 6, stats: { dmg: 70, fire: 22, range: 20 } },
             { id: 'shotgun_epic', name: 'Shotgun', type: 'shotgun', chance: 0.07, color: '#9b59b6', effect: 'Tactical spread pattern.', cooldown: 1.08, dmg: 16, pellets: 7, stats: { dmg: 100, fire: 30, range: 25 } },
-            { id: 'shotgun_legendary', name: 'Shotgun', type: 'shotgun', chance: 0.03, color: '#f1c40f', effect: 'Massive blast and force.', cooldown: 1.4, dmg: 18, pellets: 8, knockback: 400, stats: { dmg: 100, fire: 15, range: 30 } },
-            { id: 'smg_common', name: 'SMG', type: 'smg', chance: 0.60, color: '#bdc3c7', effect: 'Rapid low-damage fire.', cooldown: 0.15, dmg: 3, spread: 0.18, stats: { dmg: 10, fire: 80, range: 35 } },
+            { id: 'shotgun_legendary', name: 'Shotgun', type: 'shotgun', chance: 0.08, color: '#f1c40f', effect: 'Massive blast and force.', cooldown: 1.4, dmg: 18, pellets: 8, knockback: 400, stats: { dmg: 100, fire: 15, range: 30 } },
+            { id: 'smg_common', name: 'SMG', type: 'smg', chance: 0.55, color: '#bdc3c7', effect: 'Rapid low-damage fire.', cooldown: 0.15, dmg: 3, spread: 0.18, stats: { dmg: 10, fire: 80, range: 35 } },
             { id: 'smg_uncommon', name: 'SMG', type: 'smg', chance: 0.20, color: '#2ecc71', effect: 'Steady fire cycle.', cooldown: 0.13, dmg: 3.5, spread: 0.15, stats: { dmg: 12, fire: 85, range: 38 } },
             { id: 'smg_rare', name: 'SMG', type: 'smg', chance: 0.10, color: '#3498db', effect: 'Reinforced firing pin.', cooldown: 0.11, dmg: 4, spread: 0.12, stats: { dmg: 15, fire: 90, range: 45 } },
             { id: 'smg_epic', name: 'SMG', type: 'smg', chance: 0.07, color: '#9b59b6', effect: 'High velocity discharge.', cooldown: 0.07, dmg: 6, spread: 0.1, stats: { dmg: 20, fire: 100, range: 40 } },
-            { id: 'smg_legendary', name: 'SMG', type: 'smg', chance: 0.03, color: '#f1c40f', effect: 'Dual-feed rapid mechanism.', cooldown: 0.12, dmg: 7, pellets: 2, spread: 0.18, stats: { dmg: 35, fire: 100, range: 35 } }
+            { id: 'smg_legendary', name: 'SMG', type: 'smg', chance: 0.08, color: '#f1c40f', effect: 'Dual-feed rapid mechanism.', cooldown: 0.12, dmg: 7, pellets: 2, spread: 0.18, stats: { dmg: 35, fire: 100, range: 35 } }
         ];
 
         const powerfulsSettings = [
