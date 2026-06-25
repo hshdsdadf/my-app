@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
-    <meta name="screen-orientation" content="landscape">
     <title>Rocktato</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -1349,129 +1348,11 @@
             font-family: 'Space Mono', 'Courier New', monospace;
         }
 
+        /* ══════════════════════════════
+           MOBILE IMPROVEMENTS
+        ══════════════════════════════ */
 
-
-        /* ══════════════════════════════════
-           MOBILE CONTROLS
-        ══════════════════════════════════ */
-        #mob-left-zone,
-        #mob-right-zone { display: none; }
-
-        @media (pointer: coarse), (hover: none) {
-            body   { touch-action: none; cursor: default; }
-            canvas { touch-action: none; }
-            #inventory-btn { z-index: 50 !important; }
-            #dash-hud      { z-index: 50 !important; }
-
-            #mob-left-zone,
-            #mob-right-zone {
-                display: block;
-                position: fixed;
-                top: 0; bottom: 0;
-                width: 50%;
-                z-index: 8;
-                touch-action: none;
-                user-select: none;
-                -webkit-user-select: none;
-            }
-            #mob-left-zone  { left: 0; }
-            #mob-right-zone { right: 0; }
-
-            /* Responsive inventory */
-            #inventory-panel {
-                width: 96vw !important;
-                max-height: 84vh !important;
-                overflow-y: auto !important;
-                padding: 14px 10px 12px !important;
-            }
-            #inventory-body {
-                flex-direction: column !important;
-                align-items: center !important;
-                gap: 10px !important;
-            }
-            #inv-character-area {
-                width: 140px !important; height: 140px !important;
-                flex-shrink: 0 !important;
-            }
-            #inv-character-canvas { width: 140px !important; height: 140px !important; }
-            #inv-slots-area { width: 100% !important; }
-            #inv-slots-grid { grid-template-columns: repeat(6,1fr) !important; gap: 4px !important; }
-            #inventory-header { margin-bottom: 12px !important; padding-bottom: 10px !important; }
-
-            /* Responsive level-up cards */
-            #card-container {
-                flex-direction: row !important;
-                flex-wrap: nowrap !important;
-                overflow-x: auto !important;
-                -webkit-overflow-scrolling: touch !important;
-                max-width: 98vw !important;
-                padding: 4px 8px 16px !important;
-                gap: 8px !important;
-                justify-content: flex-start !important;
-                scrollbar-width: none !important;
-            }
-            #card-container::-webkit-scrollbar { display: none; }
-            .card {
-                width: 130px !important; min-width: 130px !important;
-                height: 240px !important; flex-shrink: 0 !important;
-                padding: 10px !important;
-            }
-            .card-icon-container { width: 50px !important; height: 50px !important; margin: 6px 0 !important; }
-            .card-rarity  { font-size: 9px  !important; margin-bottom: 4px !important; letter-spacing: 1px !important; }
-            .card-effect  { font-size: 8px  !important; line-height: 1.4 !important; }
-            .card-stats   { font-size: 7px  !important; margin: 4px 0 !important; padding: 4px 6px !important; }
-            .card-type, .card-chance { font-size: 6px !important; }
-            #level-up-title { font-size: 7px !important; margin-bottom: 12px !important; }
-        }
-
-        /* Floating joystick visuals */
-        .mob-joy-ring {
-            position: fixed;
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            background: rgba(200,187,168,0.06);
-            border: 1.5px solid rgba(200,187,168,0.28);
-            pointer-events: none;
-            z-index: 210;
-            display: none;
-            margin-left: -50px; margin-top: -50px;
-        }
-        .mob-joy-dot {
-            position: fixed;
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: rgba(200,187,168,0.25);
-            border: 1.5px solid rgba(200,187,168,0.55);
-            pointer-events: none;
-            z-index: 211;
-            display: none;
-            margin-left: -20px; margin-top: -20px;
-        }
-        #mob-joy-right-dot.mob-firing {
-            background: rgba(176,48,32,0.35);
-            border-color: rgba(208,72,64,0.75);
-        }
-        #mob-joy-right-ring.mob-firing {
-            border-color: rgba(176,48,32,0.5);
-        }
-
-        /* ── Extra mobile UI tweaks ── */
-        @media (pointer: coarse), (hover: none) {
-            /* Kill the [E] key hint under inventory button */
-            .inv-key-hint { display: none !important; }
-
-
-
-            /* Smaller wave-info (top-right Room N / timer text) */
-            #wave-info h2 { font-size: 10px !important; letter-spacing: 3px !important; }
-            #wave-info p  { font-size: 6px  !important; }
-
-            /* Right joystick completely invisible */
-            #mob-joy-right-ring,
-            #mob-joy-right-dot { display: none !important; }
-        }
-
-        /* ── Rotate-to-landscape overlay ── */
+        /* Portrait rotate overlay (shown if player tilts phone back during game) */
         #rotate-overlay {
             display: none;
             position: fixed; inset: 0; z-index: 9999;
@@ -1486,513 +1367,137 @@
             font-size: 44px; opacity: 0.5;
             animation: rotSpin 2s ease-in-out infinite;
         }
-        @keyframes rotSpin {
-            0%,100% { transform: rotate(-15deg); }
-            50%      { transform: rotate(15deg);  }
-        }
-        #rotate-overlay .rot-title {
-            font-size: 11px; font-weight: 700;
-            letter-spacing: 4px; text-transform: uppercase;
-        }
-        #rotate-overlay .rot-sub {
-            font-size: 8px; opacity: 0.4; letter-spacing: 2px; text-transform: uppercase;
-        }
+        @keyframes rotSpin { 0%,100%{transform:rotate(-15deg)} 50%{transform:rotate(15deg)} }
+        #rotate-overlay .rot-title { font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
+        #rotate-overlay .rot-sub   { font-size: 8px; opacity: 0.4; letter-spacing: 2px; text-transform: uppercase; }
 
-        /* ── Tutorial tooltip — mobile ── */
+        /* Touch zones — hidden by default, shown on touch devices */
+        #mob-left-zone, #mob-right-zone { display: none; }
+
+        /* Floating joystick visuals */
+        .mob-joy-ring {
+            position: fixed; width: 100px; height: 100px;
+            border-radius: 50%;
+            background: rgba(200,187,168,0.06);
+            border: 1.5px solid rgba(200,187,168,0.28);
+            pointer-events: none; z-index: 210; display: none;
+            margin-left: -50px; margin-top: -50px;
+        }
+        .mob-joy-dot {
+            position: fixed; width: 40px; height: 40px;
+            border-radius: 50%;
+            background: rgba(200,187,168,0.25);
+            border: 1.5px solid rgba(200,187,168,0.55);
+            pointer-events: none; z-index: 211; display: none;
+            margin-left: -20px; margin-top: -20px;
+        }
+        /* Right joystick invisible */
+        #mob-joy-right-ring, #mob-joy-right-dot { display: none !important; }
+
         @media (pointer: coarse), (hover: none) {
-            /* Pin to top-right corner, compact width */
-            #tutorial-tooltip {
-                left: auto  !important;
-                right: 10px !important;
-                top:  58px  !important;
-                width: 148px !important;
-                bottom: auto !important;
-            }
-            .tut-box {
-                max-width: 148px !important;
-                width: 148px !important;
-                box-sizing: border-box !important;
-                padding: 7px 9px !important;
-                border-radius: 5px !important;
-            }
-            .tut-title {
-                font-size: 6px !important; letter-spacing: 2px !important;
-                margin-bottom: 2px !important;
-            }
-            .tut-body  { font-size: 10px !important; line-height: 1.3 !important; }
-            .tut-key   { padding: 1px 4px !important; font-size: 8px !important; }
-            .tut-dismiss {
-                margin-top: 4px !important;
-                font-size: 6px !important; letter-spacing: 1px !important;
-            }
-            #tut-dismiss button {
-                padding: 4px 10px !important; font-size: 7px !important;
-                letter-spacing: 2px !important; margin-top: 5px !important;
-            }
-            .tut-skip  {
-                font-size: 6px !important; top: 5px !important; right: 7px !important;
-            }
+            body   { touch-action: none; cursor: default; }
+            canvas { touch-action: none; }
 
-            /* After "got it" — collapse to just the hint text */
-            #tutorial-tooltip.tut-slim #tut-title,
-            #tutorial-tooltip.tut-slim #tut-body,
-            #tutorial-tooltip.tut-slim .tut-skip { display: none !important; }
-            #tutorial-tooltip.tut-slim .tut-box  {
-                padding: 5px 8px !important;
-                background: rgba(8,7,6,0.75) !important;
+            /* Half-screen capture zones */
+            #mob-left-zone, #mob-right-zone {
+                display: block;
+                position: fixed; top: 0; bottom: 0; width: 50%;
+                z-index: 8; touch-action: none;
+                user-select: none; -webkit-user-select: none;
             }
-            #tutorial-tooltip.tut-slim .tut-dismiss { margin-top: 0 !important; }
-        }
+            #mob-left-zone  { left: 0; }
+            #mob-right-zone { right: 0; }
 
-        /* ── Death screen — mobile landscape ── */
-        @media (pointer: coarse), (hover: none) {
-            /* Outer content column */
-            #game-over-screen > div:last-child {
-                padding: 0 16px !important;
-                justify-content: center !important;
-                gap: 0 !important;
-            }
-            #go-top-rule  { margin-bottom: 8px  !important; }
-            #go-bot-rule  { margin-bottom: 8px  !important; }
-            #go-tagline   {
-                font-size: 6px !important;
-                letter-spacing: 4px !important;
-                margin-bottom: 4px !important;
-            }
-            #go-heading   {
-                font-size: 28px !important;
-                letter-spacing: 5px !important;
-                margin-bottom: 3px !important;
-            }
-            #go-cause     {
-                font-size: 9px !important;
-                letter-spacing: 1px !important;
-                margin-bottom: 10px !important;
-            }
-            #go-divider   { margin-bottom: 10px !important; }
-            #go-stats-list {
-                margin-bottom: 10px !important;
-                width: min(480px,92vw) !important;
-            }
-            #go-stats-list > div {
-                padding: 5px 0 !important;
-            }
-            /* stat label */
-            #go-stats-list span:first-child {
-                font-size: 7px !important;
-                letter-spacing: 2px !important;
-            }
-            /* stat value */
-            .go-stat-val {
-                font-size: 12px !important;
-                letter-spacing: 1px !important;
-            }
-            #go-score-wrap  { margin-bottom: 10px !important; }
-            #go-score-label {
-                font-size: 6px !important;
-                letter-spacing: 4px !important;
-                margin-bottom: 4px !important;
-            }
-            #go-score-val {
-                font-size: 28px !important;
-                letter-spacing: 2px !important;
-            }
-            #go-retry-btn {
-                padding: 9px 36px !important;
-                font-size: 8px !important;
-                letter-spacing: 4px !important;
-            }
-        }
+            /* HUD z-indices */
+            #inventory-btn { z-index: 50 !important; }
+            #dash-hud      { z-index: 50 !important; }
 
-        /* ── Mobile: compact top UI + move boss bar away from joystick zone ── */
-        @media (pointer: coarse), (hover: none) {
-            /* Tighter top padding so bars hug the top edge */
-            #top-ui {
-                padding: 6px 12px 10px !important;
-                gap: 4px !important;
-            }
+            /* Kill the [E] key hint */
+            .inv-key-hint { display: none !important; }
 
-            /* Armor label — pull up to match new top-ui height */
-            #armor-status {
-                top: 38px !important;
-                font-size: 7px !important;
-                letter-spacing: 2px !important;
-            }
+            /* Compact top UI */
+            #top-ui { padding: 6px 12px 10px !important; gap: 4px !important; }
+            #armor-status { top: 38px !important; font-size: 7px !important; letter-spacing: 2px !important; }
+            #wave-info    { top: 36px !important; }
+            #wave-info h2 { font-size: 10px !important; letter-spacing: 3px !important; }
+            #wave-info p  { font-size: 6px  !important; }
 
-            /* Room / wave info — same */
-            #wave-info {
-                top: 36px !important;
-            }
-
-            /* Boss HP bar — flip from bottom to just below top UI bars */
+            /* Boss bar → top on mobile */
             #boss-health-bar {
-                bottom: auto !important;
-                top: 52px !important;
-                width: min(420px, 72vw) !important;
-                max-width: 72vw !important;
-                gap: 3px !important;
+                bottom: auto !important; top: 52px !important;
+                width: min(420px,72vw) !important; max-width: 72vw !important;
             }
-            #boss-name {
-                font-size: 7px !important;
-                letter-spacing: 3px !important;
+            #boss-name   { font-size: 7px !important; letter-spacing: 3px !important; }
+            #boss-bar-container { height: 6px !important; }
+            #boss-phase-indicator { font-size: 6px !important; letter-spacing: 3px !important; }
+
+            /* Responsive inventory */
+            #inventory-panel { width: 96vw !important; max-height: 84vh !important; overflow-y: auto !important; padding: 14px 10px 12px !important; }
+            #inventory-body  { flex-direction: column !important; align-items: center !important; gap: 10px !important; }
+            #inv-character-area { width: 140px !important; height: 140px !important; flex-shrink: 0 !important; }
+            #inv-character-canvas { width: 140px !important; height: 140px !important; }
+            #inv-slots-area { width: 100% !important; }
+            #inv-slots-grid { grid-template-columns: repeat(6,1fr) !important; gap: 4px !important; }
+
+            /* Responsive level-up cards */
+            #card-container {
+                flex-direction: row !important; flex-wrap: nowrap !important;
+                overflow-x: auto !important; -webkit-overflow-scrolling: touch !important;
+                max-width: 98vw !important; padding: 4px 8px 16px !important;
+                gap: 8px !important; justify-content: flex-start !important;
+                scrollbar-width: none !important;
             }
-            #boss-bar-container {
-                height: 6px !important;
+            #card-container::-webkit-scrollbar { display: none; }
+            .card {
+                width: 130px !important; min-width: 130px !important;
+                height: 240px !important; flex-shrink: 0 !important;
+                padding: 10px !important;
             }
-            #boss-hp-text {
-                font-size: 6px !important;
-            }
-            #boss-phase-indicator {
-                font-size: 6px !important;
-                letter-spacing: 3px !important;
-            }
-        }
+            .card-icon-container { width: 50px !important; height: 50px !important; }
+            .card-rarity { font-size: 9px !important; }
+            .card-effect { font-size: 8px !important; line-height: 1.4 !important; }
 
-        /* ══════════════════════════════════════════════════════
-           SPLASH · MENU · SETTINGS · LOADING SCREENS
-        ══════════════════════════════════════════════════════ */
+            /* Collector chest collect button fix */
+            .chest-card-wrapper { display: flex !important; flex-direction: column !important; align-items: center !important; }
+            .boss-collect-btn   { position: relative !important; bottom: auto !important; margin-top: 14px !important; padding: 12px 32px !important; font-size: 12px !important; }
 
-        /* Preload black cover — hides game until Start is clicked */
-        #preload-cover {
-            position: fixed; inset: 0;
-            background: #000;
-            z-index: 11000;  /* above screens but below portrait-gate */
-        }
+            /* Death screen compact */
+            #go-heading  { font-size: 28px !important; }
+            #go-cause    { font-size: 9px  !important; margin-bottom: 10px !important; }
+            #go-stats-list { margin-bottom: 10px !important; width: min(480px,92vw) !important; }
+            .go-stat-val { font-size: 12px !important; }
+            #go-score-val { font-size: 28px !important; }
+            #go-retry-btn { padding: 9px 36px !important; font-size: 8px !important; }
 
-        /* Shared base */
-        .game-screen {
-            position: fixed; inset: 0;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--fm);
-            /* NO overflow:hidden — it misaligns hit areas vs visuals on iOS */
-        }
-
-        /* ── SPLASH ─────────────────────────────────────── */
-        /* Splash is always solid black so game never shows through */
-        #splash-screen { background: #000; opacity: 1; }
-        #splash-screen.fading { transition: opacity 0.9s ease; opacity: 0; }
-        #splash-logo {
-            margin-bottom: 22px; opacity: 0;
-            transform: scale(0.8);
-            transition: opacity 0.8s ease 0.2s, transform 0.8s cubic-bezier(0.23,1,0.32,1) 0.2s;
-        }
-        #splash-screen.visible #splash-logo { opacity: 1; transform: scale(1); }
-        #splash-studio {
-            font-size: 11px; font-weight: 700; letter-spacing: 10px;
-            text-transform: uppercase; color: rgba(200,187,168,0.75);
-            opacity: 0; transition: opacity 0.7s ease 0.6s;
-        }
-        #splash-screen.visible #splash-studio { opacity: 1; }
-        #splash-presents {
-            margin-top: 10px; font-size: 7px; letter-spacing: 5px;
-            text-transform: uppercase; color: rgba(200,187,168,0.2);
-            opacity: 0; transition: opacity 0.6s ease 0.9s;
-        }
-        #splash-screen.visible #splash-presents { opacity: 1; }
-
-        /* ── MAIN MENU ──────────────────────────────────── */
-        #main-menu { background: #060403; z-index: 9500; }
-        #menu-bg-canvas { position: absolute; inset: 0; pointer-events: none; display: block; }
-        #menu-version {
-            position: absolute; top: 16px; left: 20px;
-            font-size: 8px; font-weight: 700; letter-spacing: 3px;
-            text-transform: uppercase; color: rgba(200,187,168,0.22);
-            pointer-events: none;
-        }
-        #menu-content {
-            /* Fixed-position centering avoids iOS flex hit-area offset bug */
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-            display: flex; flex-direction: column; align-items: center;
-            text-align: center; padding: 0 24px;
-            width: min(400px, 90vw);
-        }
-        #menu-game-title {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(40px, 9vw, 88px);
-            font-weight: 700; letter-spacing: 8px;
-            text-transform: uppercase; color: rgba(200,187,168,0.92);
-            text-shadow: 0 0 60px rgba(200,187,168,0.12);
-            margin: 0 0 6px; line-height: 1;
-        }
-        #menu-subtitle {
-            font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-            color: rgba(200,187,168,0.28); margin: 0 0 40px;
-        }
-        #menu-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; }
-        .menu-btn {
-            /* Large tap target — min 56px height, specific transitions (not 'all') */
-            min-height: 56px; width: 100%;
-            padding: 16px 0;
-            background: rgba(200,187,168,0.03);
-            border: 1px solid rgba(200,187,168,0.14);
-            border-radius: 2px;
-            color: rgba(200,187,168,0.6);
-            font-family: var(--fm); font-size: 10px; font-weight: 700;
-            letter-spacing: 6px; text-transform: uppercase;
-            cursor: pointer;
-            pointer-events: all !important;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            /* Specific transitions only — 'all' breaks iOS tap detection */
-            transition: background 0.18s ease, border-color 0.18s ease,
-                        color 0.18s ease, box-shadow 0.18s ease;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; z-index: 3; /* ensure above canvas */
-        }
-        .menu-btn:active {
-            background: rgba(200,187,168,0.1);
-            border-color: rgba(200,187,168,0.35);
-            color: rgba(200,187,168,0.95);
-        }
-        #btn-start { border-color: rgba(200,187,168,0.22); color: rgba(200,187,168,0.85); font-size: 11px; }
-        #btn-start:active { border-color: #f1c40f; color: #f1c40f; }
-        #btn-exit { border-color: rgba(200,187,168,0.07); color: rgba(200,187,168,0.25); }
-
-        /* ── SETTINGS ───────────────────────────────────── */
-        #settings-panel { z-index: 10500; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
-        #settings-box {
-            position: relative; background: rgba(8,7,6,0.98);
-            border: 1px solid rgba(200,187,168,0.14); border-radius: 6px;
-            padding: 28px 32px 24px; width: min(340px, 88vw);
-            box-shadow: 0 32px 80px rgba(0,0,0,0.8);
-        }
-        #settings-title {
-            font-size: 8px; font-weight: 700; letter-spacing: 6px;
-            text-transform: uppercase; color: rgba(200,187,168,0.35); margin-bottom: 22px;
-        }
-        .settings-row {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0; border-bottom: 1px solid rgba(200,187,168,0.05);
-        }
-        .settings-row:last-of-type { border-bottom: none; }
-        .settings-label {
-            font-size: 9px; font-weight: 700; letter-spacing: 3px;
-            text-transform: uppercase; color: rgba(200,187,168,0.5);
-        }
-        .settings-label small {
-            display: block; font-size: 7px; letter-spacing: 1px;
-            color: rgba(200,187,168,0.25); margin-top: 2px; font-weight: 400;
-        }
-        .settings-control input[type="range"] { width: 100px; accent-color: #f1c40f; }
-        #settings-close {
-            margin-top: 20px; width: 100%; padding: 12px;
-            background: rgba(200,187,168,0.04); border: 1px solid rgba(200,187,168,0.12);
-            border-radius: 2px; color: rgba(200,187,168,0.45); font-family: var(--fm);
-            font-size: 8px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
-            cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-            transition: background 0.15s, color 0.15s;
-        }
-        #settings-close:active { background: rgba(200,187,168,0.1); color: rgba(200,187,168,0.8); }
-
-        /* ── LOADING ─────────────────────────────────────── */
-        #loading-screen { background: #060403; z-index: 10000; gap: 16px; }
-        .loading-bar-track {
-            width: min(220px, 60vw); height: 2px;
-            background: rgba(200,187,168,0.07); border-radius: 1px; overflow: hidden;
-        }
-        #loading-bar-fill {
-            height: 100%; width: 0%;
-            background: linear-gradient(90deg, rgba(200,187,168,0.3), rgba(200,187,168,0.8));
-            border-radius: 1px; transition: width 0.05s linear;
-        }
-        #loading-label {
-            font-size: 7px; letter-spacing: 4px;
-            text-transform: uppercase; color: rgba(200,187,168,0.25);
-        }
-
-        /* ── Tutorial + chest fixes ─────────────────────── */
-        .tut-box { pointer-events: all !important; }
-        #tut-dismiss button {
-            pointer-events: all !important;
-            touch-action: manipulation !important;
-            -webkit-tap-highlight-color: transparent !important;
-            min-height: 38px !important;
-        }
-        /* Collector chest collect button — inline on mobile */
-        @media (pointer: coarse), (hover: none) {
-            .chest-card-wrapper {
-                display: flex !important; flex-direction: column !important;
-                align-items: center !important;
-            }
-            .boss-collect-btn {
-                position: relative !important; bottom: auto !important;
-                margin-top: 14px !important; padding: 12px 32px !important;
-                font-size: 12px !important;
-            }
-            /* Compact menu for very short landscape screens */
-            @media (max-height: 390px) {
-                #menu-game-title  { font-size: 32px !important; }
-                #menu-subtitle    { margin-bottom: 20px !important; }
-                .menu-btn         { min-height: 46px !important; padding: 12px 0 !important; }
-                #menu-buttons     { gap: 7px !important; }
-            }
-        }
-
-        /* ── Pointer-event fixes for tutorial box and menu buttons ── */
-        /* Tutorial box must receive taps even though parent has pointer-events:none */
-        .tut-box { pointer-events: all !important; }
-        #tut-dismiss button { pointer-events: all !important; touch-action: manipulation !important; }
-
-        /* Menu buttons — explicit tappable area */
-        .menu-btn { pointer-events: all !important; touch-action: manipulation !important; }
-        #menu-content { position: relative; z-index: 2; }
-
-        /* Compact menu for small landscape screens */
-        @media (pointer: coarse) and (max-height: 420px), (hover: none) and (max-height: 420px) {
-            #menu-game-title { font-size: 36px !important; margin-bottom: 4px !important; }
-            #menu-subtitle   { margin-bottom: 24px !important; }
-            #menu-buttons    { gap: 8px !important; }
-            .menu-btn        { padding: 10px 0 !important; font-size: 9px !important; }
-        }
-
-        /* Remove tooltip transform on mobile — the translateY causes hit-area offset on iOS */
-        @media (pointer: coarse), (hover: none) {
+            /* Tutorial tooltip — mobile */
             #tutorial-tooltip {
+                left: auto  !important; right: 10px !important;
+                top: 58px   !important; width: 148px !important;
+                bottom: auto !important;
                 transform: none !important;
                 transition: opacity 0.25s ease !important;
             }
-            #tutorial-tooltip.visible {
-                transform: none !important;
-            }
-        }
+            #tutorial-tooltip.visible { transform: none !important; }
+            .tut-box { max-width: 148px !important; width: 148px !important; box-sizing: border-box !important; padding: 7px 9px !important; }
+            .tut-title { font-size: 6px !important; margin-bottom: 2px !important; }
+            .tut-body  { font-size: 10px !important; line-height: 1.3 !important; }
+            .tut-dismiss { margin-top: 4px !important; font-size: 6px !important; }
+            #tut-dismiss button { padding: 4px 10px !important; font-size: 7px !important; margin-top: 5px !important; }
+            .tut-skip { font-size: 6px !important; }
+            /* tut-box needs pointer events (parent has pointer-events:none) */
+            .tut-box { pointer-events: all !important; }
+            #tut-dismiss button { pointer-events: all !important; touch-action: manipulation !important; }
 
-        /* Failsafe: body is always black until game deliberately shows */
-        body { background: #000 !important; }
+            /* Slim tutorial after "got it" */
+            #tutorial-tooltip.tut-slim #tut-title,
+            #tutorial-tooltip.tut-slim #tut-body,
+            #tutorial-tooltip.tut-slim .tut-skip { display: none !important; }
+            #tutorial-tooltip.tut-slim .tut-box  { padding: 5px 8px !important; }
+            #tutorial-tooltip.tut-slim .tut-dismiss { margin-top: 0 !important; }
+        }
     </style>
 </head>
 <body>
-    <!-- Persistent black cover — hides game until Start is clicked -->
-    <div id="preload-cover"></div>
-
-    <!-- Single intro overlay — always solid black, content swaps inside -->
-    <div id="portrait-gate" style="display:flex; position:fixed; inset:0; z-index:12000; background:#000;
-        align-items:center; justify-content:center; transition:opacity 0.9s ease;">
-
-        <!-- Rotate prompt (shown in portrait) -->
-        <div id="pg-rotate" style="display:none; flex-direction:column; align-items:center; gap:18px;
-            font-family:'Space Mono',monospace; color:rgba(200,187,168,0.7); text-align:center;">
-            <div style="font-size:48px; animation:rotSpin 2s ease-in-out infinite;">⟳</div>
-            <div style="font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;">Rotate to play</div>
-            <div style="font-size:7px; letter-spacing:3px; text-transform:uppercase; opacity:0.35;">Rocktato requires landscape</div>
-        </div>
-
-        <!-- Sharp Studios splash (shown in landscape) -->
-        <div id="pg-splash" style="display:none; flex-direction:column; align-items:center; gap:0;
-            text-align:center; opacity:0; transition:opacity 0.7s ease;">
-            <svg viewBox="0 0 80 80" width="68" height="68" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:20px;">
-                <polygon points="40,4 76,40 40,76 4,40"
-                    fill="rgba(200,187,168,0.04)" stroke="rgba(200,187,168,0.55)" stroke-width="1.4"/>
-                <polygon points="40,16 64,40 40,64 16,40"
-                    fill="none" stroke="rgba(200,187,168,0.2)" stroke-width="1"/>
-                <line x1="4" y1="40" x2="40" y2="4" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
-                <line x1="40" y1="4" x2="76" y2="40" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
-                <text x="40" y="50" text-anchor="middle"
-                    fill="rgba(200,187,168,0.88)"
-                    font-family="Space Grotesk,sans-serif"
-                    font-size="30" font-weight="700">S</text>
-            </svg>
-            <div style="font-size:11px; font-weight:700; letter-spacing:10px; text-transform:uppercase;
-                color:rgba(200,187,168,0.78); font-family:'Space Mono',monospace; margin-bottom:10px;">
-                Sharp Studios
-            </div>
-            <div style="font-size:7px; letter-spacing:5px; text-transform:uppercase;
-                color:rgba(200,187,168,0.22); font-family:'Space Mono',monospace;">
-                presents
-            </div>
-        </div>
-
-    </div>
-    <!-- ═══════════════════════════════════════════
-         SPLASH SCREEN — Sharp Studios
-    ═══════════════════════════════════════════ -->
-    <div id="splash-screen" class="game-screen" style="display:none;">
-        <div id="splash-logo">
-            <svg viewBox="0 0 80 80" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
-                <!-- Outer diamond -->
-                <polygon points="40,4 76,40 40,76 4,40"
-                    fill="rgba(200,187,168,0.03)"
-                    stroke="rgba(200,187,168,0.55)" stroke-width="1.4"/>
-                <!-- Mid diamond -->
-                <polygon points="40,16 64,40 40,64 16,40"
-                    fill="none"
-                    stroke="rgba(200,187,168,0.2)" stroke-width="1"/>
-                <!-- Diagonal accent lines -->
-                <line x1="4" y1="40" x2="40" y2="4" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
-                <line x1="40" y1="4" x2="76" y2="40" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
-                <!-- S -->
-                <text x="40" y="50" text-anchor="middle"
-                    fill="rgba(200,187,168,0.88)"
-                    font-family="'Space Grotesk',sans-serif"
-                    font-size="30" font-weight="700">S</text>
-            </svg>
-        </div>
-        <div id="splash-studio">Sharp Studios</div>
-        <div id="splash-presents">presents</div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         MAIN MENU
-    ═══════════════════════════════════════════ -->
-    <div id="main-menu" class="game-screen">
-        <canvas id="menu-bg-canvas"></canvas>
-        <div id="menu-version">v0.1 alpha</div>
-        <div id="menu-content">
-            <div id="menu-game-title">ROCKTATO</div>
-            <div id="menu-subtitle">survive the rooms · collect the arsenal</div>
-            <div id="menu-buttons">
-                <button class="menu-btn" id="btn-start">start game</button>
-                <button class="menu-btn" id="btn-settings">settings</button>
-                <button class="menu-btn" id="btn-exit">exit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         SETTINGS PANEL
-    ═══════════════════════════════════════════ -->
-    <div id="settings-panel" class="game-screen" style="display:none;">
-        <div id="settings-box">
-            <div id="settings-title">— settings —</div>
-            <div class="settings-row">
-                <div class="settings-label">
-                    Camera Zoom
-                    <small>how much of the room you see</small>
-                </div>
-                <div class="settings-control">
-                    <input type="range" id="settings-zoom"
-                        min="0.28" max="0.65" step="0.01" value="0.38">
-                </div>
-            </div>
-            <div class="settings-row">
-                <div class="settings-label">
-                    Skip Tutorial
-                    <small>for returning players</small>
-                </div>
-                <div class="settings-control">
-                    <input type="checkbox" id="settings-skip-tut" style="width:18px;height:18px;accent-color:#f1c40f;">
-                </div>
-            </div>
-            <button id="settings-close">close</button>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════
-         LOADING SCREEN
-    ═══════════════════════════════════════════ -->
-    <div id="loading-screen" class="game-screen" style="display:none;">
-        <div class="loading-bar-track">
-            <div id="loading-bar-fill"></div>
-        </div>
-        <div id="loading-label">loading</div>
-    </div>
-
 
     <div id="top-ui">
         <div class="ui-row">
@@ -2244,13 +1749,12 @@
         // ── Roulette King Intro State ──
         const rkIntro = {
             active: false, timer: 0, bossRef: null,
-            darkOverlay: 0,
-            coins: [], cards: [],
+            darkOverlay: 0, coins: [], cards: [],
             wheelAngle: 0, wheelScale: 0,
-            textMsg: '', textAlpha: 0,
+            textMsg: '', bigText: false, textAlpha: 0,
         };
 
-                const bullets = [];
+        const bullets = [];
         const enemyBullets = [];
         const enemies = [];
         const xpGems = [];
@@ -2933,20 +2437,13 @@
                 maskCrackPct: 0,
                 cardSuitTimer: 0, currentSuit: 0
             });
-            // Start cinematic intro (boss hidden until it ends)
             const rkBoss = enemies[enemies.length - 1];
             rkBoss.introHidden = true;
-            rkIntro.active = true;
-            rkIntro.timer = 0;
-            rkIntro.bossRef = rkBoss;
-            rkIntro.darkOverlay = 0;
-            rkIntro.coins = [];
-            rkIntro.cards = [];
-            rkIntro.wheelAngle = 0;
-            rkIntro.wheelScale = 0;
-            rkIntro.textMsg = '';
-            rkIntro.textAlpha = 0;
-            isPaused = false; // game runs during intro (like Collector)
+            rkIntro.active = true; rkIntro.timer = 0; rkIntro.bossRef = rkBoss;
+            rkIntro.darkOverlay = 0; rkIntro.coins = []; rkIntro.cards = [];
+            rkIntro.wheelAngle = 0; rkIntro.wheelScale = 0;
+            rkIntro.textMsg = ''; rkIntro.textAlpha = 0;
+            isPaused = false;
         }
 
         function checkChestInteract() {
@@ -4999,13 +4496,9 @@
                 const d = Math.sqrt((player.x - chest.x)**2 + (player.y - chest.y)**2);
                 if (d < 120 && !chest.opened) {
                     if (window._mobileMode) {
-                        // On mobile: auto-open the moment player walks into range
-                        chest.opened = true;
-                        game.isChestOpen = true;
+                        chest.opened = true; game.isChestOpen = true;
                         triggerLevelUp(chest.chestType || 'collector');
-                    } else {
-                        promptVisible = true;
-                    }
+                    } else { promptVisible = true; }
                 }
             });
             interactPrompt.style.display = (promptVisible && !window._mobileMode) ? 'block' : 'none';
@@ -10941,6 +10434,7 @@
 
             // Collector boss intro cinematic overlay (drawn on top of everything)
             drawCollectorIntro();
+            drawRKIntro();
             // Roulette King cinematic intro
             drawRKIntro();
 
@@ -10948,8 +10442,6 @@
         }
 
 
-        // ════════════════════════════════════════════════════════════════════
-        //  ROULETTE KING — CINEMATIC INTRO
         // ════════════════════════════════════════════════════════════════════
         function updateRKIntro(dt) {
             if (!rkIntro.active) return;
@@ -11292,13 +10784,14 @@
         }
 
 
+
         function gameLoop(timestamp) {
             let deltaTime = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
             if (!game.isOver) update(deltaTime || 0);
             // Collector intro runs regardless of pause state
             if (!game.isOver) updateCollectorIntro(deltaTime || 0);
-            // Roulette King intro
+            if (!game.isOver) updateRKIntro(deltaTime || 0);
             if (!game.isOver) updateRKIntro(deltaTime || 0);
             // Tutorial runs every frame (even when paused) so info steps can advance
             if (typeof updateTutorial === 'function' && !game.isOver) {
@@ -11312,88 +10805,47 @@
         const DEV_MODE = false;
 
         if (DEV_MODE) {
-            game.wave = 9;
-            generateRoom(9, null);
-            startRoom(9);
-            showWaveAnnouncement('⚙ TEST MODE ⚙', 'Room 9 — Fully loaded. Roulette King is next.', '#f1c40f');
-            if (waveText) waveText.innerText = '9';
-            if (timerText) timerText.innerText = 'Room 9';
+            game.wave = 8;
+            generateRoom(8, null);
+            startRoom(8);
+            showWaveAnnouncement('⚙ DEV MODE ⚙', 'Wave 8 — Armed to the teeth.', '#f1c40f');
+            if (waveText) waveText.innerText = '8';
+            if (timerText) timerText.innerText = 'Room 8';
 
-            // ── 10 legendary weapons with the best uncommon traits ──────────
-            floatingGuns.length = 0;
-            const weaponLoadout = [
-                { base: 'smg_legendary',     trait: 'stormbound' },   // electric zaps on hit
-                { base: 'smg_legendary',     trait: 'twinburst'  },   // every 8th shot fires 3x
-                { base: 'smg_legendary',     trait: 'frostbite'  },   // stacking slow
-                { base: 'smg_legendary',     trait: 'pulsefire'  },   // burn zones on impact
-                { base: 'shotgun_legendary', trait: 'stormbound' },   // electric + massive blast
-                { base: 'shotgun_legendary', trait: 'ironwill'   },   // +dmg below 50% HP
-                { base: 'shotgun_legendary', trait: 'twinburst'  },   // burst triple-shot
-                { base: 'rifle_legendary',   trait: 'stormbound' },   // burst rifle + chain lightning
-                { base: 'rifle_legendary',   trait: 'frostbite'  },   // burst + slow stacks
-                { base: 'rifle_legendary',   trait: 'twinburst'  },   // double-burst mayhem
-            ];
-            weaponLoadout.forEach(({ base, trait }, i) => {
-                const baseWeapon  = raritySettings.find(r => r.id === base);
-                const traitConfig = uncommonTraits.find(t => t.id === trait);
-                if (!baseWeapon) return;
-                const config = traitConfig
-                    ? applyTraitToWeapon(JSON.parse(JSON.stringify(baseWeapon)), traitConfig)
-                    : JSON.parse(JSON.stringify(baseWeapon));
-                floatingGuns.push({
-                    config,
-                    angle: (Math.PI * 2 / weaponLoadout.length) * i,
-                    orbitRadius: 110 + i * 22,
-                    shootTimer: 0, recoil: 0, lookAngle: 0,
-                    burstRemaining: 0, burstDelay: 0
-                });
-            });
-
-            // ── Voidplate Harness — the best armor ─────────────────────────
-            const voidPlate = armorSettings.find(a => a.id === 'armor_legendary');
-            if (voidPlate) {
-                player.armor = voidPlate;
-                player.maxHp = player.baseHp + (voidPlate.hpBonus || 0);
-                player.hp    = player.maxHp;
-                player.armorState = { shieldHits: voidPlate.shield || 0, shieldTimer: 0, voidTimer: 0, voidCooldown: 0, isVoid: false };
-                if (armorNameDisplay) { armorNameDisplay.innerText = voidPlate.name; armorNameDisplay.style.color = voidPlate.color; }
+            // Give 6 legendary SMGs as orbiting floating guns
+            const smgLegendary = raritySettings.find(r => r.id === 'smg_legendary');
+            if (smgLegendary) {
+                floatingGuns.length = 0;
+                for (let i = 0; i < 6; i++) {
+                    floatingGuns.push({
+                        config: JSON.parse(JSON.stringify(smgLegendary)),
+                        angle: (Math.PI * 2 / 6) * i,
+                        orbitRadius: 110 + i * 30,
+                        shootTimer: 0, recoil: 0, lookAngle: 0,
+                        burstRemaining: 0, burstDelay: 0
+                    });
+                }
             }
 
-            // ── Best passives ───────────────────────────────────────────────
-            const passiveIds = ['powerful_collector', 'powerful_matrix', 'powerful_adrenaline'];
-            passiveIds.forEach(id => {
-                const p = powerfulsSettings.find(x => x.id === id);
-                if (!p) return;
-                player.powerfuls.push(p);
-                if (p.speedMod)   player.speed        *= p.speedMod;
-                if (p.pickupMod)  player.pickupRange  *= p.pickupMod;
-                if (p.critChance) player.critChance   += p.critChance;
-            });
-
-            // ── Riftstep ability (teleport dash) ────────────────────────────
-            player.abilities.push('ability_rift');
-            player.dashCooldown = 0;
-
-            // ── Generous XP so level-up screen is ready to fire ─────────────
-            player.xp = 0; player.maxXp = 200;
-
+            // Equip Voidplate Harness (Celestial armor)
+            const celestialArmor = raritySettings.find(r => r.id === 'armor_legendary');
+            if (celestialArmor) {
+                player.armor = celestialArmor;
+                player.maxHp = player.baseHp + (celestialArmor.hpBonus || 0);
+                player.hp = player.maxHp;
+                player.armorState = { shieldHits: celestialArmor.shield || 0, shieldTimer: 0, voidTimer: 0, voidCooldown: 0, isVoid: false };
+                if (celestialArmor.speedMod) player.speed *= celestialArmor.speedMod;
+            }
         } else {
-            // ── Initialize first room (game stays paused until menu Start) ──
+            // ── Initialize first room ──
             generateRoom(1, null);
             startRoom(1);
             showWaveAnnouncement('ROOM  1', 'Kill everything. Find the key.', '#00f2fe');
             if (waveText) waveText.innerText = '1';
             if (timerText) timerText.innerText = 'Room 1';
-            isPaused = true; // wait for menu
         }
         
         requestAnimationFrame(gameLoop);
-
-        // Exposed so the menu can start the game
-        window.launchGame = function() {
-            isPaused = false;
-            lastTime = performance.now();
-        };
 
         // ══════════════════════════════════════════════════════════════
         // INVENTORY SYSTEM
@@ -11856,33 +11308,7 @@
             if (ev.key === 'Escape' && inventoryOpen) {
                 toggleInventory();
             }
-
-            // ── Tap anywhere to open chest (simulates pressing E) ──────────
-            function mobileInteract() {
-                const prompt = document.getElementById('interact-prompt');
-                if (prompt && prompt.style.display !== 'none') {
-                    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
-                }
-            }
-            [zoneL, zoneR].forEach(z => {
-                z.addEventListener('touchstart', () => mobileInteract(), { passive: true });
-            });
-
-            // Interact prompt: relabel + make directly tappable.
-            // The prompt has z-index 50 (above our zones at z-8) so we must
-            // attach the listener to the prompt itself, not the zones.
-            const ipEl = document.getElementById('interact-prompt');
-            if (ipEl) {
-                ipEl.innerHTML = 'tap to open';
-                ipEl.style.touchAction = 'manipulation';
-                ipEl.style.cursor = 'pointer';
-                ipEl.addEventListener('touchstart', ev => {
-                    ev.preventDefault();
-                    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', bubbles: true }));
-                }, { passive: false });
-            }
-
-                });
+        });
 
         function toggleInventoryFromCards() {
             // Open inventory on top of the level-up screen
@@ -11910,13 +11336,7 @@
         window.addEventListener('resize', () => {
             tutCanvas.width  = window.innerWidth;
             tutCanvas.height = window.innerHeight;
-
-            // ── Zoom camera out on mobile so more of the world is visible ──
-            if (typeof camera !== 'undefined') {
-                camera.zoom = 0.38;
-            }
-
-                });
+        });
 
         // ── Tutorial state ──
         const tut = {
@@ -12324,206 +11744,47 @@
             if (typeof tut !== 'undefined' && typeof tutAcknowledged !== 'undefined' && tutAcknowledged) {
                 tut.hasShot = true;
             }
+        });
 
-            // ── Collapse tutorial box after "got it" tap ──────────────────
-            const tutTipEl    = document.getElementById('tutorial-tooltip');
-            const tutDismissEl = document.getElementById('tut-dismiss');
-            if (tutTipEl && tutDismissEl) {
-                const slimObs = new MutationObserver(() => {
-                    // A <button> means we're showing the "got it" prompt (before tap)
-                    // A <span> (no button) means after tap — collapse to slim hint
-                    const hasBtn = !!tutDismissEl.querySelector('button');
-                    const hasText = tutDismissEl.textContent.trim().length > 0;
-                    if (!hasBtn && hasText) {
-                        tutTipEl.classList.add('tut-slim');
-                    } else {
-                        tutTipEl.classList.remove('tut-slim');
-                    }
-                });
-                slimObs.observe(tutDismissEl, { childList: true, subtree: true, characterData: true });
-            }
-
-            // ── Landscape orientation ──────────────────────────────────────
-            const rotOverlay = document.getElementById('rotate-overlay');
-            function checkOrientation() {
-                if (!rotOverlay) return;
-                const portrait = window.innerHeight > window.innerWidth;
-                rotOverlay.style.display = portrait ? 'flex' : 'none';
-            }
-            // Try API lock first
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {});
-            }
-            window.addEventListener('resize', checkOrientation);
-            window.addEventListener('orientationchange', checkOrientation);
-            checkOrientation();
-
-                });
-
-        // ═══════════════════════════════════════════════════════════
-        //  MOBILE VIRTUAL JOYSTICK CONTROLS
-        // ═══════════════════════════════════════════════════════════
         // ═══════════════════════════════════════════════════════════════
-        //  MOBILE CONTROLS  — dynamic floating joysticks, double-tap dash
+        //  MOBILE CONTROLS — dynamic joysticks, double-tap dash
         // ═══════════════════════════════════════════════════════════════
         window.addEventListener('load', function() {
-
             const zoneL = document.getElementById('mob-left-zone');
             const zoneR = document.getElementById('mob-right-zone');
             if (!zoneL) return;
-
-            // Flag the game's update loop that we're on a touch device
             window._mobileMode = true;
-
-            const lRing = document.getElementById('mob-joy-left-ring');
-            const lDot  = document.getElementById('mob-joy-left-dot');
-            const rRing = document.getElementById('mob-joy-right-ring');
-            const rDot  = document.getElementById('mob-joy-right-dot');
-
-            const MAX_TRAVEL = 46;
-            const DEADZONE   = 10;
-            const DOUBLE_TAP = 280;
-
-            let ltId = null, ltOx = 0, ltOy = 0;
-            let rtId = null, rtOx = 0, rtOy = 0;
-            let rtLastTap = 0;
-
-            function clamp(dx, dy) {
-                const d = Math.sqrt(dx*dx + dy*dy);
-                const f = d > MAX_TRAVEL ? MAX_TRAVEL / d : 1;
-                return { x: dx*f, y: dy*f, dist: d };
-            }
-            function showJoy(ring, dot, x, y) {
-                ring.style.left = x + 'px'; ring.style.top = y + 'px';
-                dot.style.left  = x + 'px'; dot.style.top  = y + 'px';
-                ring.style.display = dot.style.display = 'block';
-            }
-            function moveDot(dot, ox, oy, cx, cy) {
-                const v = clamp(cx - ox, cy - oy);
-                dot.style.left = (ox + v.x) + 'px';
-                dot.style.top  = (oy + v.y) + 'px';
-                return v;
-            }
-
-            // LEFT ZONE — movement
-            zoneL.addEventListener('touchstart', e => {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (ltId !== null) continue;
-                    ltId = t.identifier;
-                    ltOx = t.clientX; ltOy = t.clientY;
-                    showJoy(lRing, lDot, ltOx, ltOy);
-                    applyLeft(ltOx, ltOy);
-                }
-            }, { passive: false });
-            zoneL.addEventListener('touchmove', e => {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (t.identifier === ltId) applyLeft(t.clientX, t.clientY);
-                }
-            }, { passive: false });
-            function endLeft(e) {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (t.identifier !== ltId) continue;
-                    ltId = null;
-                    lRing.style.display = lDot.style.display = 'none';
-                    keys.w = keys.a = keys.s = keys.d = false;
-                }
-            }
-            zoneL.addEventListener('touchend',    endLeft, { passive: false });
-            zoneL.addEventListener('touchcancel', endLeft, { passive: false });
-            function applyLeft(cx, cy) {
-                const v = moveDot(lDot, ltOx, ltOy, cx, cy);
-                if (v.dist < DEADZONE) { keys.w = keys.a = keys.s = keys.d = false; return; }
-                const nx = (cx - ltOx) / v.dist, ny = (cy - ltOy) / v.dist;
-                const T = 0.38;
-                keys.w = ny < -T; keys.a = nx < -T;
-                keys.s = ny >  T; keys.d = nx >  T;
-                if (typeof tut !== 'undefined') {
-                    if (keys.w) tut.movedW = true; if (keys.a) tut.movedA = true;
-                    if (keys.s) tut.movedS = true; if (keys.d) tut.movedD = true;
-                }
-            }
-
-            // RIGHT ZONE — aim + fire + double-tap dash
-            zoneR.addEventListener('touchstart', e => {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (rtId !== null) continue;
-                    const now = Date.now();
-                    if (now - rtLastTap < DOUBLE_TAP) {
-                        if (typeof handleDashAbility === 'function' && !isPaused) handleDashAbility();
-                        rtLastTap = 0;
-                        continue;
-                    }
-                    rtLastTap = now;
-                    rtId = t.identifier;
-                    rtOx = t.clientX; rtOy = t.clientY;
-                    showJoy(rRing, rDot, rtOx, rtOy);
-                    applyRight(rtOx, rtOy);
-                }
-            }, { passive: false });
-            zoneR.addEventListener('touchmove', e => {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (t.identifier === rtId) applyRight(t.clientX, t.clientY);
-                }
-            }, { passive: false });
-            function endRight(e) {
-                e.preventDefault();
-                for (const t of e.changedTouches) {
-                    if (t.identifier !== rtId) continue;
-                    rtId = null;
-                    rRing.style.display = rDot.style.display = 'none';
-                    rDot.classList.remove('mob-firing');
-                    rRing.classList.remove('mob-firing');
-                    mouse.down = false;
-                }
-            }
-            zoneR.addEventListener('touchend',    endRight, { passive: false });
-            zoneR.addEventListener('touchcancel', endRight, { passive: false });
-            function applyRight(cx, cy) {
-                const v = moveDot(rDot, rtOx, rtOy, cx, cy);
-                if (v.dist < DEADZONE) {
-                    rDot.classList.remove('mob-firing'); rRing.classList.remove('mob-firing');
-                    mouse.down = false; return;
-                }
-                const nx = (cx - rtOx) / v.dist, ny = (cy - rtOy) / v.dist;
-                mouse.x = window.innerWidth  / 2 + nx * 350;
-                mouse.y = window.innerHeight / 2 + ny * 350;
-                rDot.classList.add('mob-firing'); rRing.classList.add('mob-firing');
-                if (!isPaused) {
-                    mouse.down = true;
-                    if (typeof tut !== 'undefined' && typeof tutAcknowledged !== 'undefined' && tutAcknowledged)
-                        tut.hasShot = true;
-                }
-            }
-
-            // Kill auto-fire while paused
-            (function watchPause() {
-                if (isPaused && rtId !== null) mouse.down = false;
-                requestAnimationFrame(watchPause);
-            })();
-
-
-            // ── Mobile: rewrite tutorial text to match touch controls ─────
-            if (matchMedia('(pointer:coarse)').matches && typeof tutSteps !== 'undefined') {
-                tutSteps.forEach(step => {
-                    if (step.id === 'move') {
-                        step.body = 'Use the <b style="color:#fff">left joystick</b> — touch the left side of the screen and drag to move. Try all four directions.';
-                        step.dismissText = 'move your left stick →';
-                    } else if (step.id === 'shoot') {
-                        step.body = '<b style="color:#fff">Push the right side</b> of the screen to aim and fire. Kill an enemy to continue.';
-                        step.dismissText = 'use right side to shoot →';
-                    } else if (step.id === 'inventory') {
-                        step.body = 'Tap the <b style="color:#fff">Arsenal button</b> (bottom-left ⊞) to view and sell weapons for XP.';
-                        step.dismissText = 'open the arsenal →';
-                    }
-                });
-            }
-
-                });
+            const lRing=document.getElementById('mob-joy-left-ring'), lDot=document.getElementById('mob-joy-left-dot');
+            const rRing=document.getElementById('mob-joy-right-ring'), rDot=document.getElementById('mob-joy-right-dot');
+            const MAX=46, DEAD=10, DTAP=280;
+            let ltId=null,ltOx=0,ltOy=0,rtId=null,rtOx=0,rtOy=0,rtLast=0;
+            function clamp(dx,dy){const d=Math.sqrt(dx*dx+dy*dy),f=d>MAX?MAX/d:1;return{x:dx*f,y:dy*f,dist:d};}
+            function showJ(r,d,x,y){r.style.left=d.style.left=x+'px';r.style.top=d.style.top=y+'px';r.style.display=d.style.display='block';}
+            function moveD(d,ox,oy,cx,cy){const v=clamp(cx-ox,cy-oy);d.style.left=(ox+v.x)+'px';d.style.top=(oy+v.y)+'px';return v;}
+            zoneL.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(ltId!==null)continue;ltId=t.identifier;ltOx=t.clientX;ltOy=t.clientY;showJ(lRing,lDot,ltOx,ltOy);apL(ltOx,ltOy);}},{passive:false});
+            zoneL.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===ltId)apL(t.clientX,t.clientY);},{passive:false});
+            function elL(e){e.preventDefault();for(const t of e.changedTouches){if(t.identifier!==ltId)continue;ltId=null;lRing.style.display=lDot.style.display='none';keys.w=keys.a=keys.s=keys.d=false;}}
+            zoneL.addEventListener('touchend',elL,{passive:false});zoneL.addEventListener('touchcancel',elL,{passive:false});
+            function apL(cx,cy){const v=moveD(lDot,ltOx,ltOy,cx,cy);if(v.dist<DEAD){keys.w=keys.a=keys.s=keys.d=false;return;}const nx=(cx-ltOx)/v.dist,ny=(cy-ltOy)/v.dist,T=0.38;keys.w=ny<-T;keys.a=nx<-T;keys.s=ny>T;keys.d=nx>T;if(typeof tut!=='undefined'){if(keys.w)tut.movedW=true;if(keys.a)tut.movedA=true;if(keys.s)tut.movedS=true;if(keys.d)tut.movedD=true;}}
+            zoneR.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){if(rtId!==null)continue;const now=Date.now();if(now-rtLast<DTAP){if(typeof handleDashAbility==='function'&&!isPaused)handleDashAbility();rtLast=0;continue;}rtLast=now;rtId=t.identifier;rtOx=t.clientX;rtOy=t.clientY;showJ(rRing,rDot,rtOx,rtOy);apR(rtOx,rtOy);}},{passive:false});
+            zoneR.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===rtId)apR(t.clientX,t.clientY);},{passive:false});
+            function elR(e){e.preventDefault();for(const t of e.changedTouches){if(t.identifier!==rtId)continue;rtId=null;rRing.style.display=rDot.style.display='none';rDot.classList.remove('mob-firing');rRing.classList.remove('mob-firing');mouse.down=false;}}
+            zoneR.addEventListener('touchend',elR,{passive:false});zoneR.addEventListener('touchcancel',elR,{passive:false});
+            function apR(cx,cy){const v=moveD(rDot,rtOx,rtOy,cx,cy);if(v.dist<DEAD){rDot.classList.remove('mob-firing');rRing.classList.remove('mob-firing');mouse.down=false;return;}const nx=(cx-rtOx)/v.dist,ny=(cy-rtOy)/v.dist;mouse.x=window.innerWidth/2+nx*350;mouse.y=window.innerHeight/2+ny*350;rDot.classList.add('mob-firing');rRing.classList.add('mob-firing');if(!isPaused){mouse.down=true;if(typeof tut!=='undefined'&&typeof tutAcknowledged!=='undefined'&&tutAcknowledged)tut.hasShot=true;}}
+            (function wp(){if(isPaused&&rtId!==null)mouse.down=false;requestAnimationFrame(wp);})();
+            const ipEl=document.getElementById('interact-prompt');
+            if(ipEl){ipEl.innerHTML='tap to open';ipEl.style.touchAction='manipulation';ipEl.style.cursor='pointer';ipEl.addEventListener('touchstart',ev=>{ev.preventDefault();window.dispatchEvent(new KeyboardEvent('keydown',{key:'e',bubbles:true}));},{passive:false});}
+            const tutTipEl=document.getElementById('tutorial-tooltip'),tutDisEl=document.getElementById('tut-dismiss');
+            if(tutTipEl&&tutDisEl){new MutationObserver(()=>{const hB=!!tutDisEl.querySelector('button'),hT=tutDisEl.textContent.trim().length>0;tutTipEl.classList[(!hB&&hT)?'add':'remove']('tut-slim');}).observe(tutDisEl,{childList:true,subtree:true,characterData:true});}
+            if(matchMedia('(pointer:coarse)').matches&&typeof tutSteps!=='undefined'){tutSteps.forEach(s=>{if(s.id==='move'){s.body='Use the <b style="color:#fff">left joystick</b> to move.';s.dismissText='move your left stick →';}else if(s.id==='shoot'){s.body='<b style="color:#fff">Push the right side</b> of the screen to aim and fire.';s.dismissText='use right side to shoot →';}else if(s.id==='inventory'){s.body='Tap the <b style="color:#fff">Arsenal button</b> (bottom-left) to view weapons.';s.dismissText='open the arsenal →';}});}
+            if(typeof camera!=='undefined') camera.zoom=0.38;
+            const rotOv=document.getElementById('rotate-overlay');
+            function chkO(){if(!rotOv)return;rotOv.style.display=window.innerHeight>window.innerWidth?'flex':'none';}
+            if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{});
+            window.addEventListener('resize',chkO);window.addEventListener('orientationchange',chkO);chkO();
+            const gc=document.getElementById('gameCanvas');
+            if(gc){gc.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});gc.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});}
+        });
 
     </script>
     <!-- MOBILE TOUCH ZONES + FLOATING JOYSTICK VISUALS -->
@@ -12534,243 +11795,12 @@
     <div class="mob-joy-ring" id="mob-joy-right-ring"></div>
     <div class="mob-joy-dot"  id="mob-joy-right-dot"></div>
 
-    <!-- Portrait-mode rotation prompt (mobile only) -->
+    <!-- Rotate to landscape overlay -->
     <div id="rotate-overlay">
         <div class="rot-icon">⟳</div>
         <div class="rot-title">Rotate your device</div>
         <div class="rot-sub">Rocktato plays in landscape</div>
     </div>
-
-    <script>
-// ── Sharp Studios intro + menu ──────────────────────────────
-(function () {
-
-    var gate     = document.getElementById('portrait-gate');
-    var pgRotate = document.getElementById('pg-rotate');
-    var pgSplash = document.getElementById('pg-splash');
-    var menu     = document.getElementById('main-menu');
-    var setPanel = document.getElementById('settings-panel');
-    var loadScr  = document.getElementById('loading-screen');
-    var loadFill = document.getElementById('loading-bar-fill');
-    var bgC      = document.getElementById('menu-bg-canvas');
-
-    // Simple helpers
-    function show(el) { if (el) el.style.display = 'flex'; }
-    function hide(el) { if (el) el.style.display = 'none'; }
-    function setZones(on) {
-        ['mob-left-zone','mob-right-zone'].forEach(function(id){
-            var z = document.getElementById(id);
-            if (z) z.style.pointerEvents = on ? '' : 'none';
-        });
-    }
-    function onTap(el, fn) {
-        if (!el) return;
-        el.addEventListener('click', fn);
-        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, {passive:false});
-    }
-
-    setZones(false);
-
-    // ── BOOT ───────────────────────────────────────────────────
-    var started = false;
-    function isPortrait() { return window.innerHeight > window.innerWidth; }
-
-    function check() {
-        if (started) return;
-        if (isPortrait()) {
-            // Show rotate prompt inside the solid-black gate
-            show(pgRotate);
-            hide(pgSplash);
-        } else {
-            hide(pgRotate);
-            started = true;
-            runIntro();
-        }
-    }
-
-    window.addEventListener('load', function () {
-        // DEV MODE: skip all intro screens
-        if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-            hide(gate);
-            hide(menu);        // hide menu during dev mode
-            hide(setPanel);
-            hide(loadScr);
-            setZones(true);
-            return;
-        }
-        var mobile = matchMedia('(pointer:coarse)').matches;
-        if (mobile) {
-            check();
-            window.addEventListener('resize', check);
-            window.addEventListener('orientationchange', function(){ setTimeout(check, 250); });
-        } else {
-            // Desktop: skip portrait check, run intro immediately
-            hide(pgRotate);
-            started = true;
-            runIntro();
-        }
-    });
-
-    // ── INTRO ──────────────────────────────────────────────────
-    // Gate is solid black (z-index 12000). pgSplash is inside it.
-    // Step 1: 2s black
-    // Step 2: show "Sharp Studios presents"
-    // Step 3: 2s later hide gate, show menu
-    function runIntro() {
-        // 2 seconds of black
-        setTimeout(function () {
-            // Show "Sharp Studios presents" instantly
-            pgSplash.style.display = 'flex';
-            pgSplash.style.opacity = '1';
-
-            // 2 seconds later: hide gate, show menu
-            setTimeout(function () {
-                hide(gate);
-                showMenu();
-            }, 2000);
-
-        }, 2000);
-    }
-
-    // ── MENU ───────────────────────────────────────────────────
-    function showMenu() {
-        // Menu is already display:flex (no display:none in HTML)
-        // Gate hiding reveals it automatically — just kick off the background
-        startBg();
-    }
-
-    // ── MENU BACKGROUND CANVAS ─────────────────────────────────
-    var mbCtx = bgC ? bgC.getContext('2d') : null;
-    var orbs  = [];
-
-    function initBg() {
-        if (!bgC) return;
-        bgC.width = window.innerWidth;
-        bgC.height = window.innerHeight;
-        orbs = [];
-        var cols = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db'];
-        for (var i = 0; i < 28; i++) {
-            orbs.push({
-                x: Math.random() * bgC.width,
-                y: Math.random() * bgC.height,
-                r: 1.5 + Math.random() * 5,
-                vx: (Math.random() - .5) * 20,
-                vy: (Math.random() - .5) * 20,
-                col: cols[Math.floor(Math.random() * cols.length)],
-                ph: Math.random() * Math.PI * 2,
-                sp: .5 + Math.random() * 2,
-                d: .3 + Math.random() * .7
-            });
-        }
-    }
-
-    window.addEventListener('resize', function(){
-        if (bgC) { bgC.width = window.innerWidth; bgC.height = window.innerHeight; }
-    });
-
-    var bgRunning = false;
-    function startBg() {
-        if (bgRunning || !mbCtx) return;
-        bgRunning = true;
-        initBg();
-        requestAnimationFrame(drawBg);
-    }
-
-    function drawBg(ts) {
-        if (!menu || menu.style.display === 'none') { bgRunning = false; return; }
-        var W = bgC.width, H = bgC.height, t = (ts || 0) * .001;
-        mbCtx.fillStyle = 'rgba(6,4,3,.2)';
-        mbCtx.fillRect(0, 0, W, H);
-
-        // Grid
-        mbCtx.strokeStyle = 'rgba(200,187,168,.03)';
-        mbCtx.lineWidth = 1;
-        for (var x = 0; x < W; x += 80) { mbCtx.beginPath(); mbCtx.moveTo(x,0); mbCtx.lineTo(x,H); mbCtx.stroke(); }
-        for (var y = 0; y < H; y += 80) { mbCtx.beginPath(); mbCtx.moveTo(0,y); mbCtx.lineTo(W,y); mbCtx.stroke(); }
-
-        // Connections
-        for (var i = 0; i < orbs.length; i++) {
-            for (var j = i+1; j < orbs.length; j++) {
-                var dx = orbs[i].x-orbs[j].x, dy = orbs[i].y-orbs[j].y;
-                var dd = Math.sqrt(dx*dx+dy*dy);
-                if (dd < 150) {
-                    mbCtx.save();
-                    mbCtx.globalAlpha = (1-dd/150)*.1;
-                    mbCtx.strokeStyle = orbs[i].col;
-                    mbCtx.lineWidth = .7;
-                    mbCtx.beginPath(); mbCtx.moveTo(orbs[i].x,orbs[i].y); mbCtx.lineTo(orbs[j].x,orbs[j].y); mbCtx.stroke();
-                    mbCtx.restore();
-                }
-            }
-        }
-
-        // Orbs
-        orbs.forEach(function(o){
-            o.x += o.vx*o.d/60; o.y += o.vy*o.d/60; o.ph += o.sp/60;
-            if (o.x<-50) o.x=W+50; if (o.x>W+50) o.x=-50;
-            if (o.y<-50) o.y=H+50; if (o.y>H+50) o.y=-50;
-            var p = 1+Math.sin(o.ph)*.28, r = o.r*p;
-            mbCtx.save();
-            mbCtx.globalCompositeOperation = 'screen';
-            var g = mbCtx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*6*o.d);
-            g.addColorStop(0, o.col+'cc'); g.addColorStop(.35, o.col+'33'); g.addColorStop(1,'transparent');
-            mbCtx.fillStyle = g;
-            mbCtx.beginPath(); mbCtx.arc(o.x,o.y,r*6*o.d,0,Math.PI*2); mbCtx.fill();
-            mbCtx.restore();
-            mbCtx.save();
-            mbCtx.globalAlpha = .45+Math.sin(o.ph)*.18;
-            mbCtx.translate(o.x,o.y); mbCtx.rotate(t*o.sp*.5);
-            mbCtx.fillStyle = o.col;
-            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0); mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0);
-            mbCtx.closePath(); mbCtx.fill();
-            mbCtx.restore();
-        });
-
-        // Vignette
-        var vig = mbCtx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/2,Math.max(W,H)*.8);
-        vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,.82)');
-        mbCtx.fillStyle = vig; mbCtx.fillRect(0,0,W,H);
-
-        requestAnimationFrame(drawBg);
-    }
-
-    // ── BUTTONS ────────────────────────────────────────────────
-    onTap(document.getElementById('btn-start'), function(){
-        if (setPanel && setPanel.style.display !== 'none') return;
-        hide(menu);
-        doLoad();
-    });
-    onTap(document.getElementById('btn-settings'), function(){ show(setPanel); });
-    onTap(document.getElementById('btn-exit'),     function(){ location.reload(); });
-    onTap(document.getElementById('settings-close'), function(){ hide(setPanel); });
-
-    var zs = document.getElementById('settings-zoom');
-    if (zs) zs.addEventListener('input', function(){
-        if (typeof camera !== 'undefined') camera.zoom = parseFloat(zs.value);
-    });
-
-    // ── LOADING ────────────────────────────────────────────────
-    function doLoad() {
-        show(loadScr);
-        if (loadScr) loadScr.style.opacity = '1';
-        var pct = 0;
-        if (loadFill) loadFill.style.width = '0%';
-        var iv = setInterval(function(){
-            pct = Math.min(100, pct + Math.random()*9+3);
-            if (loadFill) loadFill.style.width = pct + '%';
-            if (pct >= 100) {
-                clearInterval(iv);
-                setTimeout(function(){
-                    hide(loadScr);
-                    setZones(true);
-                    if (typeof window.launchGame === 'function') window.launchGame();
-                }, 400);
-            }
-        }, 55);
-    }
-
-})();
-</script>
 
 </body>
 </html>
