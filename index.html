@@ -3009,27 +3009,49 @@
                         inner.appendChild(spEl);
                     }
 
-                    // Click to pick THIS item
-                    const capturedOpt = opt;
-                    inner.addEventListener('click', () => {
-                        if (capturedOpt.id === 'lucky7_smg') {
-                            player.lucky7SMG = true; player.lucky7ShotCount = 0;
-                        } else if (capturedOpt.id === 'dealers_deck') {
-                            player.dealersDeck = true; player.dealersDeckTimer = 10; player.dealersDeckBuff = null; player.dealersDeckBuffTimer = 0;
-                        } else if (capturedOpt.id === 'housebreaker_charm') {
-                            player.housebreakerCharm = true; player.housebreakerNextReady = true; player.housebreakerCrackTimer = 20; player.housebreakerFatalCD = 0;
-                        }
-                        chests.length = 0;
-                        game.isChestOpen = false;
-                        const tt = document.getElementById('boss-chest-title');
-                        if (tt) tt.remove();
-                        levelUpTitle.style.display = '';
-                        closeLevelUp();
-                    });
-
+                    inner.style.cursor = 'default'; // no individual click — collect all below
                     wrapper.appendChild(inner);
                     cardContainer.appendChild(wrapper);
                 });
+
+                // ── COLLECT ALL THREE (like Collector chest) ──
+                const rkBtn = document.createElement('button');
+                rkBtn.className = 'boss-collect-btn';
+                rkBtn.innerText = '♠ CLAIM THE HOUSE VAULT ♠';
+                rkBtn.onclick = () => {
+                    rkOptions.forEach(o => {
+                        if (o.id === 'lucky7_smg') {
+                            player.lucky7SMG = true; player.lucky7ShotCount = 0;
+                        } else if (o.id === 'dealers_deck') {
+                            player.dealersDeck = true; player.dealersDeckTimer = 10;
+                            player.dealersDeckBuff = null; player.dealersDeckBuffTimer = 0;
+                        } else if (o.id === 'housebreaker_charm') {
+                            player.housebreakerCharm = true; player.housebreakerNextReady = true;
+                            player.housebreakerCrackTimer = 20; player.housebreakerFatalCD = 0;
+                        }
+                    });
+                    // Show what was received as floating gold text
+                    const rewards = rkOptions.map(o => o.name);
+                    let delay = 0;
+                    rewards.forEach(name => {
+                        setTimeout(() => {
+                            addFloatingText(
+                                player.x + (Math.random()-0.5)*120,
+                                player.y - 60 - Math.random()*60,
+                                '✦ ' + name,
+                                '#f1c40f', 22
+                            );
+                            createExplosion(player.x, player.y, '#f1c40f', 8);
+                        }, delay);
+                        delay += 350;
+                    });
+                    chests.length = 0; game.isChestOpen = false;
+                    const tt = document.getElementById('boss-chest-title');
+                    if (tt) tt.remove();
+                    levelUpTitle.style.display = '';
+                    closeLevelUp();
+                };
+                cardContainer.appendChild(rkBtn);
 
             } else if (isCollectorChest) {
                 const options = [
@@ -5287,6 +5309,7 @@
                 e.jackpotTimer = 9;
                 e.dealerTimer = 12;
                 e.houseEdgeTimer = 7;
+                e.blitzTimer = 10;
                 e.teleportTimer = 8;
             }
             e.wheelTimer -= dt;
@@ -5294,6 +5317,7 @@
             e.jackpotTimer -= dt;
             e.dealerTimer -= dt;
             e.houseEdgeTimer -= dt;
+            e.blitzTimer      -= dt;
 
             // ── MOVEMENT ──
             if (!e.jackpotActive) {
@@ -5312,16 +5336,26 @@
                 e._moveTimer += dt;
 
                 // Phase transitions
-                if (e._movePhase === 'orbit' && e._moveTimer > (isEnrage ? 2.2 : 3.5)) {
-                    // Switch to charge or retreat based on distance
-                    if (distToPlayer < 200) { e._movePhase = 'retreat'; }
-                    else { e._movePhase = 'charge'; }
+                if (e._movePhase === 'orbit' && e._moveTimer > (isEnrage ? 1.8 : 3.0)) {
+                    // Random: charge, retreat, or side-dash
+                    const roll = Math.random();
+                    if (distToPlayer < 180) {
+                        e._movePhase = 'retreat';
+                    } else if (isEnrage && roll < 0.35) {
+                        e._movePhase = 'sidedash'; // new aggressive sidestep
+                        e._sideDashDir = Math.random() < 0.5 ? 1 : -1;
+                    } else {
+                        e._movePhase = 'charge';
+                    }
                     e._moveTimer = 0;
-                    e._orbitDir *= -1; // reverse orbit on next orbit
-                } else if (e._movePhase === 'charge' && e._moveTimer > (isEnrage ? 0.55 : 0.8)) {
+                    e._orbitDir *= -1;
+                } else if (e._movePhase === 'charge' && e._moveTimer > (isEnrage ? 0.45 : 0.75)) {
                     e._movePhase = 'orbit';
                     e._moveTimer = 0;
-                } else if (e._movePhase === 'retreat' && e._moveTimer > 1.0) {
+                } else if (e._movePhase === 'sidedash' && e._moveTimer > 0.5) {
+                    e._movePhase = 'orbit';
+                    e._moveTimer = 0;
+                } else if (e._movePhase === 'retreat' && e._moveTimer > 0.9) {
                     e._movePhase = 'orbit';
                     e._moveTimer = 0;
                 }
@@ -5329,24 +5363,29 @@
                 // Compute velocity target per phase
                 let tvx = 0, tvy = 0;
                 if (e._movePhase === 'orbit') {
-                    // Orbit at preferred distance with sinusoidal weave
-                    const idealDist = isEnrage ? 220 : 300;
-                    const radialAdj = (distToPlayer - idealDist) * 0.4; // push/pull toward ideal dist
+                    const idealDist = isEnrage ? 200 : 290;
+                    const radialAdj = (distToPlayer - idealDist) * 0.45;
                     const tangentAng = angleToPlayer + Math.PI/2 * e._orbitDir;
                     tvx = Math.cos(tangentAng) * spd * speedMult + Math.cos(angleToPlayer) * radialAdj;
                     tvy = Math.sin(tangentAng) * spd * speedMult + Math.sin(angleToPlayer) * radialAdj;
-                    // Weave
-                    const weaveAmt = isEnrage ? 60 : 35;
+                    // Figure-8 weave during orbit
+                    const weaveAmt = isEnrage ? 75 : 42;
                     const weaveAng = angleToPlayer + Math.PI/2;
-                    tvx += Math.cos(weaveAng) * Math.sin(e._moveTimer * (isEnrage ? 5 : 3)) * weaveAmt;
-                    tvy += Math.sin(weaveAng) * Math.sin(e._moveTimer * (isEnrage ? 5 : 3)) * weaveAmt;
+                    const weaveFq  = isEnrage ? 6 : 3.5;
+                    tvx += Math.cos(weaveAng) * Math.sin(e._moveTimer * weaveFq) * weaveAmt;
+                    tvy += Math.sin(weaveAng) * Math.sin(e._moveTimer * weaveFq) * weaveAmt;
                 } else if (e._movePhase === 'charge') {
-                    // Dash straight at player, faster
-                    const chargeSpd = spd * speedMult * (isEnrage ? 2.4 : 1.8);
+                    const chargeSpd = spd * speedMult * (isEnrage ? 2.8 : 2.0);
                     tvx = Math.cos(angleToPlayer) * chargeSpd;
                     tvy = Math.sin(angleToPlayer) * chargeSpd;
+                } else if (e._movePhase === 'sidedash') {
+                    // Strafe perpendicular to player for a quick dodge
+                    const sideAng = angleToPlayer + Math.PI/2 * (e._sideDashDir || 1);
+                    const sideSpd = spd * speedMult * 2.8;
+                    tvx = Math.cos(sideAng) * sideSpd;
+                    tvy = Math.sin(sideAng) * sideSpd;
                 } else { // retreat
-                    const retreatSpd = spd * speedMult * 1.5;
+                    const retreatSpd = spd * speedMult * 1.6;
                     tvx = -Math.cos(angleToPlayer) * retreatSpd;
                     tvy = -Math.sin(angleToPlayer) * retreatSpd;
                 }
@@ -5371,6 +5410,30 @@
                     triggerShake(10, 0.3);
                     e.teleportTimer = 3 + Math.random() * 2;
                 }
+            }
+
+            // ── 6. CARD BLITZ — rapid aimed card burst ──
+            if (e.blitzTimer <= 0) {
+                addFloatingText(e.x, e.y - e.size - 55, '🎴 CARD BLITZ!', '#e74c3c', 18);
+                const blitzSuits = ['♠','♥','♦','♣','♠','♥'];
+                blitzSuits.forEach((suit, bi) => {
+                    setTimeout(() => {
+                        if (!enemies.find(en => en === e)) return;
+                        // Aim at current player position each shot
+                        const bAng = Math.atan2(player.y - e.y, player.x - e.x) + (Math.random()-0.5)*0.12;
+                        const isRed = suit==='♥'||suit==='♦';
+                        enemyBullets.push({
+                            x:e.x, y:e.y,
+                            vx:Math.cos(bAng)*(480+bi*18), vy:Math.sin(bAng)*(480+bi*18),
+                            life: 2.5, size: 14, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#1a1a2e',
+                            suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: 10 + bi*2, homing: isEnrage
+                        });
+                        triggerShake(4, 0.12);
+                    }, bi * 120);
+                });
+                e.blitzTimer = isEnrage ? 6 : 10;
             }
 
             // ── MELEE CONTACT DAMAGE ──
@@ -10945,7 +11008,7 @@
             if (T >= 6.0) rk.wheelScale = Math.min(1, (T - 6.0) / 2.8);
 
             // ── COIN PARTICLES ──────────────────────────────────────────────
-            if (T >= 2.5 && T < 16.0 && Math.random() < 0.5) {
+            if (T >= 2.5 && T < 19.0 && Math.random() < 0.5) {
                 const side = Math.random();
                 rk.coins.push({
                     x: side < 0.33 ? canvas.width * 0.25 * Math.random() :
@@ -10968,7 +11031,7 @@
             rk.coins = rk.coins.filter(c => c.y < canvas.height + 60);
 
             // ── FLYING CARDS ────────────────────────────────────────────────
-            if (T >= 9.0 && T < 15.0 && Math.random() < 0.35) {
+            if (T >= 9.0 && T < 18.0 && Math.random() < 0.35) {
                 const fromLeft = Math.random() < 0.5;
                 rk.cards.push({
                     x:  fromLeft ? -70 : canvas.width + 70,
@@ -10990,10 +11053,10 @@
 
             // ── CINEMATIC TEXT ─────────────────────────────────────────────
             const texts = [
-                { start: 3.0,  end: 7.0,  msg: '— the wheel begins to turn —',    big: false },
-                { start: 9.5,  end: 14.0, msg: '— chance cannot be outrun —',      big: false },
-                { start: 15.5, end: 20.0, msg: '♠ THE ROULETTE KING ♠',            big: true  },
-                { start: 21.0, end: 23.5, msg: 'The House Always Wins.',            big: true  },
+                { start: 3.0,  end: 8.0,  msg: '— the wheel begins to turn —',    big: false },
+                { start: 10.0, end: 15.5, msg: '— chance cannot be outrun —',      big: false },
+                { start: 17.0, end: 23.0, msg: '♠ THE ROULETTE KING ♠',            big: true  },
+                { start: 24.0, end: 28.5, msg: 'The House Always Wins.',            big: true  },
             ];
             let found = null;
             for (const t of texts) {
@@ -11008,16 +11071,16 @@
             }
 
             // Reveal boss only when cinematic fully ends (prevents weapons killing him during intro)
-            if (T >= 19.0 && boss.introHidden) boss.introHidden = false;
+            if (T >= 23.5 && boss.introHidden) boss.introHidden = false;
 
             // Kick off with a proper wave announcement at the end
-            if (T >= 23.0 && rk.active) {
+            if (T >= 28.5 && rk.active) {
                 showWaveAnnouncement('♠ ROULETTE KING AWAKENS ♠', 'The House Always Wins — Wave 10', '#f1c40f');
                 triggerShake(30, 1.8);
                 enemyBullets.length = 0;
             }
 
-            if (T >= 24.0) {
+            if (T >= 30.0) {
                 rk.active = false;
                 rk.darkOverlay = 0;
             }
