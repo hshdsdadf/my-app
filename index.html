@@ -12591,39 +12591,55 @@
 
     // ── SPLASH ────────────────────────────────────────────────
     function beginSplash() {
-        // Splash is already in the DOM (display:flex via .game-screen)
-        // Gate is still covering it (z-index 12000 vs splash 10000)
-        // We just need to fade-in the content then later hide the gate
-
-        // Force-show inner elements with opacity 0 first
         var logo     = document.getElementById('splash-logo');
         var studio   = document.getElementById('splash-studio');
         var presents = document.getElementById('splash-presents');
+
+        // Make splash visible + cover everything
+        if (splash) { splash.style.display = 'flex'; splash.style.opacity = '1'; }
+
+        // Start content invisible
         [logo, studio, presents].forEach(function(el) {
             if (el) { el.style.opacity = '0'; el.style.transition = 'none'; }
         });
 
-        // After one frame, add .visible to trigger CSS transitions
+        // Hide gate, then stagger content in
         setTimeout(function() {
-            // Safe to hide gate now — solid black splash is behind it
             hide(gate);
 
-            // Trigger content fade-in
-            if (splash) splash.classList.add('visible');
-
-            // Fade-out entire splash after 4.5s
             setTimeout(function() {
-                if (splash) {
-                    splash.style.transition = 'opacity 0.9s ease';
-                    splash.style.opacity    = '0';
-                    setTimeout(function() {
-                        hide(splash);
-                        showMenu();
-                    }, 950);
-                } else { showMenu(); }
-            }, 4500);
+                if (logo) {
+                    logo.style.transition = 'opacity 0.9s ease, transform 0.9s ease';
+                    logo.style.opacity = '1';
+                    logo.style.transform = 'scale(1)';
+                }
+            }, 120);
+            setTimeout(function() {
+                if (studio) {
+                    studio.style.transition = 'opacity 0.8s ease';
+                    studio.style.opacity = '1';
+                }
+            }, 450);
+            setTimeout(function() {
+                if (presents) {
+                    presents.style.transition = 'opacity 0.7s ease';
+                    presents.style.opacity = '1';
+                }
+            }, 750);
 
-        }, 80);
+        }, 60);
+
+        // Fade out whole splash after 4.8s
+        setTimeout(function() {
+            if (splash) {
+                splash.style.transition = 'opacity 0.9s ease';
+                splash.style.opacity = '0';
+            }
+            setTimeout(function() {
+                hide(splash);
+                showMenu();
+            }, 950);
+        }, 4800);
     }
 
     // ── MENU ─────────────────────────────────────────────────
