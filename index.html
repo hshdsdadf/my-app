@@ -1674,6 +1674,217 @@
                         0 0 8px  var(--rarity-color, transparent),
                         0 0 4px  var(--trait-color, transparent) inset !important;
         }
+
+        /* ── Arsenal button: bottom-centre on mobile (clear of joystick zones) ── */
+        @media (pointer: coarse), (hover: none) {
+            #inventory-btn {
+                bottom: 10px !important;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+                width: 44px !important;
+                height: 36px !important;
+                border-radius: 8px !important;
+                font-size: 10px !important;
+            }
+            #inventory-btn:active { transform: translateX(-50%) scale(0.94) !important; }
+        }
+
+        /* ══════════════════════════════════════════
+           LEGENDARY CARD — INSANE VISUAL OVERHAUL
+        ══════════════════════════════════════════ */
+
+        /* @property for spinning border */
+        @property --leg-rot {
+            syntax: '<angle>';
+            inherits: false;
+            initial-value: 0deg;
+        }
+
+        .glow-legendary {
+            --rarity-color: #f1c40f;
+            background: radial-gradient(ellipse at 50% 0%, #2a1e00 0%, #110d00 45%, #0a0800 100%) !important;
+            border: 2px solid rgba(241,196,15,0.7) !important;
+            overflow: visible !important;   /* let glow bleed outside */
+            animation: legCardBreath 1.8s ease-in-out infinite !important;
+        }
+
+        /* SPINNING CONIC-GRADIENT GOLD BORDER */
+        .glow-legendary::before {
+            content: '' !important;
+            position: absolute !important;
+            inset: -3px !important;
+            border-radius: 11px !important;
+            background: conic-gradient(
+                from var(--leg-rot),
+                #b8860b 0%,
+                #f1c40f 15%,
+                #fff8a0 28%,
+                #f1c40f 42%,
+                #e6a800 55%,
+                #f1c40f 68%,
+                #fff176 80%,
+                #f1c40f 92%,
+                #b8860b 100%
+            ) !important;
+            animation: legBorderSpin 2.8s linear infinite !important;
+            z-index: -1 !important;
+            opacity: 0.9 !important;
+            -webkit-mask: none !important;
+            mask: none !important;
+        }
+        @keyframes legBorderSpin { to { --leg-rot: 360deg; } }
+
+        /* MASSIVE MULTI-LAYER PULSING GLOW */
+        @keyframes legCardBreath {
+            0%,100% {
+                box-shadow:
+                    0 0 24px  rgba(241,196,15,0.75),
+                    0 0 60px  rgba(241,196,15,0.45),
+                    0 0 110px rgba(241,196,15,0.22),
+                    0 0 180px rgba(241,196,15,0.10),
+                    inset 0 0 18px rgba(241,196,15,0.07);
+            }
+            50% {
+                box-shadow:
+                    0 0 36px  rgba(241,196,15,0.95),
+                    0 0 90px  rgba(241,196,15,0.65),
+                    0 0 160px rgba(241,196,15,0.35),
+                    0 0 260px rgba(241,196,15,0.15),
+                    inset 0 0 28px rgba(241,196,15,0.14);
+            }
+        }
+
+        /* STAR FIELD + SHIMMER OVERLAY */
+        .glow-legendary::after {
+            content: '' !important;
+            position: absolute !important;
+            inset: 0 !important;
+            border-radius: inherit !important;
+            background:
+                radial-gradient(circle at 10% 15%, rgba(255,255,180,0.9) 1px, transparent 3px),
+                radial-gradient(circle at 90% 10%, rgba(255,248,140,0.8) 1.5px, transparent 4px),
+                radial-gradient(circle at 78% 85%, rgba(255,230,80,0.7) 1px, transparent 3px),
+                radial-gradient(circle at 14% 80%, rgba(255,255,200,0.8) 1.5px, transparent 4px),
+                radial-gradient(circle at 48% 8%,  rgba(255,248,160,0.6) 1px, transparent 3px),
+                radial-gradient(circle at 95% 52%, rgba(255,240,100,0.7) 1.5px, transparent 4px),
+                radial-gradient(circle at 5% 48%,  rgba(255,255,180,0.6) 1px, transparent 3px),
+                radial-gradient(circle at 62% 92%, rgba(255,220,60,0.5) 1px, transparent 3px),
+                linear-gradient(110deg, transparent 20%, rgba(255,240,100,0.08) 50%, transparent 80%);
+            animation: legStarTwinkle 2.2s ease-in-out infinite alternate,
+                       legShimmer 4s ease-in-out infinite !important;
+            pointer-events: none !important;
+            z-index: 0 !important;
+        }
+        @keyframes legStarTwinkle {
+            0%   { opacity: 0.35; }
+            100% { opacity: 1; }
+        }
+        @keyframes legShimmer {
+            0%   { background-position: -200% 0; transform: translateX(-120%) skewX(-12deg); }
+            100% { transform: translateX(220%) skewX(-12deg); }
+        }
+
+        /* HOVER — dramatic tilt + nuclear glow */
+        .glow-legendary:hover {
+            transform: translateY(-18px) scale(1.07) rotate(-1.5deg) !important;
+            box-shadow:
+                0 0 50px  rgba(241,196,15,1),
+                0 0 110px rgba(241,196,15,0.75),
+                0 0 200px rgba(241,196,15,0.45),
+                0 0 340px rgba(241,196,15,0.18) !important;
+        }
+
+        /* RARITY TEXT — full glow cycle */
+        .glow-legendary .card-rarity {
+            font-size: 18px !important;
+            letter-spacing: 4px !important;
+            animation: legRarityText 1.4s ease-in-out infinite !important;
+        }
+        @keyframes legRarityText {
+            0%,100% { text-shadow: 0 0 16px #f1c40f; }
+            50%     { text-shadow: 0 0 32px #f1c40f, 0 0 64px #f1c40f, 0 0 8px #fff8a0; }
+        }
+
+        /* ICON — max glow */
+        .glow-legendary .card-glow-bg {
+            opacity: 0.7 !important;
+            filter: blur(40px) !important;
+            animation: legIconGlow 1.8s ease-in-out infinite alternate !important;
+        }
+        @keyframes legIconGlow {
+            0%   { opacity: 0.5; filter: blur(35px); }
+            100% { opacity: 0.85; filter: blur(45px); }
+        }
+
+        /* STAT BARS on legendary */
+        .glow-legendary .stat-fill {
+            box-shadow: 0 0 10px var(--rarity-color), 0 0 4px #fff8a0 !important;
+        }
+
+        /* Trait on legendary: ultra glow */
+        .glow-legendary.has-trait {
+            animation: legCardBreath 1.8s ease-in-out infinite,
+                       traitLegPulse 2.4s ease-in-out infinite !important;
+        }
+        @keyframes traitLegPulse {
+            0%,100% { border-color: rgba(241,196,15,0.7); }
+            50%     { border-color: rgba(241,196,15,1); }
+        }
+
+        /* Patch notes overlay */
+        #patch-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 9000;
+            background: rgba(0,0,0,0.88);
+            align-items: center; justify-content: center;
+            font-family: 'Space Mono', monospace;
+            backdrop-filter: blur(12px);
+        }
+        #patch-box {
+            background: rgba(10,8,6,0.98);
+            border: 1px solid rgba(200,187,168,0.14);
+            border-radius: 8px;
+            padding: 28px 32px 24px;
+            width: min(480px, 90vw);
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.9);
+        }
+        #patch-box h2 {
+            font-size: 9px; font-weight: 700;
+            letter-spacing: 6px; text-transform: uppercase;
+            color: rgba(200,187,168,0.35); margin: 0 0 4px;
+        }
+        #patch-box h3 {
+            font-size: 22px; font-weight: 700;
+            color: rgba(200,187,168,0.9); margin: 0 0 20px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .patch-entry {
+            display: flex; gap: 12px; align-items: flex-start;
+            padding: 8px 0; border-bottom: 1px solid rgba(200,187,168,0.05);
+        }
+        .patch-entry:last-of-type { border-bottom: none; }
+        .patch-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+        .patch-text { font-size: 11px; line-height: 1.55; color: rgba(200,187,168,0.65); }
+        .patch-text strong { color: rgba(200,187,168,0.9); font-weight: 700; }
+        #patch-close {
+            margin-top: 20px; width: 100%;
+            padding: 11px; background: rgba(200,187,168,0.05);
+            border: 1px solid rgba(200,187,168,0.14);
+            border-radius: 4px;
+            color: rgba(200,187,168,0.5);
+            font-family: 'Space Mono', monospace;
+            font-size: 9px; font-weight: 700;
+            letter-spacing: 4px; text-transform: uppercase;
+            cursor: pointer; touch-action: manipulation;
+            transition: all 0.15s;
+        }
+        #patch-close:hover, #patch-close:active {
+            background: rgba(200,187,168,0.1);
+            color: rgba(200,187,168,0.9);
+        }
     </style>
 </head>
 <body>
@@ -12069,6 +12280,76 @@
         <div class="rot-title">Rotate your device</div>
         <div class="rot-sub">Rocktato plays in landscape</div>
     </div>
+
+    <!-- Patch notes overlay (shown once per version) -->
+    <div id="patch-overlay">
+        <div id="patch-box">
+            <h2>What's New</h2>
+            <h3>v1.1 Update</h3>
+            <div class="patch-entry">
+                <span class="patch-icon">⚔️</span>
+                <div class="patch-text"><strong>Legendary weapons</strong> drop ~2.7× more often — from 3% to 8% per roll.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">✨</span>
+                <div class="patch-text"><strong>Legendary cards</strong> completely redesigned — spinning gold border, star field, massive glow, hover tilt.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">🃏</span>
+                <div class="patch-text"><strong>Card visuals overhauled</strong> — each rarity glows distinctly, traits are bigger and bolder.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">🎰</span>
+                <div class="patch-text"><strong>Roulette King</strong> now has a 13-second cinematic intro with coin rain, spinning wheel, and card storm.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">📱</span>
+                <div class="patch-text"><strong>Mobile controls</strong> — dynamic joysticks appear at touch point. Double-tap right side to dash.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">🎯</span>
+                <div class="patch-text"><strong>iOS button fix</strong> — overlay buttons now tap accurately regardless of browser chrome state.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">🔍</span>
+                <div class="patch-text"><strong>Camera zoomed out</strong> on mobile so more of the room is visible during combat.</div>
+            </div>
+            <div class="patch-entry">
+                <span class="patch-icon">⚙️</span>
+                <div class="patch-text"><strong>Arsenal button</strong> moved to bottom-centre — no more accidental opens while strafing.</div>
+            </div>
+            <button id="patch-close" onclick="closePatch()">Let's play →</button>
+        </div>
+    </div>
+
+    <script>
+    // Show patch notes once per version
+    (function() {
+        var VERSION = 'v1.1';
+        var KEY     = 'rocktato_patch_' + VERSION;
+        var ov      = document.getElementById('patch-overlay');
+        if (!ov) return;
+        try {
+            if (!localStorage.getItem(KEY)) {
+                ov.style.display = 'flex';
+            }
+        } catch(e) {
+            // private mode / no localStorage — just don't show
+        }
+        window.closePatch = function() {
+            ov.style.display = 'none';
+            try { localStorage.setItem(KEY, '1'); } catch(e) {}
+        };
+        // Also close on tap outside the box
+        ov.addEventListener('click', function(e) {
+            if (e.target === ov) window.closePatch();
+        });
+        // And close on touchend outside
+        ov.addEventListener('touchend', function(e) {
+            if (e.target === ov) { e.preventDefault(); window.closePatch(); }
+        }, false);
+    })();
+    </script>
 
 </body>
 </html>
