@@ -1496,22 +1496,17 @@
             #tutorial-tooltip.tut-slim .tut-dismiss { margin-top: 0 !important; }
         }
 
-        /* ══ iOS Safari fixed-overlay touch-target fix ══
-           iOS positions fixed elements relative to the LAYOUT viewport
-           (full page height including browser chrome), not the visual viewport.
-           This shifts justify-content:center down so buttons hit below visual.
-           Fix: use Visual Viewport API vars (--vvt, --vvh) set by JS below.  */
+        /* ══ Mobile button & top-bar fixes ══ */
         @media (pointer: coarse), (hover: none) {
-            #level-up-overlay,
-            #boss-warning-overlay,
-            #game-over-screen,
-            #inventory-overlay {
-                top:    var(--vvt, 0px)  !important;
-                height: var(--vvh, 100%) !important;
+            /* Pin top-UI to viewport top so it's never offset */
+            #top-ui {
+                position: fixed !important;
+                top: 0 !important; left: 0 !important; right: 0 !important;
+                padding: 4px 12px 8px !important;
             }
-            /* Make every tappable element respond instantly */
-            button, .card, .menu-btn, [onclick],
-            #go-retry-btn, .boss-collect-btn, #tut-dismiss button {
+            /* Touch-action on every tappable thing so browser generates fast taps */
+            button, .card, #go-retry-btn, .boss-collect-btn,
+            #tut-dismiss button, [onclick] {
                 touch-action: manipulation !important;
                 cursor: pointer !important;
             }
@@ -11765,7 +11760,42 @@
             if (typeof tut !== 'undefined' && typeof tutAcknowledged !== 'undefined' && tutAcknowledged) {
                 tut.hasShot = true;
             }
-        });
+
+            // ── iOS button fix: intercept touchend and fire .click() directly ──
+            // iOS Safari can misalign fixed-overlay hit-areas with visual positions.
+            // We bypass this by catching touchend on overlay containers and calling
+            // .click() on the element at the touch point ourselves.
+            var OVERLAY_IDS = [
+                'level-up-overlay','boss-warning-overlay',
+                'game-over-screen','inventory-overlay','tutorial-tooltip'
+            ];
+            document.addEventListener('touchend', function(iE) {
+                var t = iE.changedTouches[0];
+                // Check if touch is inside one of our overlays
+                var el = document.elementFromPoint(t.clientX, t.clientY);
+                if (!el) return;
+                var inOverlay = false;
+                for (var i = 0; i < OVERLAY_IDS.length; i++) {
+                    var ov = document.getElementById(OVERLAY_IDS[i]);
+                    if (ov && ov.contains(el)) { inOverlay = true; break; }
+                }
+                if (!inOverlay) return;
+                // Walk up to find the nearest clickable ancestor
+                var node = el;
+                while (node && node.tagName !== 'BODY') {
+                    if (node.tagName === 'BUTTON' ||
+                        (node.getAttribute && node.getAttribute('onclick')) ||
+                        node.classList.contains('card') ||
+                        node.classList.contains('boss-collect-btn')) {
+                        iE.preventDefault(); // prevent browser's own (offset) click
+                        node.click();
+                        return;
+                    }
+                    node = node.parentElement;
+                }
+            }, false); // non-passive so we can preventDefault
+
+                });
 
         // ═══════════════════════════════════════════════════════════════
         //  MOBILE CONTROLS — dynamic joysticks, double-tap dash
@@ -11805,23 +11835,6 @@
             window.addEventListener('resize',chkO);window.addEventListener('orientationchange',chkO);chkO();
             const gc=document.getElementById('gameCanvas');
             if(gc){gc.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});gc.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});}
-
-            // ── iOS Safari visual-viewport fix ────────────────────────────────
-            // Fixed overlays render at full layout-viewport height on iOS,
-            // causing justify-content:center to shift hit areas off visual center.
-            // Syncing --vvt / --vvh corrects overlay top + height to visual viewport.
-            if (window.visualViewport) {
-                function syncVV() {
-                    const t = Math.round(window.visualViewport.offsetTop);
-                    const h = Math.round(window.visualViewport.height);
-                    document.documentElement.style.setProperty('--vvt', t + 'px');
-                    document.documentElement.style.setProperty('--vvh', h + 'px');
-                }
-                window.visualViewport.addEventListener('resize', syncVV);
-                window.visualViewport.addEventListener('scroll', syncVV);
-                syncVV();
-            }
-
                 });
 
     </script>
