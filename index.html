@@ -1863,22 +1863,23 @@
                 transform: none !important;
             }
         }
+
+        /* Failsafe: body is always black until game deliberately shows */
+        body { background: #000 !important; }
     </style>
 </head>
 <body>
     <!-- Persistent black cover — hides game until Start is clicked -->
     <div id="preload-cover"></div>
 
-    <!-- Portrait gate — shown before splash on mobile if in portrait mode -->
-    <div id="portrait-gate" style="display:none; position:fixed; inset:0; z-index:12000; background:#000;
-        flex-direction:column; align-items:center; justify-content:center; gap:18px;
-        font-family:'Space Mono',monospace; color:rgba(200,187,168,0.7); text-align:center;">
-        <div style="font-size:48px; animation:rotSpin 2s ease-in-out infinite;">⟳</div>
-        <div style="font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;">
-            Rotate to play
-        </div>
-        <div style="font-size:7px; letter-spacing:3px; text-transform:uppercase; opacity:0.35;">
-            Rocktato requires landscape
+    <!-- Portrait gate — solid black cover on load, shows rotate text if in portrait -->
+    <div id="portrait-gate" style="display:flex; position:fixed; inset:0; z-index:12000; background:#000;
+        align-items:center; justify-content:center;">
+        <div id="pg-text" style="display:none; flex-direction:column; align-items:center; gap:18px;
+            font-family:'Space Mono',monospace; color:rgba(200,187,168,0.7); text-align:center;">
+            <div style="font-size:48px; animation:rotSpin 2s ease-in-out infinite;">⟳</div>
+            <div style="font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;">Rotate to play</div>
+            <div style="font-size:7px; letter-spacing:3px; text-transform:uppercase; opacity:0.35;">Rocktato requires landscape</div>
         </div>
     </div>
     <!-- ═══════════════════════════════════════════
@@ -12514,301 +12515,233 @@
     </div>
 
     <script>
-    // ════════════════════════════════════════════════════════════════════
-    //  SHARP STUDIOS — PORTRAIT GATE · SPLASH · MENU · SETTINGS · LOADING
-    // ════════════════════════════════════════════════════════════════════
-    (function() {
+// ══════════════════════════════════════════════════════════
+//  SHARP STUDIOS  —  splash · menu · loading
+// ══════════════════════════════════════════════════════════
+(function () {
 
-        // ── DOM refs ───────────────────────────────────────────────────
-        const portraitGate = document.getElementById('portrait-gate');
-        const splash       = document.getElementById('splash-screen');
-        const mainMenu     = document.getElementById('main-menu');
-        const settingsP    = document.getElementById('settings-panel');
-        const loadingS     = document.getElementById('loading-screen');
-        const menuBgC      = document.getElementById('menu-bg-canvas');
-        const btnStart     = document.getElementById('btn-start');
-        const btnSett      = document.getElementById('btn-settings');
-        const btnExit      = document.getElementById('btn-exit');
-        const settClose    = document.getElementById('settings-close');
-        const zoomSlider   = document.getElementById('settings-zoom');
-        const skipTutCB    = document.getElementById('settings-skip-tut');
-        const loadFill     = document.getElementById('loading-bar-fill');
+    // ── Refs ─────────────────────────────────────────────────
+    var gate    = document.getElementById('portrait-gate');
+    var splash  = document.getElementById('splash-screen');
+    var menu    = document.getElementById('main-menu');
+    var setP    = document.getElementById('settings-panel');
+    var load    = document.getElementById('loading-screen');
+    var bgC     = document.getElementById('menu-bg-canvas');
 
-        // ── Disable joystick zones while on any screen ──────────────────
-        function setZones(enabled) {
-            ['mob-left-zone','mob-right-zone'].forEach(id => {
-                const z = document.getElementById(id);
-                if (z) z.style.pointerEvents = enabled ? '' : 'none';
+    // ── Tiny helpers ─────────────────────────────────────────
+    function show(el)  { if (el) el.style.display = 'flex'; }
+    function hide(el)  { if (el) el.style.display = 'none'; }
+    function setZones(on) {
+        ['mob-left-zone','mob-right-zone'].forEach(function(id) {
+            var z = document.getElementById(id);
+            if (z) z.style.pointerEvents = on ? '' : 'none';
+        });
+    }
+    // touchend fires reliably even when touchstart was preventDefault'd elsewhere
+    function onTap(el, fn) {
+        if (!el) return;
+        el.addEventListener('click', fn);
+        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, { passive: false });
+    }
+
+    // Gate starts visible (flex, solid black) — see HTML default
+    setZones(false);
+
+    // ── ORIENTATION CHECK ─────────────────────────────────────
+    var started = false;
+    function isPortrait() { return window.innerHeight > window.innerWidth; }
+
+    function updateGate() {
+        if (started) return;
+        if (isPortrait()) {
+            // Show the "rotate" content inside the gate
+            var pgText = document.getElementById('pg-text');
+            if (pgText) pgText.style.display = 'flex';
+        } else {
+            // In landscape — hide rotate text, start splash behind gate
+            var pgText = document.getElementById('pg-text');
+            if (pgText) pgText.style.display = 'none';
+            started = true;
+            beginSplash();
+        }
+    }
+
+    window.addEventListener('load', function () {
+        // DEV MODE: skip all screens
+        if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
+            hide(gate); hide(splash); hide(menu); hide(setP); hide(load);
+            setZones(true);
+            return;
+        }
+
+        var mobile = matchMedia('(pointer:coarse)').matches;
+        if (mobile) {
+            updateGate();
+            window.addEventListener('resize', updateGate);
+            window.addEventListener('orientationchange', function() {
+                setTimeout(updateGate, 250);
             });
+        } else {
+            // Desktop: skip gate, go straight to splash
+            hide(gate);
+            started = true;
+            beginSplash();
         }
+    });
 
-        // ── Tap helper — use touchend for reliable mobile firing ─────────
-        function onTap(el, fn) {
-            if (!el) return;
-            el.addEventListener('click', fn);
-            el.addEventListener('touchend', e => { e.preventDefault(); fn(); }, { passive: false });
-        }
+    // ── SPLASH ────────────────────────────────────────────────
+    function beginSplash() {
+        // Splash is already in the DOM (display:flex via .game-screen)
+        // Gate is still covering it (z-index 12000 vs splash 10000)
+        // We just need to fade-in the content then later hide the gate
 
-        // ── BOOT SEQUENCE ────────────────────────────────────────────────
-        window.addEventListener('load', function() {
-            setZones(false); // Zones off until game starts
-
-            if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                // Skip everything — straight into game
-                [portraitGate, splash, mainMenu, settingsP, loadingS].forEach(el => {
-                    if (el) el.style.display = 'none';
-                });
-                setZones(true);
-                return;
-            }
-
-            // Check if touch device (mobile)
-            const isMobile = matchMedia('(pointer:coarse)').matches;
-            if (isMobile) {
-                checkPortrait();
-                window.addEventListener('resize', checkPortrait);
-                window.addEventListener('orientationchange', () => setTimeout(checkPortrait, 200));
-            } else {
-                // Desktop: skip portrait gate, go straight to splash
-                if (portraitGate) portraitGate.style.display = 'none';
-                startSplash();
-            }
+        // Force-show inner elements with opacity 0 first
+        var logo     = document.getElementById('splash-logo');
+        var studio   = document.getElementById('splash-studio');
+        var presents = document.getElementById('splash-presents');
+        [logo, studio, presents].forEach(function(el) {
+            if (el) { el.style.opacity = '0'; el.style.transition = 'none'; }
         });
 
-        // ── PORTRAIT GATE ─────────────────────────────────────────────────
-        let splashStarted = false;
-        function checkPortrait() {
-            const portrait = window.innerHeight > window.innerWidth;
-            if (portraitGate) portraitGate.style.display = portrait ? 'flex' : 'none';
-            if (!portrait && !splashStarted) {
-                splashStarted = true;
-                // Don't hide portrait gate yet — startSplash hides it once
-                // the solid-black splash is painted, preventing any game flash
-                setTimeout(startSplash, 80);
-            }
-        }
+        // After one frame, add .visible to trigger CSS transitions
+        setTimeout(function() {
+            // Safe to hide gate now — solid black splash is behind it
+            hide(gate);
 
-        // ── SPLASH ────────────────────────────────────────────────────────
-        function startSplash() {
-            if (!splash) { showMainMenu(); return; }
-            // Show immediately — splash background is solid black, no flash
-            splash.style.display = 'flex';
-            splash.style.opacity = '1';
-            splash.classList.remove('fading');
-            // Fade in the inner content (logo, text) with a slight delay
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                splash.classList.add('visible');
-                // Now safe to hide portrait gate — splash solid black is covering
-                if (portraitGate) portraitGate.style.display = 'none';
-            }));
-            // Hold 4.2s then fade out
-            setTimeout(() => {
-                splash.classList.add('fading'); // triggers opacity 0 transition
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    showMainMenu();
-                }, 950);
-            }, 4200);
-        }
+            // Trigger content fade-in
+            if (splash) splash.classList.add('visible');
 
-        // ── MAIN MENU ─────────────────────────────────────────────────────
-        function showMainMenu() {
-            if (!mainMenu) return;
-            mainMenu.style.display = 'flex';
-            startMenuBg();
-            requestAnimationFrame(() => requestAnimationFrame(() => {
-                mainMenu.classList.add('visible');
-            }));
-        }
+            // Fade-out entire splash after 4.5s
+            setTimeout(function() {
+                if (splash) {
+                    splash.style.transition = 'opacity 0.9s ease';
+                    splash.style.opacity    = '0';
+                    setTimeout(function() {
+                        hide(splash);
+                        showMenu();
+                    }, 950);
+                } else { showMenu(); }
+            }, 4500);
 
-        // ── MENU BACKGROUND (upgraded atmospheric canvas) ──────────────────
-        const mbCtx = menuBgC ? menuBgC.getContext('2d') : null;
-        const orbs = [];
-        const trails = [];
+        }, 80);
+    }
 
-        function initMenuBg() {
-            if (!menuBgC || !mbCtx) return;
-            menuBgC.width  = window.innerWidth;
-            menuBgC.height = window.innerHeight;
-            orbs.length = 0;
-            const cols = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db','#e74c3c'];
-            for (let i = 0; i < 32; i++) {
-                orbs.push({
-                    x:  Math.random() * menuBgC.width,
-                    y:  Math.random() * menuBgC.height,
-                    r:  1.5 + Math.random() * 5,
-                    vx: (Math.random() - 0.5) * 22,
-                    vy: (Math.random() - 0.5) * 22,
-                    col: cols[Math.floor(Math.random() * cols.length)],
-                    phase: Math.random() * Math.PI * 2,
-                    spd:  0.5 + Math.random() * 1.8,
-                    depth: 0.3 + Math.random() * 0.7, // simulates z-depth
-                });
-            }
-        }
-        window.addEventListener('resize', () => {
-            if (menuBgC) { menuBgC.width = window.innerWidth; menuBgC.height = window.innerHeight; }
+    // ── MENU ─────────────────────────────────────────────────
+    var menuBgRunning = false;
+    function showMenu() {
+        if (!menu) return;
+        show(menu);
+        startMenuBg();
+        setTimeout(function() { menu.classList.add('visible'); }, 30);
+    }
+
+    // ── MENU BACKGROUND ───────────────────────────────────────
+    var mbCtx = bgC ? bgC.getContext('2d') : null;
+    var orbs  = [];
+    function initBg() {
+        if (!bgC) return;
+        bgC.width = window.innerWidth; bgC.height = window.innerHeight;
+        orbs = [];
+        var cols = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db'];
+        for (var i = 0; i < 30; i++) orbs.push({
+            x: Math.random()*bgC.width,  y: Math.random()*bgC.height,
+            r: 1.5 + Math.random()*5,
+            vx: (Math.random()-.5)*20,   vy: (Math.random()-.5)*20,
+            col: cols[Math.floor(Math.random()*cols.length)],
+            ph: Math.random()*Math.PI*2, sp: .5+Math.random()*2,
+            d: .3+Math.random()*.7
         });
-
-        let menuBgRunning = false;
-        function startMenuBg() {
-            if (menuBgRunning || !mbCtx) return;
-            menuBgRunning = true;
-            initMenuBg();
-            requestAnimationFrame(animMenuBg);
+    }
+    window.addEventListener('resize', function() {
+        if (bgC) { bgC.width = window.innerWidth; bgC.height = window.innerHeight; }
+    });
+    function startMenuBg() {
+        if (menuBgRunning || !mbCtx) return;
+        menuBgRunning = true; initBg(); rafBg();
+    }
+    function rafBg(ts) {
+        if (!menu || menu.style.display === 'none') { menuBgRunning = false; return; }
+        var W = bgC.width, H = bgC.height, t = (ts||0)*.001;
+        mbCtx.fillStyle = 'rgba(6,4,3,.2)'; mbCtx.fillRect(0,0,W,H);
+        // grid
+        mbCtx.strokeStyle='rgba(200,187,168,.03)'; mbCtx.lineWidth=1;
+        for (var x=0;x<W;x+=80){mbCtx.beginPath();mbCtx.moveTo(x,0);mbCtx.lineTo(x,H);mbCtx.stroke();}
+        for (var y=0;y<H;y+=80){mbCtx.beginPath();mbCtx.moveTo(0,y);mbCtx.lineTo(W,y);mbCtx.stroke();}
+        // connections
+        for (var i=0;i<orbs.length;i++) for (var j=i+1;j<orbs.length;j++) {
+            var dx=orbs[i].x-orbs[j].x, dy=orbs[i].y-orbs[j].y, dd=Math.sqrt(dx*dx+dy*dy);
+            if (dd<150){ mbCtx.save();mbCtx.globalAlpha=(1-dd/150)*.1;
+                mbCtx.strokeStyle=orbs[i].col;mbCtx.lineWidth=.7;
+                mbCtx.beginPath();mbCtx.moveTo(orbs[i].x,orbs[i].y);mbCtx.lineTo(orbs[j].x,orbs[j].y);
+                mbCtx.stroke();mbCtx.restore(); }
         }
-
-        function animMenuBg(ts) {
-            if (!mainMenu || mainMenu.style.display === 'none') { menuBgRunning = false; return; }
-            const W = menuBgC.width, H = menuBgC.height;
-            const now = (ts || 0) * 0.001;
-
-            // Fade trail instead of clear — creates motion blur effect
-            mbCtx.fillStyle = 'rgba(6,4,3,0.22)';
-            mbCtx.fillRect(0, 0, W, H);
-
-            // Very subtle grid
-            mbCtx.save();
-            mbCtx.strokeStyle = 'rgba(200,187,168,0.03)';
-            mbCtx.lineWidth = 1;
-            for (let x = 0; x < W; x += 80) { mbCtx.beginPath(); mbCtx.moveTo(x,0); mbCtx.lineTo(x,H); mbCtx.stroke(); }
-            for (let y = 0; y < H; y += 80) { mbCtx.beginPath(); mbCtx.moveTo(0,y); mbCtx.lineTo(W,y); mbCtx.stroke(); }
+        // orbs
+        orbs.forEach(function(o){
+            o.x+=o.vx*o.d/60; o.y+=o.vy*o.d/60; o.ph+=o.sp/60;
+            if(o.x<-50)o.x=W+50; if(o.x>W+50)o.x=-50;
+            if(o.y<-50)o.y=H+50; if(o.y>H+50)o.y=-50;
+            var p=1+Math.sin(o.ph)*.28, r=o.r*p;
+            mbCtx.save(); mbCtx.globalCompositeOperation='screen';
+            var g=mbCtx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*6*o.d);
+            g.addColorStop(0,o.col+'cc'); g.addColorStop(.35,o.col+'33'); g.addColorStop(1,'transparent');
+            mbCtx.fillStyle=g; mbCtx.beginPath(); mbCtx.arc(o.x,o.y,r*6*o.d,0,Math.PI*2); mbCtx.fill();
             mbCtx.restore();
+            mbCtx.save(); mbCtx.globalAlpha=.45+Math.sin(o.ph)*.18;
+            mbCtx.translate(o.x,o.y); mbCtx.rotate(t*o.sp*.5);
+            mbCtx.fillStyle=o.col;
+            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0); mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0);
+            mbCtx.closePath(); mbCtx.fill(); mbCtx.restore();
+        });
+        // vignette
+        var vig=mbCtx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/2,Math.max(W,H)*.8);
+        vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,.82)');
+        mbCtx.fillStyle=vig; mbCtx.fillRect(0,0,W,H);
+        requestAnimationFrame(rafBg);
+    }
 
-            // Draw connections between close orbs
-            for (let i = 0; i < orbs.length; i++) {
-                for (let j = i + 1; j < orbs.length; j++) {
-                    const dx = orbs[i].x - orbs[j].x, dy = orbs[i].y - orbs[j].y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    if (dist < 160) {
-                        mbCtx.save();
-                        mbCtx.globalAlpha = (1 - dist/160) * 0.12;
-                        mbCtx.strokeStyle = orbs[i].col;
-                        mbCtx.lineWidth = 0.8;
-                        mbCtx.beginPath();
-                        mbCtx.moveTo(orbs[i].x, orbs[i].y);
-                        mbCtx.lineTo(orbs[j].x, orbs[j].y);
-                        mbCtx.stroke();
-                        mbCtx.restore();
-                    }
-                }
+    // ── BUTTONS ───────────────────────────────────────────────
+    onTap(document.getElementById('btn-start'), function() {
+        if (setP && setP.style.display !== 'none') return;
+        if (menu) { menu.classList.remove('visible');
+            setTimeout(function(){ hide(menu); }, 500); }
+        doLoading();
+    });
+    onTap(document.getElementById('btn-settings'), function() { show(setP); });
+    onTap(document.getElementById('btn-exit'),     function() { location.reload(); });
+    onTap(document.getElementById('settings-close'), function() { hide(setP); });
+
+    var zoomSlider = document.getElementById('settings-zoom');
+    if (zoomSlider) zoomSlider.addEventListener('input', function() {
+        if (typeof camera !== 'undefined') camera.zoom = parseFloat(zoomSlider.value);
+    });
+
+    // ── LOADING ───────────────────────────────────────────────
+    var loadFill = document.getElementById('loading-bar-fill');
+    function doLoading() {
+        show(load); if (load) load.style.opacity = '1';
+        var pct = 0;
+        if (loadFill) loadFill.style.width = '0%';
+        var iv = setInterval(function() {
+            pct = Math.min(100, pct + Math.random()*9+3);
+            if (loadFill) loadFill.style.width = pct+'%';
+            if (pct >= 100) {
+                clearInterval(iv);
+                setTimeout(function() {
+                    if (load) { load.style.transition='opacity .5s'; load.style.opacity='0'; }
+                    setTimeout(function() {
+                        hide(load);
+                        var st = document.getElementById('settings-skip-tut');
+                        if (st && st.checked && typeof tutEnd === 'function') tutEnd();
+                        setZones(true);
+                        if (typeof window.launchGame === 'function') window.launchGame();
+                    }, 520);
+                }, 150);
             }
+        }, 55);
+    }
 
-            // Draw orbs
-            orbs.forEach(o => {
-                o.x  += o.vx * o.depth / 60;
-                o.y  += o.vy * o.depth / 60;
-                o.phase += o.spd / 60;
-
-                if (o.x < -60) o.x = W + 60;
-                if (o.x > W+60) o.x = -60;
-                if (o.y < -60) o.y = H + 60;
-                if (o.y > H+60) o.y = -60;
-
-                const pulse = 1 + Math.sin(o.phase) * 0.3;
-                const r = o.r * pulse;
-
-                // Screen-blend glow
-                mbCtx.save();
-                mbCtx.globalCompositeOperation = 'screen';
-                const g = mbCtx.createRadialGradient(o.x, o.y, 0, o.x, o.y, r * 6 * o.depth);
-                g.addColorStop(0,   o.col + 'cc');
-                g.addColorStop(0.3, o.col + '33');
-                g.addColorStop(1,   'transparent');
-                mbCtx.fillStyle = g;
-                mbCtx.beginPath(); mbCtx.arc(o.x, o.y, r * 6 * o.depth, 0, Math.PI*2); mbCtx.fill();
-                mbCtx.restore();
-
-                // Rotating diamond core
-                mbCtx.save();
-                mbCtx.globalAlpha = 0.5 + Math.sin(o.phase) * 0.2;
-                mbCtx.translate(o.x, o.y);
-                mbCtx.rotate(now * o.spd * 0.5);
-                mbCtx.fillStyle = o.col;
-                mbCtx.beginPath();
-                mbCtx.moveTo(0, -r); mbCtx.lineTo(r, 0); mbCtx.lineTo(0, r); mbCtx.lineTo(-r, 0);
-                mbCtx.closePath(); mbCtx.fill();
-                mbCtx.restore();
-            });
-
-            // Central ambient glow
-            const cg = mbCtx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W,H)*0.55);
-            cg.addColorStop(0,   'rgba(200,187,168,0.03)');
-            cg.addColorStop(0.4, 'rgba(176,48,32,0.02)');
-            cg.addColorStop(1,   'transparent');
-            mbCtx.fillStyle = cg; mbCtx.fillRect(0, 0, W, H);
-
-            // Vignette
-            const vig = mbCtx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.18, W/2, H/2, Math.max(W,H)*0.78);
-            vig.addColorStop(0, 'transparent');
-            vig.addColorStop(1, 'rgba(0,0,0,0.82)');
-            mbCtx.fillStyle = vig; mbCtx.fillRect(0, 0, W, H);
-
-            requestAnimationFrame(animMenuBg);
-        }
-
-        // ── BUTTON HANDLERS ───────────────────────────────────────────────
-        onTap(btnStart, () => {
-            if (settingsP && settingsP.style.display !== 'none') return;
-            mainMenu.classList.remove('visible');
-            setTimeout(() => { if (mainMenu) mainMenu.style.display = 'none'; }, 550);
-            startLoading();
-        });
-
-        onTap(btnSett, () => {
-            if (settingsP) settingsP.style.display = 'flex';
-        });
-
-        onTap(btnExit, () => { location.reload(); });
-        onTap(settClose, () => { if (settingsP) settingsP.style.display = 'none'; });
-
-        // Live settings
-        if (zoomSlider) {
-            zoomSlider.addEventListener('input', () => {
-                if (typeof camera !== 'undefined') camera.zoom = parseFloat(zoomSlider.value);
-            });
-        }
-        if (skipTutCB) {
-            skipTutCB.addEventListener('change', () => {
-                if (skipTutCB.checked && typeof tutEnd === 'function') tutEnd();
-            });
-        }
-
-        // ── LOADING ────────────────────────────────────────────────────────
-        function startLoading() {
-            if (!loadingS) { launchNow(); return; }
-            loadingS.style.display = 'flex';
-            loadingS.style.opacity = '1';
-            let pct = 0;
-            if (loadFill) loadFill.style.width = '0%';
-            const iv = setInterval(() => {
-                pct = Math.min(100, pct + Math.random() * 9 + 3);
-                if (loadFill) loadFill.style.width = pct + '%';
-                if (pct >= 100) {
-                    clearInterval(iv);
-                    setTimeout(() => {
-                        loadingS.style.transition = 'opacity 0.5s';
-                        loadingS.style.opacity = '0';
-                        setTimeout(() => {
-                            loadingS.style.display = 'none';
-                            launchNow();
-                        }, 500);
-                    }, 150);
-                }
-            }, 55);
-        }
-
-        function launchNow() {
-            if (skipTutCB && skipTutCB.checked && typeof tutEnd === 'function') tutEnd();
-            setZones(true); // re-enable joystick zones
-            // Remove black cover to reveal game
-            const cover = document.getElementById('preload-cover');
-            if (cover) { cover.style.transition = 'opacity 0.4s'; cover.style.opacity = '0'; setTimeout(() => cover.style.display = 'none', 400); }
-            if (typeof window.launchGame === 'function') window.launchGame();
-        }
-
-    })();
-    </script>
+})();
+</script>
 
 </body>
 </html>
