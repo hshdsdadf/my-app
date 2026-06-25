@@ -1695,8 +1695,7 @@
         #splash-screen.visible #splash-presents { opacity: 1; }
 
         /* ── MAIN MENU ──────────────────────────────────── */
-        #main-menu { background: #060403; opacity: 0; transition: opacity 0.6s ease; z-index: 9500; }
-        #main-menu.visible { opacity: 1; }
+        #main-menu { background: #060403; z-index: 9500; }
         #menu-bg-canvas { position: absolute; inset: 0; pointer-events: none; display: block; }
         #menu-version {
             position: absolute; top: 16px; left: 20px;
@@ -12543,24 +12542,23 @@
     </div>
 
     <script>
-// ════════════════════════════════════════════════════════════
-//  SHARP STUDIOS — intro · menu · loading
-// ════════════════════════════════════════════════════════════
+// ── Sharp Studios intro + menu ──────────────────────────────
 (function () {
 
-    var gate      = document.getElementById('portrait-gate');
-    var pgRotate  = document.getElementById('pg-rotate');
-    var pgSplash  = document.getElementById('pg-splash');
-    var menu      = document.getElementById('main-menu');
-    var setP      = document.getElementById('settings-panel');
-    var loadScr   = document.getElementById('loading-screen');
-    var loadFill  = document.getElementById('loading-bar-fill');
-    var bgC       = document.getElementById('menu-bg-canvas');
+    var gate     = document.getElementById('portrait-gate');
+    var pgRotate = document.getElementById('pg-rotate');
+    var pgSplash = document.getElementById('pg-splash');
+    var menu     = document.getElementById('main-menu');
+    var setPanel = document.getElementById('settings-panel');
+    var loadScr  = document.getElementById('loading-screen');
+    var loadFill = document.getElementById('loading-bar-fill');
+    var bgC      = document.getElementById('menu-bg-canvas');
 
-    function show(el, type) { if (el) el.style.display = type || 'flex'; }
-    function hide(el)        { if (el) el.style.display = 'none'; }
+    // Simple helpers
+    function show(el) { if (el) el.style.display = 'flex'; }
+    function hide(el) { if (el) el.style.display = 'none'; }
     function setZones(on) {
-        ['mob-left-zone','mob-right-zone'].forEach(function(id) {
+        ['mob-left-zone','mob-right-zone'].forEach(function(id){
             var z = document.getElementById(id);
             if (z) z.style.pointerEvents = on ? '' : 'none';
         });
@@ -12568,179 +12566,204 @@
     function onTap(el, fn) {
         if (!el) return;
         el.addEventListener('click', fn);
-        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, { passive:false });
+        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, {passive:false});
     }
 
-    setZones(false);  // zones off until game starts
+    setZones(false);
 
-    // ── ORIENTATION ────────────────────────────────────────────
+    // ── BOOT ───────────────────────────────────────────────────
     var started = false;
     function isPortrait() { return window.innerHeight > window.innerWidth; }
 
     function check() {
         if (started) return;
         if (isPortrait()) {
+            // Show rotate prompt inside the solid-black gate
             show(pgRotate);
             hide(pgSplash);
         } else {
             hide(pgRotate);
             started = true;
-            showSplash();
+            runIntro();
         }
     }
 
     window.addEventListener('load', function () {
+        // DEV MODE: skip all intro screens
         if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-            hide(gate); hide(menu); hide(setP); hide(loadScr);
+            hide(gate);
             setZones(true);
             return;
         }
         var mobile = matchMedia('(pointer:coarse)').matches;
         if (mobile) {
             check();
-            window.addEventListener('resize',            check);
-            window.addEventListener('orientationchange', function(){ setTimeout(check, 200); });
+            window.addEventListener('resize', check);
+            window.addEventListener('orientationchange', function(){ setTimeout(check, 250); });
         } else {
-            // Desktop: skip portrait check
+            // Desktop: skip portrait check, run intro immediately
             hide(pgRotate);
             started = true;
-            showSplash();
+            runIntro();
         }
     });
 
-    // ── SPLASH ──────────────────────────────────────────────────
-    // Flow: 2s black → "Sharp Studios presents" fades in → menu
-    function showSplash() {
-        // Gate is solid black (z-index 12000). pgSplash is inside it.
-        pgSplash.style.display    = 'flex';
-        pgSplash.style.opacity    = '0';
-        pgSplash.style.transition = 'none';
+    // ── INTRO ──────────────────────────────────────────────────
+    // Gate is solid black (z-index 12000). pgSplash is inside it.
+    // Step 1: 2s black
+    // Step 2: show "Sharp Studios presents"
+    // Step 3: 2s later hide gate, show menu
+    function runIntro() {
+        // 2 seconds of black
+        setTimeout(function () {
+            // Show "Sharp Studios presents" instantly
+            pgSplash.style.display = 'flex';
+            pgSplash.style.opacity = '1';
 
-        // After 2s of black: fade in "Sharp Studios presents"
-        setTimeout(function() {
-            pgSplash.style.transition = 'opacity 0.6s ease';
-            pgSplash.style.opacity    = '1';
-
-            // 1.8s later: fade the whole gate out, show menu
-            setTimeout(function() {
-                gate.style.transition = 'opacity 0.7s ease';
-                gate.style.opacity    = '0';
-                setTimeout(function() {
-                    hide(gate);
-                    gate.style.opacity    = '1';
-                    gate.style.transition = '';
-                    openMenu();
-                }, 720);
-            }, 1800);
+            // 2 seconds later: hide gate, show menu
+            setTimeout(function () {
+                hide(gate);
+                showMenu();
+            }, 2000);
 
         }, 2000);
     }
 
-    // ── MENU ────────────────────────────────────────────────────
-    var menuBgRunning = false;
-    function openMenu() {
-        show(menu);
+    // ── MENU ───────────────────────────────────────────────────
+    function showMenu() {
+        menu.style.display = 'flex';
+        menu.style.opacity = '1';
         startBg();
-        setTimeout(function(){ if (menu) menu.classList.add('visible'); }, 40);
     }
 
-    // ── MENU BACKGROUND ─────────────────────────────────────────
+    // ── MENU BACKGROUND CANVAS ─────────────────────────────────
     var mbCtx = bgC ? bgC.getContext('2d') : null;
     var orbs  = [];
+
     function initBg() {
         if (!bgC) return;
-        bgC.width = window.innerWidth; bgC.height = window.innerHeight;
+        bgC.width = window.innerWidth;
+        bgC.height = window.innerHeight;
         orbs = [];
         var cols = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db'];
-        for (var i = 0; i < 30; i++) orbs.push({
-            x: Math.random()*bgC.width,  y: Math.random()*bgC.height,
-            r: 1.5 + Math.random()*5,
-            vx:(Math.random()-.5)*20,    vy:(Math.random()-.5)*20,
-            col: cols[Math.floor(Math.random()*cols.length)],
-            ph: Math.random()*Math.PI*2, sp:.5+Math.random()*2, d:.3+Math.random()*.7
-        });
-    }
-    window.addEventListener('resize', function(){
-        if (bgC){ bgC.width=window.innerWidth; bgC.height=window.innerHeight; }
-    });
-    function startBg() {
-        if (menuBgRunning||!mbCtx) return;
-        menuBgRunning=true; initBg(); rafBg();
-    }
-    function rafBg(ts) {
-        if (!menu||menu.style.display==='none'){ menuBgRunning=false; return; }
-        var W=bgC.width, H=bgC.height, t=(ts||0)*.001;
-        mbCtx.fillStyle='rgba(6,4,3,.2)'; mbCtx.fillRect(0,0,W,H);
-        mbCtx.strokeStyle='rgba(200,187,168,.03)'; mbCtx.lineWidth=1;
-        for(var x=0;x<W;x+=80){mbCtx.beginPath();mbCtx.moveTo(x,0);mbCtx.lineTo(x,H);mbCtx.stroke();}
-        for(var y=0;y<H;y+=80){mbCtx.beginPath();mbCtx.moveTo(0,y);mbCtx.lineTo(W,y);mbCtx.stroke();}
-        for(var i=0;i<orbs.length;i++) for(var j=i+1;j<orbs.length;j++){
-            var dx=orbs[i].x-orbs[j].x, dy=orbs[i].y-orbs[j].y, dd=Math.sqrt(dx*dx+dy*dy);
-            if(dd<150){ mbCtx.save();mbCtx.globalAlpha=(1-dd/150)*.1;
-                mbCtx.strokeStyle=orbs[i].col;mbCtx.lineWidth=.7;
-                mbCtx.beginPath();mbCtx.moveTo(orbs[i].x,orbs[i].y);
-                mbCtx.lineTo(orbs[j].x,orbs[j].y);mbCtx.stroke();mbCtx.restore(); }
+        for (var i = 0; i < 28; i++) {
+            orbs.push({
+                x: Math.random() * bgC.width,
+                y: Math.random() * bgC.height,
+                r: 1.5 + Math.random() * 5,
+                vx: (Math.random() - .5) * 20,
+                vy: (Math.random() - .5) * 20,
+                col: cols[Math.floor(Math.random() * cols.length)],
+                ph: Math.random() * Math.PI * 2,
+                sp: .5 + Math.random() * 2,
+                d: .3 + Math.random() * .7
+            });
         }
-        orbs.forEach(function(o){
-            o.x+=o.vx*o.d/60; o.y+=o.vy*o.d/60; o.ph+=o.sp/60;
-            if(o.x<-50)o.x=W+50; if(o.x>W+50)o.x=-50;
-            if(o.y<-50)o.y=H+50; if(o.y>H+50)o.y=-50;
-            var p=1+Math.sin(o.ph)*.28, r=o.r*p;
-            mbCtx.save(); mbCtx.globalCompositeOperation='screen';
-            var g=mbCtx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*6*o.d);
-            g.addColorStop(0,o.col+'cc'); g.addColorStop(.35,o.col+'33'); g.addColorStop(1,'transparent');
-            mbCtx.fillStyle=g; mbCtx.beginPath(); mbCtx.arc(o.x,o.y,r*6*o.d,0,Math.PI*2); mbCtx.fill();
-            mbCtx.restore();
-            mbCtx.save(); mbCtx.globalAlpha=.45+Math.sin(o.ph)*.18;
-            mbCtx.translate(o.x,o.y); mbCtx.rotate(t*o.sp*.5);
-            mbCtx.fillStyle=o.col;
-            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0);
-            mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0); mbCtx.closePath(); mbCtx.fill();
-            mbCtx.restore();
-        });
-        var vig=mbCtx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/2,Math.max(W,H)*.8);
-        vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,.82)');
-        mbCtx.fillStyle=vig; mbCtx.fillRect(0,0,W,H);
-        requestAnimationFrame(rafBg);
     }
 
-    // ── BUTTONS ─────────────────────────────────────────────────
+    window.addEventListener('resize', function(){
+        if (bgC) { bgC.width = window.innerWidth; bgC.height = window.innerHeight; }
+    });
+
+    var bgRunning = false;
+    function startBg() {
+        if (bgRunning || !mbCtx) return;
+        bgRunning = true;
+        initBg();
+        requestAnimationFrame(drawBg);
+    }
+
+    function drawBg(ts) {
+        if (!menu || menu.style.display === 'none') { bgRunning = false; return; }
+        var W = bgC.width, H = bgC.height, t = (ts || 0) * .001;
+        mbCtx.fillStyle = 'rgba(6,4,3,.2)';
+        mbCtx.fillRect(0, 0, W, H);
+
+        // Grid
+        mbCtx.strokeStyle = 'rgba(200,187,168,.03)';
+        mbCtx.lineWidth = 1;
+        for (var x = 0; x < W; x += 80) { mbCtx.beginPath(); mbCtx.moveTo(x,0); mbCtx.lineTo(x,H); mbCtx.stroke(); }
+        for (var y = 0; y < H; y += 80) { mbCtx.beginPath(); mbCtx.moveTo(0,y); mbCtx.lineTo(W,y); mbCtx.stroke(); }
+
+        // Connections
+        for (var i = 0; i < orbs.length; i++) {
+            for (var j = i+1; j < orbs.length; j++) {
+                var dx = orbs[i].x-orbs[j].x, dy = orbs[i].y-orbs[j].y;
+                var dd = Math.sqrt(dx*dx+dy*dy);
+                if (dd < 150) {
+                    mbCtx.save();
+                    mbCtx.globalAlpha = (1-dd/150)*.1;
+                    mbCtx.strokeStyle = orbs[i].col;
+                    mbCtx.lineWidth = .7;
+                    mbCtx.beginPath(); mbCtx.moveTo(orbs[i].x,orbs[i].y); mbCtx.lineTo(orbs[j].x,orbs[j].y); mbCtx.stroke();
+                    mbCtx.restore();
+                }
+            }
+        }
+
+        // Orbs
+        orbs.forEach(function(o){
+            o.x += o.vx*o.d/60; o.y += o.vy*o.d/60; o.ph += o.sp/60;
+            if (o.x<-50) o.x=W+50; if (o.x>W+50) o.x=-50;
+            if (o.y<-50) o.y=H+50; if (o.y>H+50) o.y=-50;
+            var p = 1+Math.sin(o.ph)*.28, r = o.r*p;
+            mbCtx.save();
+            mbCtx.globalCompositeOperation = 'screen';
+            var g = mbCtx.createRadialGradient(o.x,o.y,0,o.x,o.y,r*6*o.d);
+            g.addColorStop(0, o.col+'cc'); g.addColorStop(.35, o.col+'33'); g.addColorStop(1,'transparent');
+            mbCtx.fillStyle = g;
+            mbCtx.beginPath(); mbCtx.arc(o.x,o.y,r*6*o.d,0,Math.PI*2); mbCtx.fill();
+            mbCtx.restore();
+            mbCtx.save();
+            mbCtx.globalAlpha = .45+Math.sin(o.ph)*.18;
+            mbCtx.translate(o.x,o.y); mbCtx.rotate(t*o.sp*.5);
+            mbCtx.fillStyle = o.col;
+            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0); mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0);
+            mbCtx.closePath(); mbCtx.fill();
+            mbCtx.restore();
+        });
+
+        // Vignette
+        var vig = mbCtx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/2,Math.max(W,H)*.8);
+        vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,.82)');
+        mbCtx.fillStyle = vig; mbCtx.fillRect(0,0,W,H);
+
+        requestAnimationFrame(drawBg);
+    }
+
+    // ── BUTTONS ────────────────────────────────────────────────
     onTap(document.getElementById('btn-start'), function(){
-        if(setP&&setP.style.display!=='none') return;
-        if(menu){ menu.classList.remove('visible');
-            setTimeout(function(){ hide(menu); },500); }
+        if (setPanel && setPanel.style.display !== 'none') return;
+        hide(menu);
         doLoad();
     });
-    onTap(document.getElementById('btn-settings'), function(){ show(setP); });
+    onTap(document.getElementById('btn-settings'), function(){ show(setPanel); });
     onTap(document.getElementById('btn-exit'),     function(){ location.reload(); });
-    onTap(document.getElementById('settings-close'), function(){ hide(setP); });
+    onTap(document.getElementById('settings-close'), function(){ hide(setPanel); });
+
     var zs = document.getElementById('settings-zoom');
-    if(zs) zs.addEventListener('input', function(){
-        if(typeof camera!=='undefined') camera.zoom=parseFloat(zs.value);
+    if (zs) zs.addEventListener('input', function(){
+        if (typeof camera !== 'undefined') camera.zoom = parseFloat(zs.value);
     });
 
-    // ── LOADING ──────────────────────────────────────────────────
+    // ── LOADING ────────────────────────────────────────────────
     function doLoad() {
-        show(loadScr); if(loadScr) loadScr.style.opacity='1';
-        var pct=0;
-        if(loadFill) loadFill.style.width='0%';
-        var iv=setInterval(function(){
-            pct=Math.min(100,pct+Math.random()*9+3);
-            if(loadFill) loadFill.style.width=pct+'%';
-            if(pct>=100){
+        show(loadScr);
+        if (loadScr) loadScr.style.opacity = '1';
+        var pct = 0;
+        if (loadFill) loadFill.style.width = '0%';
+        var iv = setInterval(function(){
+            pct = Math.min(100, pct + Math.random()*9+3);
+            if (loadFill) loadFill.style.width = pct + '%';
+            if (pct >= 100) {
                 clearInterval(iv);
                 setTimeout(function(){
-                    if(loadScr){loadScr.style.transition='opacity .5s';loadScr.style.opacity='0';}
-                    setTimeout(function(){
-                        hide(loadScr);
-                        var st=document.getElementById('settings-skip-tut');
-                        if(st&&st.checked&&typeof tutEnd==='function') tutEnd();
-                        setZones(true);
-                        if(typeof window.launchGame==='function') window.launchGame();
-                    },520);
-                },150);
+                    hide(loadScr);
+                    setZones(true);
+                    if (typeof window.launchGame === 'function') window.launchGame();
+                }, 400);
             }
-        },55);
+        }, 55);
     }
 
 })();
