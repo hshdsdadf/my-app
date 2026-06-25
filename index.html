@@ -1495,6 +1495,27 @@
             #tutorial-tooltip.tut-slim .tut-box  { padding: 5px 8px !important; }
             #tutorial-tooltip.tut-slim .tut-dismiss { margin-top: 0 !important; }
         }
+
+        /* ══ iOS Safari fixed-overlay touch-target fix ══
+           iOS positions fixed elements relative to the LAYOUT viewport
+           (full page height including browser chrome), not the visual viewport.
+           This shifts justify-content:center down so buttons hit below visual.
+           Fix: use Visual Viewport API vars (--vvt, --vvh) set by JS below.  */
+        @media (pointer: coarse), (hover: none) {
+            #level-up-overlay,
+            #boss-warning-overlay,
+            #game-over-screen,
+            #inventory-overlay {
+                top:    var(--vvt, 0px)  !important;
+                height: var(--vvh, 100%) !important;
+            }
+            /* Make every tappable element respond instantly */
+            button, .card, .menu-btn, [onclick],
+            #go-retry-btn, .boss-collect-btn, #tut-dismiss button {
+                touch-action: manipulation !important;
+                cursor: pointer !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -11784,7 +11805,24 @@
             window.addEventListener('resize',chkO);window.addEventListener('orientationchange',chkO);chkO();
             const gc=document.getElementById('gameCanvas');
             if(gc){gc.addEventListener('touchstart',e=>e.preventDefault(),{passive:false});gc.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});}
-        });
+
+            // ── iOS Safari visual-viewport fix ────────────────────────────────
+            // Fixed overlays render at full layout-viewport height on iOS,
+            // causing justify-content:center to shift hit areas off visual center.
+            // Syncing --vvt / --vvh corrects overlay top + height to visual viewport.
+            if (window.visualViewport) {
+                function syncVV() {
+                    const t = Math.round(window.visualViewport.offsetTop);
+                    const h = Math.round(window.visualViewport.height);
+                    document.documentElement.style.setProperty('--vvt', t + 'px');
+                    document.documentElement.style.setProperty('--vvh', h + 'px');
+                }
+                window.visualViewport.addEventListener('resize', syncVV);
+                window.visualViewport.addEventListener('scroll', syncVV);
+                syncVV();
+            }
+
+                });
 
     </script>
     <!-- MOBILE TOUCH ZONES + FLOATING JOYSTICK VISUALS -->
