@@ -1913,7 +1913,7 @@
     <!-- ═══════════════════════════════════════════
          SPLASH SCREEN — Sharp Studios
     ═══════════════════════════════════════════ -->
-    <div id="splash-screen" class="game-screen">
+    <div id="splash-screen" class="game-screen" style="display:none;">
         <div id="splash-logo">
             <svg viewBox="0 0 80 80" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
                 <!-- Outer diamond -->
@@ -12608,31 +12608,32 @@
         }
     });
 
-    // ── SPLASH (inside the gate div — no element swap needed) ───
+    // ── SPLASH ──────────────────────────────────────────────────
+    // Flow: 2s black → "Sharp Studios presents" fades in → menu
     function showSplash() {
-        // pgSplash is already inside gate (z-index 12000 solid black)
-        // Just show it and fade in
-        pgSplash.style.display  = 'flex';
-        pgSplash.style.opacity  = '0';
+        // Gate is solid black (z-index 12000). pgSplash is inside it.
+        pgSplash.style.display    = 'flex';
+        pgSplash.style.opacity    = '0';
         pgSplash.style.transition = 'none';
 
-        // Tiny delay so the browser paints display:flex before we change opacity
+        // After 2s of black: fade in "Sharp Studios presents"
         setTimeout(function() {
-            pgSplash.style.transition = 'opacity 0.8s ease';
+            pgSplash.style.transition = 'opacity 0.6s ease';
             pgSplash.style.opacity    = '1';
-        }, 60);
 
-        // Hold 4.5s then fade gate out → show menu
-        setTimeout(function() {
-            gate.style.transition = 'opacity 0.9s ease';
-            gate.style.opacity    = '0';
+            // 1.8s later: fade the whole gate out, show menu
             setTimeout(function() {
-                hide(gate);
-                gate.style.opacity    = '1';
-                gate.style.transition = '';
-                openMenu();
-            }, 950);
-        }, 4500);
+                gate.style.transition = 'opacity 0.7s ease';
+                gate.style.opacity    = '0';
+                setTimeout(function() {
+                    hide(gate);
+                    gate.style.opacity    = '1';
+                    gate.style.transition = '';
+                    openMenu();
+                }, 720);
+            }, 1800);
+
+        }, 2000);
     }
 
     // ── MENU ────────────────────────────────────────────────────
