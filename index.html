@@ -2803,7 +2803,7 @@
             const x = player.x + Math.cos(angle) * dist; const y = player.y + Math.sin(angle) * dist;
             enemies.push({
                 x, y, type: 'rouletteKing',
-                hp: 2200, maxHp: 2200, speed: 120, color: '#f1c40f', size: 110, xpVal: 5000,
+                hp: 6500, maxHp: 6500, speed: 120, color: '#f1c40f', size: 110, xpVal: 5000,
                 animTimer: 0, shootTimer: 0, kx: 0, ky: 0, hitTimer: 0, facing: 0,
                 isBoss: true,
                 phase: 1,
@@ -5385,13 +5385,30 @@
                 createExplosion(e.x, e.y, e.wheelResult === 'red' ? '#e74c3c' : (e.wheelResult === 'black' ? '#9b59b6' : '#2ecc71'), 25);
 
                 if (e.wheelResult === 'red') {
-                    // Fire cone of burning projectiles toward player
-                    const spread = 5;
-                    for (let i = -spread; i <= spread; i++) {
-                        const ang = angleToPlayer + i * 0.12;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*520, vy: Math.sin(ang)*520, life: 2.8, size: 14, isBossOrb: true, color: '#e74c3c', isFireBullet: true });
+                    // Throw a fan of flying CARDS that embed in walls and explode!
+                    const cardSuits = ['♠','♥','♦','♣','♠','♥'];
+                    const fanCount = isEnrage ? 12 : 8;
+                    for (let i = 0; i < fanCount; i++) {
+                        const ang = angleToPlayer + (i - (fanCount-1)/2) * 0.13;
+                        const suit = cardSuits[i % cardSuits.length];
+                        const isRed = suit === '♥' || suit === '♦';
+                        const spd = 480 + Math.random() * 120;
+                        enemyBullets.push({
+                            x: e.x, y: e.y,
+                            vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+                            life: 5, size: 16,
+                            isCard: true, isBossOrb: false,
+                            color: isRed ? '#c0392b' : '#c8bba8',
+                            suit,
+                            cardAngle: Math.random() * Math.PI * 2,
+                            spinSpeed: (Math.random() - 0.5) * 14,
+                            startX: e.x, startY: e.y,
+                            maxRange: 400 + Math.random() * 250,
+                            stuck: false, stuckTimer: 0
+                        });
                     }
-                    addFloatingText(e.x, e.y - e.size - 30, '🔴 RED — FIRE!', '#e74c3c', 16);
+                    triggerShake(12, 0.4);
+                    addFloatingText(e.x, e.y - e.size - 30, '🃏 CARD VOLLEY!', '#e74c3c', 16);
                 } else if (e.wheelResult === 'black') {
                     // Summon shadow clones (fast chasers in dark color)
                     const count = isEnrage ? 5 : 3;
@@ -5433,37 +5450,78 @@
                 createExplosion(e.x, e.y, '#f39c12', 10);
                 addFloatingText(e.x, e.y - e.size - 50, `🎲 DICE: ${face}!`, '#f39c12', 14);
                 if (face === 1) {
-                    enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(angleToPlayer)*480, vy: Math.sin(angleToPlayer)*480, life:2.5, size:14, isBossOrb:true, color:'#e74c3c' });
+                    // Single homing card - slow, sticks and explodes big
+                    const suit1 = ['♠','♥','♦','♣'][Math.floor(Math.random()*4)];
+                    enemyBullets.push({
+                        x: e.x, y: e.y, vx: Math.cos(angleToPlayer)*320, vy: Math.sin(angleToPlayer)*320,
+                        life: 6, size: 22, isCard: true, isBossOrb: false,
+                        color: (suit1==='♥'||suit1==='♦') ? '#c0392b' : '#1a1a2e',
+                        suit: suit1, cardAngle: 0, spinSpeed: 5,
+                        startX: e.x, startY: e.y, maxRange: 480 + Math.random()*200,
+                        stuck: false, stuckTimer: 0, bigExplosion: true
+                    });
                 } else if (face === 2) {
-                    for (let bi = 0; bi < 2; bi++) {
-                        const ang = angleToPlayer + (bi - 0.5) * 0.3;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*420, vy: Math.sin(ang)*420, life:3, size:12, isBossOrb:true, color:'#e67e22', bounces: 2 });
-                    }
+                    // Two spinning cards aimed at player
+                    ['♠','♦'].forEach((suit,bi) => {
+                        const ang = angleToPlayer + (bi - 0.5) * 0.35;
+                        const isRed = suit === '♦';
+                        enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang)*460, vy:Math.sin(ang)*460,
+                            life:5, size:14, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#c8bba8', suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: 8, startX:e.x, startY:e.y, maxRange:420+Math.random()*120,
+                            stuck:false, stuckTimer:0, bigExplosion:false });
+                    });
                 } else if (face === 3) {
-                    for (let hi = 0; hi < 3; hi++) {
-                        const ang = angleToPlayer + (Math.random()-0.5)*0.2;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*400, vy: Math.sin(ang)*400, life:4, size:11, isBossOrb:true, color:'#e74c3c', homing:true });
-                    }
+                    // Three homing cards
+                    ['♥','♣','♥'].forEach((suit,hi) => {
+                        const isRed = suit === '♥';
+                        const ang = angleToPlayer + (Math.random()-0.5)*0.15;
+                        enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang)*420, vy:Math.sin(ang)*420,
+                            life:5.5, size:14, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#1a1a2e', suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: 6, homing:true, startX:e.x, startY:e.y, maxRange:500,
+                            stuck:false, stuckTimer:0, bigExplosion:false });
+                    });
                 } else if (face === 4) {
+                    // Four-card spread fan
+                    const suits = ['♠','♥','♦','♣'];
                     for (let i = 0; i < 4; i++) {
-                        const ang = angleToPlayer + (i - 1.5)*0.18;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*450, vy: Math.sin(ang)*450, life:2.5, size:13, isBossOrb:true, color:'#f39c12', explodeOnDeath:true });
+                        const ang = angleToPlayer + (i - 1.5) * 0.22;
+                        const suit = suits[i]; const isRed = suit==='♥'||suit==='♦';
+                        enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang)*500, vy:Math.sin(ang)*500,
+                            life:5, size:15, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#1a1a2e', suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: 10, startX:e.x, startY:e.y, maxRange:380+Math.random()*180,
+                            stuck:false, stuckTimer:0, bigExplosion:true });
                     }
+                    triggerShake(8, 0.3);
                 } else if (face === 5) {
+                    // Five fast piercing cards
+                    const suits5 = ['♠','♥','♦','♣','♠'];
                     for (let i = 0; i < 5; i++) {
-                        const ang = angleToPlayer + (i - 2)*0.15;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*500, vy: Math.sin(ang)*500, life:3, size:10, isBossOrb:true, color:'#9b59b6', pierce:true });
+                        const ang = angleToPlayer + (i - 2) * 0.14;
+                        const suit = suits5[i]; const isRed = suit==='♥'||suit==='♦';
+                        enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang)*550, vy:Math.sin(ang)*550,
+                            life:4, size:13, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#1a1a2e', suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: 12, startX:e.x, startY:e.y, maxRange:600,
+                            stuck:false, stuckTimer:0, bigExplosion:false });
                     }
                 } else {
-                    // 6: massive shockwave
-                    const shockR = 320;
-                    const pd = Math.sqrt((player.x - e.x)**2 + (player.y - e.y)**2);
-                    deathCause = 'shockwave from a cursed dice roll'; if (pd < shockR) takeDamage(40);
-                    for (let si = 0; si < 24; si++) {
-                        const ang = (si/24)*Math.PI*2;
-                        enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(ang)*380, vy: Math.sin(ang)*380, life:1.8, size:15, isBossOrb:true, color:'#e74c3c' });
+                    // 6: FULL DECK — 18 cards burst in all directions, all explode!
+                    addFloatingText(e.x, e.y - e.size - 60, '🃏 FULL DECK!', '#e74c3c', 20);
+                    triggerShake(22, 0.7);
+                    const suits6 = ['♠','♥','♦','♣'];
+                    for (let si = 0; si < 18; si++) {
+                        const ang = (si/18)*Math.PI*2;
+                        const suit = suits6[si % 4]; const isRed = suit==='♥'||suit==='♦';
+                        const spd = 340 + Math.random()*80;
+                        enemyBullets.push({ x:e.x, y:e.y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd,
+                            life:6, size:15, isCard:true, isBossOrb:false,
+                            color: isRed ? '#c0392b' : '#1a1a2e', suit, cardAngle: Math.random()*Math.PI*2,
+                            spinSpeed: (Math.random()-0.5)*16, startX:e.x, startY:e.y,
+                            maxRange:280+Math.random()*200, stuck:false, stuckTimer:0, bigExplosion:true });
                     }
-                    triggerShake(18, 0.6);
                 }
                 e.diceTimer = isEnrage ? 2.5 : 5;
             }
@@ -5711,7 +5769,61 @@
                         b.vx = Math.cos(newA)*spd; b.vy = Math.sin(newA)*spd;
                     }
                 }
-                b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+                // ── isCard: handle travel/stuck/explode ──────────────────
+                if (!isPlayer && b.isCard) {
+                    if (!b.stuck) {
+                        b.cardAngle += (b.spinSpeed || 6) * dt;
+                        b.x += b.vx * dt; b.y += b.vy * dt;
+                        b.life -= dt;
+                        // Check if travelled max range
+                        if (b.maxRange) {
+                            const travelD = Math.sqrt((b.x-b.startX)**2+(b.y-b.startY)**2);
+                            if (travelD >= b.maxRange) {
+                                b.stuck = true;
+                                b.vx = 0; b.vy = 0;
+                                b.stuckTimer = 0.6 + Math.random()*0.4;
+                                b.spinSpeed = 0;
+                                triggerShake(6, 0.2);
+                                // Embed spark
+                                for (let sp=0;sp<6;sp++){
+                                    const sa=Math.random()*Math.PI*2;
+                                    particles.push({x:b.x,y:b.y,vx:Math.cos(sa)*120,vy:Math.sin(sa)*120,
+                                        life:0.35,color:b.color,size:4+Math.random()*4});
+                                }
+                            }
+                        }
+                    } else {
+                        // Stuck — count down then EXPLODE
+                        b.stuckTimer -= dt;
+                        // Wobble while stuck
+                        b.cardAngle += Math.sin(b.stuckTimer * 18) * 0.04;
+                        if (b.stuckTimer <= 0) {
+                            const blastR = b.bigExplosion ? 200 : 130;
+                            const blastDmg = b.bigExplosion ? 38 : 22;
+                            const blastCol = b.bigExplosion ? '#e74c3c' : '#e67e22';
+                            createExplosion(b.x, b.y, blastCol, b.bigExplosion ? 40 : 22);
+                            // Shrapnel burst
+                            for (let ep=0;ep<(b.bigExplosion?20:12);ep++){
+                                const ea=Math.random()*Math.PI*2;
+                                particles.push({x:b.x,y:b.y,
+                                    vx:Math.cos(ea)*(200+Math.random()*200),
+                                    vy:Math.sin(ea)*(200+Math.random()*200),
+                                    life:0.5+Math.random()*0.4,
+                                    color:Math.random()<0.5?blastCol:'#fff',
+                                    size:4+Math.random()*8});
+                            }
+                            // Card suit shards
+                            addFloatingText(b.x, b.y-20, b.suit||'♠', blastCol, b.bigExplosion?28:18);
+                            triggerShake(b.bigExplosion?20:10, b.bigExplosion?0.6:0.35);
+                            const pDist=Math.sqrt((player.x-b.x)**2+(player.y-b.y)**2);
+                            if (pDist < blastR) { deathCause='an exploding playing card'; takeDamage(blastDmg); }
+                            b.life = 0;
+                        }
+                        continue; // don't process normal hit while stuck
+                    }
+                } else {
+                    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+                }
                 // Bullet trail particles
                 if (isPlayer && Math.random() < 0.4) {
                     particles.push({ x: b.x, y: b.y, vx: (Math.random()-0.5)*40, vy: (Math.random()-0.5)*40, life: 0.12, color: b.isCrit ? '#f1c40f' : '#ffdd88', size: Math.random()*3+1 });
@@ -10204,6 +10316,51 @@
                         ctx.restore();
                     }
 
+                } else if (b.isCard) {
+                    // ── FLYING PLAYING CARD ──────────────────────────────────
+                    ctx.save();
+                    ctx.translate(b.x, b.y);
+                    ctx.rotate(b.cardAngle || 0);
+                    const cw = (b.size||14)*2.0, ch = (b.size||14)*2.8;
+                    const isRedCard = b.color === '#c0392b' || b.color === '#e74c3c';
+
+                    if (b.stuck) {
+                        // Pulse red glow warning
+                        const pulse = 0.6 + 0.4*Math.sin(Date.now()*0.02);
+                        ctx.shadowColor = '#e74c3c';
+                        ctx.shadowBlur = 18 + pulse*18;
+                    }
+                    // Drop shadow
+                    ctx.globalAlpha = 0.35;
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(3-cw/2, 3-ch/2, cw, ch);
+                    ctx.globalAlpha = 1;
+                    // Card body
+                    ctx.fillStyle = b.stuck ? '#ffe0e0' : '#f5ecd5';
+                    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.roundRect(-cw/2, -ch/2, cw, ch, cw*0.1);
+                    ctx.fill(); ctx.stroke();
+                    // Center suit symbol
+                    ctx.fillStyle = isRedCard ? '#c0392b' : '#1a1a2e';
+                    ctx.font = `900 ${Math.round(cw*0.65)}px serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(b.suit || '♠', 0, 1);
+                    // Corner pip (top-left)
+                    ctx.font = `700 ${Math.round(cw*0.3)}px serif`;
+                    ctx.fillText(b.suit || '♠', -cw*0.31, -ch*0.34);
+                    ctx.shadowBlur = 0;
+                    ctx.restore();
+
+                    // Card trail while in flight
+                    if (!b.stuck && Math.random() < 0.5) {
+                        const ta = Math.atan2(b.vy, b.vx)+Math.PI;
+                        particles.push({x:b.x+Math.cos(ta)*8+(Math.random()-0.5)*6,
+                            y:b.y+Math.sin(ta)*8+(Math.random()-0.5)*6,
+                            vx:0, vy:0, life:0.08,
+                            color: isRedCard ? '#c0392b66' : '#c8bba866', size:4});
+                    }
                 } else {
                     // Regular enemy bullet — small dark round
                     ctx.fillStyle = '#cc2200';
@@ -10839,23 +10996,25 @@
             const boss = rk.bossRef;
             if (!boss) { rk.active = false; return; }
 
-            rk.timer += dt;
+            // Cap dt to prevent huge jumps (tab background, first frame spikes)
+            const safeDt = Math.min(dt, 0.04);
+            rk.timer += safeDt;
             const T = rk.timer;
 
-            // ── DARKNESS  0–13.5s timeline ─────────────────────────────────
-            if (T < 1.8)       rk.darkOverlay = Math.min(0.96, T / 1.8 * 0.96);
-            else if (T > 12.5) rk.darkOverlay = Math.max(0, rk.darkOverlay - dt * 2.0);
+            // ── DARKNESS  0–24s timeline ───────────────────────────────────
+            if (T < 2.5)       rk.darkOverlay = Math.min(0.96, T / 2.5 * 0.96);
+            else if (T > 22.0) rk.darkOverlay = Math.max(0, rk.darkOverlay - safeDt * 1.6);
             else               rk.darkOverlay = 0.96;
 
             // Wheel spin — fast then slowing as it "locks in"
-            const spinSpeed = T < 5 ? 4.5 : (T < 8 ? 3.0 : (T < 11 ? 1.2 : 0.55));
-            rk.wheelAngle += dt * spinSpeed;
+            const spinSpeed = T < 7 ? 4.5 : (T < 12 ? 3.0 : (T < 17 ? 1.2 : 0.55));
+            rk.wheelAngle += safeDt * spinSpeed;
 
-            // Wheel scale in (4.0 – 6.0)
-            if (T >= 4.0) rk.wheelScale = Math.min(1, (T - 4.0) / 1.8);
+            // Wheel scale in (6.0 – 9.0)
+            if (T >= 6.0) rk.wheelScale = Math.min(1, (T - 6.0) / 2.8);
 
             // ── COIN PARTICLES ──────────────────────────────────────────────
-            if (T >= 1.8 && T < 10.0 && Math.random() < 0.5) {
+            if (T >= 2.5 && T < 16.0 && Math.random() < 0.5) {
                 const side = Math.random();
                 rk.coins.push({
                     x: side < 0.33 ? canvas.width * 0.25 * Math.random() :
@@ -10878,7 +11037,7 @@
             rk.coins = rk.coins.filter(c => c.y < canvas.height + 60);
 
             // ── FLYING CARDS ────────────────────────────────────────────────
-            if (T >= 7.0 && T < 11.0 && Math.random() < 0.35) {
+            if (T >= 9.0 && T < 15.0 && Math.random() < 0.35) {
                 const fromLeft = Math.random() < 0.5;
                 rk.cards.push({
                     x:  fromLeft ? -70 : canvas.width + 70,
@@ -10900,10 +11059,10 @@
 
             // ── CINEMATIC TEXT ─────────────────────────────────────────────
             const texts = [
-                { start: 2.0,  end: 4.5,  msg: '— the wheel begins to turn —',    big: false },
-                { start: 5.5,  end: 8.0,  msg: '— chance cannot be outrun —',      big: false },
-                { start: 9.0,  end: 11.5, msg: '♠ THE ROULETTE KING ♠',            big: true  },
-                { start: 12.0, end: 13.5, msg: 'The House Always Wins.',            big: true  },
+                { start: 3.0,  end: 7.0,  msg: '— the wheel begins to turn —',    big: false },
+                { start: 9.5,  end: 14.0, msg: '— chance cannot be outrun —',      big: false },
+                { start: 15.5, end: 20.0, msg: '♠ THE ROULETTE KING ♠',            big: true  },
+                { start: 21.0, end: 23.5, msg: 'The House Always Wins.',            big: true  },
             ];
             let found = null;
             for (const t of texts) {
@@ -10918,16 +11077,16 @@
             }
 
             // Reveal boss only when cinematic fully ends (prevents weapons killing him during intro)
-            if (T >= 13.5 && boss.introHidden) boss.introHidden = false;
+            if (T >= 19.0 && boss.introHidden) boss.introHidden = false;
 
             // Kick off with a proper wave announcement at the end
-            if (T >= 13.0 && rk.active) {
+            if (T >= 23.0 && rk.active) {
                 showWaveAnnouncement('♠ ROULETTE KING AWAKENS ♠', 'The House Always Wins — Wave 10', '#f1c40f');
                 triggerShake(30, 1.8);
-                enemyBullets.length = 0; // wipe any stray bullets from before intro
+                enemyBullets.length = 0;
             }
 
-            if (T >= 13.5) {
+            if (T >= 24.0) {
                 rk.active = false;
                 rk.darkOverlay = 0;
             }
@@ -11192,7 +11351,7 @@
         }
         
         // ── DEV MODE ──
-        const DEV_MODE = false;
+        const DEV_MODE = true;
 
         if (DEV_MODE) {
             game.wave = 8;
