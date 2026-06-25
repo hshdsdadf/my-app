@@ -1940,7 +1940,7 @@
     <!-- ═══════════════════════════════════════════
          MAIN MENU
     ═══════════════════════════════════════════ -->
-    <div id="main-menu" class="game-screen" style="display:none;">
+    <div id="main-menu" class="game-screen">
         <canvas id="menu-bg-canvas"></canvas>
         <div id="menu-version">v0.1 alpha</div>
         <div id="menu-content">
@@ -12592,6 +12592,9 @@
         // DEV MODE: skip all intro screens
         if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
             hide(gate);
+            hide(menu);        // hide menu during dev mode
+            hide(setPanel);
+            hide(loadScr);
             setZones(true);
             return;
         }
@@ -12631,8 +12634,8 @@
 
     // ── MENU ───────────────────────────────────────────────────
     function showMenu() {
-        menu.style.display = 'flex';
-        menu.style.opacity = '1';
+        // Menu is already display:flex (no display:none in HTML)
+        // Gate hiding reveals it automatically — just kick off the background
         startBg();
     }
 
