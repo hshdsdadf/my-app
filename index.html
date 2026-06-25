@@ -1912,9 +1912,38 @@
                 font-size: 12px !important;
             }
         }
+
+        /* ── Pointer-event fixes for tutorial box and menu buttons ── */
+        /* Tutorial box must receive taps even though parent has pointer-events:none */
+        .tut-box { pointer-events: all !important; }
+        #tut-dismiss button { pointer-events: all !important; touch-action: manipulation !important; }
+
+        /* Menu buttons — explicit tappable area */
+        .menu-btn { pointer-events: all !important; touch-action: manipulation !important; }
+        #menu-content { position: relative; z-index: 2; }
+
+        /* Compact menu for small landscape screens */
+        @media (pointer: coarse) and (max-height: 420px), (hover: none) and (max-height: 420px) {
+            #menu-game-title { font-size: 36px !important; margin-bottom: 4px !important; }
+            #menu-subtitle   { margin-bottom: 24px !important; }
+            #menu-buttons    { gap: 8px !important; }
+            .menu-btn        { padding: 10px 0 !important; font-size: 9px !important; }
+        }
     </style>
 </head>
 <body>
+    <!-- Portrait gate — shown before splash on mobile if in portrait mode -->
+    <div id="portrait-gate" style="display:none; position:fixed; inset:0; z-index:12000; background:#000;
+        flex-direction:column; align-items:center; justify-content:center; gap:18px;
+        font-family:'Space Mono',monospace; color:rgba(200,187,168,0.7); text-align:center;">
+        <div style="font-size:48px; animation:rotSpin 2s ease-in-out infinite;">⟳</div>
+        <div style="font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;">
+            Rotate to play
+        </div>
+        <div style="font-size:7px; letter-spacing:3px; text-transform:uppercase; opacity:0.35;">
+            Rocktato requires landscape
+        </div>
+    </div>
     <!-- ═══════════════════════════════════════════
          SPLASH SCREEN — Sharp Studios
     ═══════════════════════════════════════════ -->
@@ -12549,209 +12578,290 @@
 
     <script>
     // ════════════════════════════════════════════════════════════════════
-    //  SHARP STUDIOS — SPLASH · MENU · SETTINGS · LOADING
+    //  SHARP STUDIOS — PORTRAIT GATE · SPLASH · MENU · SETTINGS · LOADING
     // ════════════════════════════════════════════════════════════════════
     (function() {
-        const splash    = document.getElementById('splash-screen');
-        const mainMenu  = document.getElementById('main-menu');
-        const settingsP = document.getElementById('settings-panel');
-        const loadingS  = document.getElementById('loading-screen');
-        const menuBgC   = document.getElementById('menu-bg-canvas');
-        const btnStart  = document.getElementById('btn-start');
-        const btnSett   = document.getElementById('btn-settings');
-        const btnExit   = document.getElementById('btn-exit');
-        const settClose = document.getElementById('settings-close');
-        const zoomSlider= document.getElementById('settings-zoom');
-        const skipTutCB = document.getElementById('settings-skip-tut');
-        const loadFill  = document.getElementById('loading-bar-fill');
 
-        // ── SKIP MENU IN DEV MODE ───────────────────────────────────────
-        // Wait for main game script to set DEV_MODE flag via window
+        // ── DOM refs ───────────────────────────────────────────────────
+        const portraitGate = document.getElementById('portrait-gate');
+        const splash       = document.getElementById('splash-screen');
+        const mainMenu     = document.getElementById('main-menu');
+        const settingsP    = document.getElementById('settings-panel');
+        const loadingS     = document.getElementById('loading-screen');
+        const menuBgC      = document.getElementById('menu-bg-canvas');
+        const btnStart     = document.getElementById('btn-start');
+        const btnSett      = document.getElementById('btn-settings');
+        const btnExit      = document.getElementById('btn-exit');
+        const settClose    = document.getElementById('settings-close');
+        const zoomSlider   = document.getElementById('settings-zoom');
+        const skipTutCB    = document.getElementById('settings-skip-tut');
+        const loadFill     = document.getElementById('loading-bar-fill');
+
+        // ── Disable joystick zones while on any screen ──────────────────
+        function setZones(enabled) {
+            ['mob-left-zone','mob-right-zone'].forEach(id => {
+                const z = document.getElementById(id);
+                if (z) z.style.pointerEvents = enabled ? '' : 'none';
+            });
+        }
+
+        // ── Tap helper — use touchend for reliable mobile firing ─────────
+        function onTap(el, fn) {
+            if (!el) return;
+            el.addEventListener('click', fn);
+            el.addEventListener('touchend', e => { e.preventDefault(); fn(); }, { passive: false });
+        }
+
+        // ── BOOT SEQUENCE ────────────────────────────────────────────────
         window.addEventListener('load', function() {
+            setZones(false); // Zones off until game starts
+
             if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-                splash.style.display = 'none';
-                mainMenu.style.display = 'none';
+                // Skip everything — straight into game
+                [portraitGate, splash, mainMenu, settingsP, loadingS].forEach(el => {
+                    if (el) el.style.display = 'none';
+                });
+                setZones(true);
                 return;
             }
-            startSplash();
+
+            // Check if touch device (mobile)
+            const isMobile = matchMedia('(pointer:coarse)').matches;
+            if (isMobile) {
+                checkPortrait();
+                window.addEventListener('resize', checkPortrait);
+                window.addEventListener('orientationchange', () => setTimeout(checkPortrait, 200));
+            } else {
+                // Desktop: skip portrait gate, go straight to splash
+                if (portraitGate) portraitGate.style.display = 'none';
+                startSplash();
+            }
         });
 
-        // ── SPLASH SEQUENCE ─────────────────────────────────────────────
-        function startSplash() {
-            splash.style.display = 'flex';
-            // Force reflow then fade in
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    splash.classList.add('visible');
-                });
-            });
-            // Hold 2.2s then fade out → show menu
-            setTimeout(() => {
-                splash.style.transition = 'opacity 0.7s ease';
-                splash.style.opacity = '0';
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    showMainMenu();
-                }, 700);
-            }, 2600);
+        // ── PORTRAIT GATE ─────────────────────────────────────────────────
+        let splashStarted = false;
+        function checkPortrait() {
+            const portrait = window.innerHeight > window.innerWidth;
+            if (portraitGate) portraitGate.style.display = portrait ? 'flex' : 'none';
+            if (!portrait && !splashStarted) {
+                splashStarted = true;
+                setTimeout(startSplash, 300); // brief pause after rotating
+            }
         }
 
-        // ── MAIN MENU ───────────────────────────────────────────────────
+        // ── SPLASH ────────────────────────────────────────────────────────
+        function startSplash() {
+            if (splash) {
+                splash.style.display = 'flex';
+                // Stagger the entrance
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    splash.classList.add('visible');
+                }));
+                // Hold longer — 4 seconds total
+                setTimeout(() => {
+                    splash.style.transition = 'opacity 0.9s ease';
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                        showMainMenu();
+                    }, 900);
+                }, 4200);
+            } else {
+                showMainMenu();
+            }
+        }
+
+        // ── MAIN MENU ─────────────────────────────────────────────────────
         function showMainMenu() {
+            if (!mainMenu) return;
             mainMenu.style.display = 'flex';
             startMenuBg();
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    mainMenu.classList.add('visible');
-                });
-            });
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                mainMenu.classList.add('visible');
+            }));
         }
 
-        // Animated background — floating gem orbs
-        const menuBgCtx = menuBgC.getContext('2d');
+        // ── MENU BACKGROUND (upgraded atmospheric canvas) ──────────────────
+        const mbCtx = menuBgC ? menuBgC.getContext('2d') : null;
         const orbs = [];
-        function initOrbs() {
+        const trails = [];
+
+        function initMenuBg() {
+            if (!menuBgC || !mbCtx) return;
             menuBgC.width  = window.innerWidth;
             menuBgC.height = window.innerHeight;
             orbs.length = 0;
-            const colors = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db'];
-            for (let i = 0; i < 28; i++) {
+            const cols = ['#f1c40f','#00f2fe','#b03020','#9b59b6','#2ecc71','#c8bba8','#3498db','#e74c3c'];
+            for (let i = 0; i < 32; i++) {
                 orbs.push({
-                    x: Math.random() * menuBgC.width,
-                    y: Math.random() * menuBgC.height,
-                    r: 2 + Math.random() * 5,
-                    vx: (Math.random() - 0.5) * 18,
-                    vy: (Math.random() - 0.5) * 18,
-                    col: colors[Math.floor(Math.random() * colors.length)],
+                    x:  Math.random() * menuBgC.width,
+                    y:  Math.random() * menuBgC.height,
+                    r:  1.5 + Math.random() * 5,
+                    vx: (Math.random() - 0.5) * 22,
+                    vy: (Math.random() - 0.5) * 22,
+                    col: cols[Math.floor(Math.random() * cols.length)],
                     phase: Math.random() * Math.PI * 2,
-                    spd: 0.6 + Math.random() * 1.4,
+                    spd:  0.5 + Math.random() * 1.8,
+                    depth: 0.3 + Math.random() * 0.7, // simulates z-depth
                 });
             }
         }
         window.addEventListener('resize', () => {
-            menuBgC.width  = window.innerWidth;
-            menuBgC.height = window.innerHeight;
+            if (menuBgC) { menuBgC.width = window.innerWidth; menuBgC.height = window.innerHeight; }
         });
 
         let menuBgRunning = false;
         function startMenuBg() {
-            if (menuBgRunning) return;
+            if (menuBgRunning || !mbCtx) return;
             menuBgRunning = true;
-            initOrbs();
-            animMenuBg();
+            initMenuBg();
+            requestAnimationFrame(animMenuBg);
         }
 
         function animMenuBg(ts) {
-            if (mainMenu.style.display === 'none') { menuBgRunning = false; return; }
+            if (!mainMenu || mainMenu.style.display === 'none') { menuBgRunning = false; return; }
             const W = menuBgC.width, H = menuBgC.height;
-            const now = (ts || 0) / 1000;
+            const now = (ts || 0) * 0.001;
 
-            menuBgCtx.clearRect(0, 0, W, H);
-            // Base fill
-            menuBgCtx.fillStyle = '#060403';
-            menuBgCtx.fillRect(0, 0, W, H);
+            // Fade trail instead of clear — creates motion blur effect
+            mbCtx.fillStyle = 'rgba(6,4,3,0.22)';
+            mbCtx.fillRect(0, 0, W, H);
 
-            // Grid
-            menuBgCtx.save();
-            menuBgCtx.strokeStyle = 'rgba(200,187,168,0.035)';
-            menuBgCtx.lineWidth = 1;
-            for (let x = 0; x < W; x += 90) { menuBgCtx.beginPath(); menuBgCtx.moveTo(x,0); menuBgCtx.lineTo(x,H); menuBgCtx.stroke(); }
-            for (let y = 0; y < H; y += 90) { menuBgCtx.beginPath(); menuBgCtx.moveTo(0,y); menuBgCtx.lineTo(W,y); menuBgCtx.stroke(); }
-            menuBgCtx.restore();
+            // Very subtle grid
+            mbCtx.save();
+            mbCtx.strokeStyle = 'rgba(200,187,168,0.03)';
+            mbCtx.lineWidth = 1;
+            for (let x = 0; x < W; x += 80) { mbCtx.beginPath(); mbCtx.moveTo(x,0); mbCtx.lineTo(x,H); mbCtx.stroke(); }
+            for (let y = 0; y < H; y += 80) { mbCtx.beginPath(); mbCtx.moveTo(0,y); mbCtx.lineTo(W,y); mbCtx.stroke(); }
+            mbCtx.restore();
 
-            // Orbs
+            // Draw connections between close orbs
+            for (let i = 0; i < orbs.length; i++) {
+                for (let j = i + 1; j < orbs.length; j++) {
+                    const dx = orbs[i].x - orbs[j].x, dy = orbs[i].y - orbs[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 160) {
+                        mbCtx.save();
+                        mbCtx.globalAlpha = (1 - dist/160) * 0.12;
+                        mbCtx.strokeStyle = orbs[i].col;
+                        mbCtx.lineWidth = 0.8;
+                        mbCtx.beginPath();
+                        mbCtx.moveTo(orbs[i].x, orbs[i].y);
+                        mbCtx.lineTo(orbs[j].x, orbs[j].y);
+                        mbCtx.stroke();
+                        mbCtx.restore();
+                    }
+                }
+            }
+
+            // Draw orbs
             orbs.forEach(o => {
-                o.x += o.vx / 60; o.y += o.vy / 60;
+                o.x  += o.vx * o.depth / 60;
+                o.y  += o.vy * o.depth / 60;
                 o.phase += o.spd / 60;
-                if (o.x < -40) o.x = W + 40;
-                if (o.x > W + 40) o.x = -40;
-                if (o.y < -40) o.y = H + 40;
-                if (o.y > H + 40) o.y = -40;
-                const pulse = 1 + Math.sin(o.phase) * 0.25;
+
+                if (o.x < -60) o.x = W + 60;
+                if (o.x > W+60) o.x = -60;
+                if (o.y < -60) o.y = H + 60;
+                if (o.y > H+60) o.y = -60;
+
+                const pulse = 1 + Math.sin(o.phase) * 0.3;
                 const r = o.r * pulse;
+
                 // Screen-blend glow
-                menuBgCtx.save();
-                menuBgCtx.globalCompositeOperation = 'screen';
-                const g = menuBgCtx.createRadialGradient(o.x, o.y, 0, o.x, o.y, r * 5);
-                g.addColorStop(0,   o.col + 'bb');
-                g.addColorStop(0.3, o.col + '44');
+                mbCtx.save();
+                mbCtx.globalCompositeOperation = 'screen';
+                const g = mbCtx.createRadialGradient(o.x, o.y, 0, o.x, o.y, r * 6 * o.depth);
+                g.addColorStop(0,   o.col + 'cc');
+                g.addColorStop(0.3, o.col + '33');
                 g.addColorStop(1,   'transparent');
-                menuBgCtx.fillStyle = g;
-                menuBgCtx.beginPath(); menuBgCtx.arc(o.x, o.y, r * 5, 0, Math.PI*2); menuBgCtx.fill();
-                menuBgCtx.restore();
-                // Core diamond (rotated square)
-                menuBgCtx.save();
-                menuBgCtx.globalAlpha = 0.55 + Math.sin(o.phase) * 0.15;
-                menuBgCtx.translate(o.x, o.y);
-                menuBgCtx.rotate(Math.PI / 4);
-                menuBgCtx.fillStyle = o.col;
-                menuBgCtx.fillRect(-r, -r, r*2, r*2);
-                menuBgCtx.restore();
+                mbCtx.fillStyle = g;
+                mbCtx.beginPath(); mbCtx.arc(o.x, o.y, r * 6 * o.depth, 0, Math.PI*2); mbCtx.fill();
+                mbCtx.restore();
+
+                // Rotating diamond core
+                mbCtx.save();
+                mbCtx.globalAlpha = 0.5 + Math.sin(o.phase) * 0.2;
+                mbCtx.translate(o.x, o.y);
+                mbCtx.rotate(now * o.spd * 0.5);
+                mbCtx.fillStyle = o.col;
+                mbCtx.beginPath();
+                mbCtx.moveTo(0, -r); mbCtx.lineTo(r, 0); mbCtx.lineTo(0, r); mbCtx.lineTo(-r, 0);
+                mbCtx.closePath(); mbCtx.fill();
+                mbCtx.restore();
             });
 
+            // Central ambient glow
+            const cg = mbCtx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.min(W,H)*0.55);
+            cg.addColorStop(0,   'rgba(200,187,168,0.03)');
+            cg.addColorStop(0.4, 'rgba(176,48,32,0.02)');
+            cg.addColorStop(1,   'transparent');
+            mbCtx.fillStyle = cg; mbCtx.fillRect(0, 0, W, H);
+
             // Vignette
-            const vig = menuBgCtx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.2, W/2, H/2, Math.max(W,H)*0.75);
+            const vig = mbCtx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.18, W/2, H/2, Math.max(W,H)*0.78);
             vig.addColorStop(0, 'transparent');
-            vig.addColorStop(1, 'rgba(0,0,0,0.8)');
-            menuBgCtx.fillStyle = vig; menuBgCtx.fillRect(0, 0, W, H);
+            vig.addColorStop(1, 'rgba(0,0,0,0.82)');
+            mbCtx.fillStyle = vig; mbCtx.fillRect(0, 0, W, H);
 
             requestAnimationFrame(animMenuBg);
         }
 
-        // ── BUTTON HANDLERS ─────────────────────────────────────────────
-        btnStart.addEventListener('click', () => {
-            if (settingsP.style.display !== 'none') return;
+        // ── BUTTON HANDLERS ───────────────────────────────────────────────
+        onTap(btnStart, () => {
+            if (settingsP && settingsP.style.display !== 'none') return;
             mainMenu.classList.remove('visible');
-            setTimeout(() => { mainMenu.style.display = 'none'; }, 500);
+            setTimeout(() => { if (mainMenu) mainMenu.style.display = 'none'; }, 550);
             startLoading();
         });
-        // Mobile touch
-        btnStart.addEventListener('touchstart', (e) => { e.preventDefault(); btnStart.click(); }, { passive: false });
 
-        btnSett.addEventListener('click', () => { settingsP.style.display = 'flex'; });
-        btnSett.addEventListener('touchstart', (e) => { e.preventDefault(); btnSett.click(); }, { passive: false });
+        onTap(btnSett, () => {
+            if (settingsP) settingsP.style.display = 'flex';
+        });
 
-        btnExit.addEventListener('click', () => { location.reload(); });
-        btnExit.addEventListener('touchstart', (e) => { e.preventDefault(); btnExit.click(); }, { passive: false });
+        onTap(btnExit, () => { location.reload(); });
+        onTap(settClose, () => { if (settingsP) settingsP.style.display = 'none'; });
 
-        settClose.addEventListener('click', () => { settingsP.style.display = 'none'; });
-        settClose.addEventListener('touchstart', (e) => { e.preventDefault(); settClose.click(); }, { passive: false });
-
-        // Settings: zoom slider
+        // Live settings
         if (zoomSlider) {
             zoomSlider.addEventListener('input', () => {
                 if (typeof camera !== 'undefined') camera.zoom = parseFloat(zoomSlider.value);
             });
         }
-        // Settings: skip tutorial
         if (skipTutCB) {
             skipTutCB.addEventListener('change', () => {
                 if (skipTutCB.checked && typeof tutEnd === 'function') tutEnd();
             });
         }
 
-        // ── LOADING SCREEN ──────────────────────────────────────────────
+        // ── LOADING ────────────────────────────────────────────────────────
         function startLoading() {
+            if (!loadingS) { launchNow(); return; }
             loadingS.style.display = 'flex';
+            loadingS.style.opacity = '1';
             let pct = 0;
-            const interval = setInterval(() => {
-                pct = Math.min(100, pct + (Math.random() * 8 + 4));
+            if (loadFill) loadFill.style.width = '0%';
+            const iv = setInterval(() => {
+                pct = Math.min(100, pct + Math.random() * 9 + 3);
                 if (loadFill) loadFill.style.width = pct + '%';
                 if (pct >= 100) {
-                    clearInterval(interval);
+                    clearInterval(iv);
                     setTimeout(() => {
-                        loadingS.style.transition = 'opacity 0.5s ease';
+                        loadingS.style.transition = 'opacity 0.5s';
                         loadingS.style.opacity = '0';
                         setTimeout(() => {
                             loadingS.style.display = 'none';
-                            loadingS.style.opacity = '1';
-                            // Apply skip-tutorial setting
-                            if (skipTutCB && skipTutCB.checked && typeof tutEnd === 'function') tutEnd();
-                            if (typeof window.launchGame === 'function') window.launchGame();
+                            launchNow();
                         }, 500);
-                    }, 200);
+                    }, 150);
                 }
             }, 55);
+        }
+
+        function launchNow() {
+            if (skipTutCB && skipTutCB.checked && typeof tutEnd === 'function') tutEnd();
+            setZones(true); // re-enable joystick zones
+            if (typeof window.launchGame === 'function') window.launchGame();
         }
 
     })();
