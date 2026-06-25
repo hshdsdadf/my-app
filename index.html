@@ -11795,45 +11795,72 @@
             window.addEventListener('resize', syncWH);
             syncWH();
 
-            function findClickable(x, y) {
-                var el = document.elementFromPoint(x, y);
-                if (!el) return null;
-                // Must be inside an overlay
-                var inOv = false;
-                for (var i = 0; i < OV_IDS.length; i++) {
-                    var ov = document.getElementById(OV_IDS[i]);
-                    if (ov && ov.contains(el)) { inOv = true; break; }
-                }
-                if (!inOv) return null;
-                // Walk up for clickable
-                var node = el;
-                while (node && node.tagName !== 'BODY') {
-                    if (node.tagName === 'BUTTON' ||
-                        (node.getAttribute && node.getAttribute('onclick')) ||
-                        node.classList.contains('card') ||
-                        node.classList.contains('boss-collect-btn')) return node;
-                    node = node.parentElement;
-                }
-                return null;
-            }
+            // ── Targeted touchend fix for SIMPLE overlays only ─────────────
+            // Level-up cards and inventory handle their own clicks natively
+            // (touch-action:manipulation + no complex Y-offset search needed).
+            // Only the boss warning, game-over, and tutorial need the interceptor
+            // because those have single centered buttons affected by iOS URL bar.
+            var SIMPLE_OVS = ['boss-warning-overlay', 'game-over-screen', 'tutorial-tooltip'];
+            var interceptBusy = false;
 
             document.addEventListener('touchend', function(iE) {
+                if (interceptBusy) return;
                 var t = iE.changedTouches[0];
                 var cx = t.clientX, cy = t.clientY;
-                // VV offset: if iOS URL bar is showing, VV is shifted below layout top
+
+                // Only try VV offset (if known) + a single 44px fallback
                 var vvOff = (window.visualViewport && window.visualViewport.offsetTop > 0)
-                             ? window.visualViewport.offsetTop : 0;
-                // Try original Y, VV-corrected Y, and common iOS chrome heights as fallback
-                var tries = [cy, cy + vvOff, cy + 44, cy + 50, cy + 56, cy + 84];
-                for (var i = 0; i < tries.length; i++) {
-                    var node = findClickable(cx, tries[i]);
-                    if (node) {
-                        iE.preventDefault();
-                        node.click();
-                        return;
+                             ? window.visualViewport.offsetTop : 44;
+                var tries = [cy, cy + vvOff];
+
+                for (var ti = 0; ti < tries.length; ti++) {
+                    var el = document.elementFromPoint(cx, tries[ti]);
+                    if (!el) continue;
+                    // Must be inside one of the SIMPLE overlays
+                    var inOv = false;
+                    for (var i = 0; i < SIMPLE_OVS.length; i++) {
+                        var ov = document.getElementById(SIMPLE_OVS[i]);
+                        if (ov && ov.contains(el)) { inOv = true; break; }
+                    }
+                    if (!inOv) continue;
+                    // Walk up for a BUTTON only (not generic onclick/card)
+                    var node = el;
+                    while (node && node.tagName !== 'BODY') {
+                        if (node.tagName === 'BUTTON') {
+                            interceptBusy = true;
+                            iE.preventDefault();
+                            node.click();
+                            setTimeout(function(){ interceptBusy = false; }, 400);
+                            return;
+                        }
+                        node = node.parentElement;
                     }
                 }
             }, false);
+
+            // Level-up cards: add touchend directly so they work without the interceptor
+            // (avoids multi-Y search accidentally hitting sell/other buttons)
+            var lvlOv = document.getElementById('level-up-overlay');
+            if (lvlOv) {
+                lvlOv.addEventListener('touchend', function(iE) {
+                    var t = iE.changedTouches[0];
+                    var el = document.elementFromPoint(t.clientX, t.clientY);
+                    if (!el) return;
+                    // Find the card element (has onclick set as JS property)
+                    var node = el;
+                    while (node && node !== lvlOv) {
+                        if (node.classList && (node.classList.contains('card') ||
+                            node.classList.contains('boss-collect-btn') ||
+                            node.classList.contains('boss-chest-card'))) {
+                            iE.preventDefault();
+                            iE.stopPropagation();
+                            node.click();
+                            return;
+                        }
+                        node = node.parentElement;
+                    }
+                }, false);
+            }
 
                 });
 
