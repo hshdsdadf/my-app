@@ -1872,15 +1872,43 @@
     <!-- Persistent black cover — hides game until Start is clicked -->
     <div id="preload-cover"></div>
 
-    <!-- Portrait gate — solid black cover on load, shows rotate text if in portrait -->
+    <!-- Single intro overlay — always solid black, content swaps inside -->
     <div id="portrait-gate" style="display:flex; position:fixed; inset:0; z-index:12000; background:#000;
-        align-items:center; justify-content:center;">
-        <div id="pg-text" style="display:none; flex-direction:column; align-items:center; gap:18px;
+        align-items:center; justify-content:center; transition:opacity 0.9s ease;">
+
+        <!-- Rotate prompt (shown in portrait) -->
+        <div id="pg-rotate" style="display:none; flex-direction:column; align-items:center; gap:18px;
             font-family:'Space Mono',monospace; color:rgba(200,187,168,0.7); text-align:center;">
             <div style="font-size:48px; animation:rotSpin 2s ease-in-out infinite;">⟳</div>
             <div style="font-size:10px; font-weight:700; letter-spacing:5px; text-transform:uppercase;">Rotate to play</div>
             <div style="font-size:7px; letter-spacing:3px; text-transform:uppercase; opacity:0.35;">Rocktato requires landscape</div>
         </div>
+
+        <!-- Sharp Studios splash (shown in landscape) -->
+        <div id="pg-splash" style="display:none; flex-direction:column; align-items:center; gap:0;
+            text-align:center; opacity:0; transition:opacity 0.7s ease;">
+            <svg viewBox="0 0 80 80" width="68" height="68" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:20px;">
+                <polygon points="40,4 76,40 40,76 4,40"
+                    fill="rgba(200,187,168,0.04)" stroke="rgba(200,187,168,0.55)" stroke-width="1.4"/>
+                <polygon points="40,16 64,40 40,64 16,40"
+                    fill="none" stroke="rgba(200,187,168,0.2)" stroke-width="1"/>
+                <line x1="4" y1="40" x2="40" y2="4" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
+                <line x1="40" y1="4" x2="76" y2="40" stroke="rgba(200,187,168,0.1)" stroke-width="0.8"/>
+                <text x="40" y="50" text-anchor="middle"
+                    fill="rgba(200,187,168,0.88)"
+                    font-family="Space Grotesk,sans-serif"
+                    font-size="30" font-weight="700">S</text>
+            </svg>
+            <div style="font-size:11px; font-weight:700; letter-spacing:10px; text-transform:uppercase;
+                color:rgba(200,187,168,0.78); font-family:'Space Mono',monospace; margin-bottom:10px;">
+                Sharp Studios
+            </div>
+            <div style="font-size:7px; letter-spacing:5px; text-transform:uppercase;
+                color:rgba(200,187,168,0.22); font-family:'Space Mono',monospace;">
+                presents
+            </div>
+        </div>
+
     </div>
     <!-- ═══════════════════════════════════════════
          SPLASH SCREEN — Sharp Studios
@@ -12515,143 +12543,107 @@
     </div>
 
     <script>
-// ══════════════════════════════════════════════════════════
-//  SHARP STUDIOS  —  splash · menu · loading
-// ══════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+//  SHARP STUDIOS — intro · menu · loading
+// ════════════════════════════════════════════════════════════
 (function () {
 
-    // ── Refs ─────────────────────────────────────────────────
-    var gate    = document.getElementById('portrait-gate');
-    var splash  = document.getElementById('splash-screen');
-    var menu    = document.getElementById('main-menu');
-    var setP    = document.getElementById('settings-panel');
-    var load    = document.getElementById('loading-screen');
-    var bgC     = document.getElementById('menu-bg-canvas');
+    var gate      = document.getElementById('portrait-gate');
+    var pgRotate  = document.getElementById('pg-rotate');
+    var pgSplash  = document.getElementById('pg-splash');
+    var menu      = document.getElementById('main-menu');
+    var setP      = document.getElementById('settings-panel');
+    var loadScr   = document.getElementById('loading-screen');
+    var loadFill  = document.getElementById('loading-bar-fill');
+    var bgC       = document.getElementById('menu-bg-canvas');
 
-    // ── Tiny helpers ─────────────────────────────────────────
-    function show(el)  { if (el) el.style.display = 'flex'; }
-    function hide(el)  { if (el) el.style.display = 'none'; }
+    function show(el, type) { if (el) el.style.display = type || 'flex'; }
+    function hide(el)        { if (el) el.style.display = 'none'; }
     function setZones(on) {
         ['mob-left-zone','mob-right-zone'].forEach(function(id) {
             var z = document.getElementById(id);
             if (z) z.style.pointerEvents = on ? '' : 'none';
         });
     }
-    // touchend fires reliably even when touchstart was preventDefault'd elsewhere
     function onTap(el, fn) {
         if (!el) return;
         el.addEventListener('click', fn);
-        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, { passive: false });
+        el.addEventListener('touchend', function(e){ e.preventDefault(); fn(); }, { passive:false });
     }
 
-    // Gate starts visible (flex, solid black) — see HTML default
-    setZones(false);
+    setZones(false);  // zones off until game starts
 
-    // ── ORIENTATION CHECK ─────────────────────────────────────
+    // ── ORIENTATION ────────────────────────────────────────────
     var started = false;
     function isPortrait() { return window.innerHeight > window.innerWidth; }
 
-    function updateGate() {
+    function check() {
         if (started) return;
         if (isPortrait()) {
-            // Show the "rotate" content inside the gate
-            var pgText = document.getElementById('pg-text');
-            if (pgText) pgText.style.display = 'flex';
+            show(pgRotate);
+            hide(pgSplash);
         } else {
-            // In landscape — hide rotate text, start splash behind gate
-            var pgText = document.getElementById('pg-text');
-            if (pgText) pgText.style.display = 'none';
+            hide(pgRotate);
             started = true;
-            beginSplash();
+            showSplash();
         }
     }
 
     window.addEventListener('load', function () {
-        // DEV MODE: skip all screens
         if (typeof DEV_MODE !== 'undefined' && DEV_MODE) {
-            hide(gate); hide(splash); hide(menu); hide(setP); hide(load);
+            hide(gate); hide(menu); hide(setP); hide(loadScr);
             setZones(true);
             return;
         }
-
         var mobile = matchMedia('(pointer:coarse)').matches;
         if (mobile) {
-            updateGate();
-            window.addEventListener('resize', updateGate);
-            window.addEventListener('orientationchange', function() {
-                setTimeout(updateGate, 250);
-            });
+            check();
+            window.addEventListener('resize',            check);
+            window.addEventListener('orientationchange', function(){ setTimeout(check, 200); });
         } else {
-            // Desktop: skip gate, go straight to splash
-            hide(gate);
+            // Desktop: skip portrait check
+            hide(pgRotate);
             started = true;
-            beginSplash();
+            showSplash();
         }
     });
 
-    // ── SPLASH ────────────────────────────────────────────────
-    function beginSplash() {
-        var logo     = document.getElementById('splash-logo');
-        var studio   = document.getElementById('splash-studio');
-        var presents = document.getElementById('splash-presents');
+    // ── SPLASH (inside the gate div — no element swap needed) ───
+    function showSplash() {
+        // pgSplash is already inside gate (z-index 12000 solid black)
+        // Just show it and fade in
+        pgSplash.style.display  = 'flex';
+        pgSplash.style.opacity  = '0';
+        pgSplash.style.transition = 'none';
 
-        // Make splash visible + cover everything
-        if (splash) { splash.style.display = 'flex'; splash.style.opacity = '1'; }
-
-        // Start content invisible
-        [logo, studio, presents].forEach(function(el) {
-            if (el) { el.style.opacity = '0'; el.style.transition = 'none'; }
-        });
-
-        // Hide gate, then stagger content in
+        // Tiny delay so the browser paints display:flex before we change opacity
         setTimeout(function() {
-            hide(gate);
-
-            setTimeout(function() {
-                if (logo) {
-                    logo.style.transition = 'opacity 0.9s ease, transform 0.9s ease';
-                    logo.style.opacity = '1';
-                    logo.style.transform = 'scale(1)';
-                }
-            }, 120);
-            setTimeout(function() {
-                if (studio) {
-                    studio.style.transition = 'opacity 0.8s ease';
-                    studio.style.opacity = '1';
-                }
-            }, 450);
-            setTimeout(function() {
-                if (presents) {
-                    presents.style.transition = 'opacity 0.7s ease';
-                    presents.style.opacity = '1';
-                }
-            }, 750);
-
+            pgSplash.style.transition = 'opacity 0.8s ease';
+            pgSplash.style.opacity    = '1';
         }, 60);
 
-        // Fade out whole splash after 4.8s
+        // Hold 4.5s then fade gate out → show menu
         setTimeout(function() {
-            if (splash) {
-                splash.style.transition = 'opacity 0.9s ease';
-                splash.style.opacity = '0';
-            }
+            gate.style.transition = 'opacity 0.9s ease';
+            gate.style.opacity    = '0';
             setTimeout(function() {
-                hide(splash);
-                showMenu();
+                hide(gate);
+                gate.style.opacity    = '1';
+                gate.style.transition = '';
+                openMenu();
             }, 950);
-        }, 4800);
+        }, 4500);
     }
 
-    // ── MENU ─────────────────────────────────────────────────
+    // ── MENU ────────────────────────────────────────────────────
     var menuBgRunning = false;
-    function showMenu() {
-        if (!menu) return;
+    function openMenu() {
         show(menu);
-        startMenuBg();
-        setTimeout(function() { menu.classList.add('visible'); }, 30);
+        startBg();
+        setTimeout(function(){ if (menu) menu.classList.add('visible'); }, 40);
     }
 
-    // ── MENU BACKGROUND ───────────────────────────────────────
+    // ── MENU BACKGROUND ─────────────────────────────────────────
     var mbCtx = bgC ? bgC.getContext('2d') : null;
     var orbs  = [];
     function initBg() {
@@ -12662,36 +12654,32 @@
         for (var i = 0; i < 30; i++) orbs.push({
             x: Math.random()*bgC.width,  y: Math.random()*bgC.height,
             r: 1.5 + Math.random()*5,
-            vx: (Math.random()-.5)*20,   vy: (Math.random()-.5)*20,
+            vx:(Math.random()-.5)*20,    vy:(Math.random()-.5)*20,
             col: cols[Math.floor(Math.random()*cols.length)],
-            ph: Math.random()*Math.PI*2, sp: .5+Math.random()*2,
-            d: .3+Math.random()*.7
+            ph: Math.random()*Math.PI*2, sp:.5+Math.random()*2, d:.3+Math.random()*.7
         });
     }
-    window.addEventListener('resize', function() {
-        if (bgC) { bgC.width = window.innerWidth; bgC.height = window.innerHeight; }
+    window.addEventListener('resize', function(){
+        if (bgC){ bgC.width=window.innerWidth; bgC.height=window.innerHeight; }
     });
-    function startMenuBg() {
-        if (menuBgRunning || !mbCtx) return;
-        menuBgRunning = true; initBg(); rafBg();
+    function startBg() {
+        if (menuBgRunning||!mbCtx) return;
+        menuBgRunning=true; initBg(); rafBg();
     }
     function rafBg(ts) {
-        if (!menu || menu.style.display === 'none') { menuBgRunning = false; return; }
-        var W = bgC.width, H = bgC.height, t = (ts||0)*.001;
-        mbCtx.fillStyle = 'rgba(6,4,3,.2)'; mbCtx.fillRect(0,0,W,H);
-        // grid
+        if (!menu||menu.style.display==='none'){ menuBgRunning=false; return; }
+        var W=bgC.width, H=bgC.height, t=(ts||0)*.001;
+        mbCtx.fillStyle='rgba(6,4,3,.2)'; mbCtx.fillRect(0,0,W,H);
         mbCtx.strokeStyle='rgba(200,187,168,.03)'; mbCtx.lineWidth=1;
-        for (var x=0;x<W;x+=80){mbCtx.beginPath();mbCtx.moveTo(x,0);mbCtx.lineTo(x,H);mbCtx.stroke();}
-        for (var y=0;y<H;y+=80){mbCtx.beginPath();mbCtx.moveTo(0,y);mbCtx.lineTo(W,y);mbCtx.stroke();}
-        // connections
-        for (var i=0;i<orbs.length;i++) for (var j=i+1;j<orbs.length;j++) {
+        for(var x=0;x<W;x+=80){mbCtx.beginPath();mbCtx.moveTo(x,0);mbCtx.lineTo(x,H);mbCtx.stroke();}
+        for(var y=0;y<H;y+=80){mbCtx.beginPath();mbCtx.moveTo(0,y);mbCtx.lineTo(W,y);mbCtx.stroke();}
+        for(var i=0;i<orbs.length;i++) for(var j=i+1;j<orbs.length;j++){
             var dx=orbs[i].x-orbs[j].x, dy=orbs[i].y-orbs[j].y, dd=Math.sqrt(dx*dx+dy*dy);
-            if (dd<150){ mbCtx.save();mbCtx.globalAlpha=(1-dd/150)*.1;
+            if(dd<150){ mbCtx.save();mbCtx.globalAlpha=(1-dd/150)*.1;
                 mbCtx.strokeStyle=orbs[i].col;mbCtx.lineWidth=.7;
-                mbCtx.beginPath();mbCtx.moveTo(orbs[i].x,orbs[i].y);mbCtx.lineTo(orbs[j].x,orbs[j].y);
-                mbCtx.stroke();mbCtx.restore(); }
+                mbCtx.beginPath();mbCtx.moveTo(orbs[i].x,orbs[i].y);
+                mbCtx.lineTo(orbs[j].x,orbs[j].y);mbCtx.stroke();mbCtx.restore(); }
         }
-        // orbs
         orbs.forEach(function(o){
             o.x+=o.vx*o.d/60; o.y+=o.vy*o.d/60; o.ph+=o.sp/60;
             if(o.x<-50)o.x=W+50; if(o.x>W+50)o.x=-50;
@@ -12705,55 +12693,53 @@
             mbCtx.save(); mbCtx.globalAlpha=.45+Math.sin(o.ph)*.18;
             mbCtx.translate(o.x,o.y); mbCtx.rotate(t*o.sp*.5);
             mbCtx.fillStyle=o.col;
-            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0); mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0);
-            mbCtx.closePath(); mbCtx.fill(); mbCtx.restore();
+            mbCtx.beginPath(); mbCtx.moveTo(0,-r); mbCtx.lineTo(r,0);
+            mbCtx.lineTo(0,r); mbCtx.lineTo(-r,0); mbCtx.closePath(); mbCtx.fill();
+            mbCtx.restore();
         });
-        // vignette
         var vig=mbCtx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/2,Math.max(W,H)*.8);
         vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,.82)');
         mbCtx.fillStyle=vig; mbCtx.fillRect(0,0,W,H);
         requestAnimationFrame(rafBg);
     }
 
-    // ── BUTTONS ───────────────────────────────────────────────
-    onTap(document.getElementById('btn-start'), function() {
-        if (setP && setP.style.display !== 'none') return;
-        if (menu) { menu.classList.remove('visible');
-            setTimeout(function(){ hide(menu); }, 500); }
-        doLoading();
+    // ── BUTTONS ─────────────────────────────────────────────────
+    onTap(document.getElementById('btn-start'), function(){
+        if(setP&&setP.style.display!=='none') return;
+        if(menu){ menu.classList.remove('visible');
+            setTimeout(function(){ hide(menu); },500); }
+        doLoad();
     });
-    onTap(document.getElementById('btn-settings'), function() { show(setP); });
-    onTap(document.getElementById('btn-exit'),     function() { location.reload(); });
-    onTap(document.getElementById('settings-close'), function() { hide(setP); });
-
-    var zoomSlider = document.getElementById('settings-zoom');
-    if (zoomSlider) zoomSlider.addEventListener('input', function() {
-        if (typeof camera !== 'undefined') camera.zoom = parseFloat(zoomSlider.value);
+    onTap(document.getElementById('btn-settings'), function(){ show(setP); });
+    onTap(document.getElementById('btn-exit'),     function(){ location.reload(); });
+    onTap(document.getElementById('settings-close'), function(){ hide(setP); });
+    var zs = document.getElementById('settings-zoom');
+    if(zs) zs.addEventListener('input', function(){
+        if(typeof camera!=='undefined') camera.zoom=parseFloat(zs.value);
     });
 
-    // ── LOADING ───────────────────────────────────────────────
-    var loadFill = document.getElementById('loading-bar-fill');
-    function doLoading() {
-        show(load); if (load) load.style.opacity = '1';
-        var pct = 0;
-        if (loadFill) loadFill.style.width = '0%';
-        var iv = setInterval(function() {
-            pct = Math.min(100, pct + Math.random()*9+3);
-            if (loadFill) loadFill.style.width = pct+'%';
-            if (pct >= 100) {
+    // ── LOADING ──────────────────────────────────────────────────
+    function doLoad() {
+        show(loadScr); if(loadScr) loadScr.style.opacity='1';
+        var pct=0;
+        if(loadFill) loadFill.style.width='0%';
+        var iv=setInterval(function(){
+            pct=Math.min(100,pct+Math.random()*9+3);
+            if(loadFill) loadFill.style.width=pct+'%';
+            if(pct>=100){
                 clearInterval(iv);
-                setTimeout(function() {
-                    if (load) { load.style.transition='opacity .5s'; load.style.opacity='0'; }
-                    setTimeout(function() {
-                        hide(load);
-                        var st = document.getElementById('settings-skip-tut');
-                        if (st && st.checked && typeof tutEnd === 'function') tutEnd();
+                setTimeout(function(){
+                    if(loadScr){loadScr.style.transition='opacity .5s';loadScr.style.opacity='0';}
+                    setTimeout(function(){
+                        hide(loadScr);
+                        var st=document.getElementById('settings-skip-tut');
+                        if(st&&st.checked&&typeof tutEnd==='function') tutEnd();
                         setZones(true);
-                        if (typeof window.launchGame === 'function') window.launchGame();
-                    }, 520);
-                }, 150);
+                        if(typeof window.launchGame==='function') window.launchGame();
+                    },520);
+                },150);
             }
-        }, 55);
+        },55);
     }
 
 })();
