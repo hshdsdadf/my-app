@@ -1603,6 +1603,50 @@
                 letter-spacing: 4px !important;
             }
         }
+
+        /* ── Mobile: compact top UI + move boss bar away from joystick zone ── */
+        @media (pointer: coarse), (hover: none) {
+            /* Tighter top padding so bars hug the top edge */
+            #top-ui {
+                padding: 6px 12px 10px !important;
+                gap: 4px !important;
+            }
+
+            /* Armor label — pull up to match new top-ui height */
+            #armor-status {
+                top: 38px !important;
+                font-size: 7px !important;
+                letter-spacing: 2px !important;
+            }
+
+            /* Room / wave info — same */
+            #wave-info {
+                top: 36px !important;
+            }
+
+            /* Boss HP bar — flip from bottom to just below top UI bars */
+            #boss-health-bar {
+                bottom: auto !important;
+                top: 52px !important;
+                width: min(420px, 72vw) !important;
+                max-width: 72vw !important;
+                gap: 3px !important;
+            }
+            #boss-name {
+                font-size: 7px !important;
+                letter-spacing: 3px !important;
+            }
+            #boss-bar-container {
+                height: 6px !important;
+            }
+            #boss-hp-text {
+                font-size: 6px !important;
+            }
+            #boss-phase-indicator {
+                font-size: 6px !important;
+                letter-spacing: 3px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -10922,7 +10966,7 @@
         }
         
         // ── DEV MODE ──
-        const DEV_MODE = true;
+        const DEV_MODE = false;
 
         if (DEV_MODE) {
             game.wave = 9;
