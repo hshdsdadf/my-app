@@ -5778,13 +5778,14 @@
                             const dmgDealt = b.dmg;
                             e.hp -= dmgDealt; e.hitTimer = 0.1;
                             totalDamageDealt += dmgDealt;
-                            // Coldsteel: brief freeze
-                            if (b.traitSlow) { e.frozenTimer = 0.8; createExplosion(b.x, b.y, '#48dbfb', 4); }
-                            // Frostbite: stacking slow (up to 3 stacks, each extends freeze)
-                            if (b.traitFrostbite) {
-                                e.frostbiteStacks = Math.min(3, (e.frostbiteStacks || 0) + 1);
-                                e.frozenTimer = Math.max(e.frozenTimer || 0, e.frostbiteStacks * 0.7);
-                                createExplosion(b.x, b.y, '#74f2ff', e.frostbiteStacks + 2);
+                            // Coldsteel/Frostbite: freeze — never on bosses
+                            if (!e.isBoss) {
+                                if (b.traitSlow) { e.frozenTimer = 0.8; createExplosion(b.x, b.y, '#48dbfb', 4); }
+                                if (b.traitFrostbite) {
+                                    e.frostbiteStacks = Math.min(3, (e.frostbiteStacks || 0) + 1);
+                                    e.frozenTimer = Math.max(e.frozenTimer || 0, e.frostbiteStacks * 0.7);
+                                    createExplosion(b.x, b.y, '#74f2ff', e.frostbiteStacks + 2);
+                                }
                             }
                             // Pulsefire: leave a burn zone at impact point
                             if (b.traitPulsefire) {
@@ -6104,8 +6105,8 @@
             ctx.restore();
 
             // ── Ability status overlays ──
-            if (e.frozenTimer > 0) {
-                // Ice frozen: blue crystal tint + snowflake
+            if (e.frozenTimer > 0 && !e.isBoss) {
+                // Ice frozen: blue crystal tint + snowflake (never on bosses)
                 ctx.save(); ctx.translate(e.x, e.y);
                 ctx.globalAlpha = Math.min(1, e.frozenTimer) * 0.55;
                 ctx.fillStyle = '#48dbfb';
@@ -11281,7 +11282,7 @@
         }
         
         // ── DEV MODE ──
-        const DEV_MODE = true;
+        const DEV_MODE = false;
 
         if (DEV_MODE) {
             game.wave = 10;
