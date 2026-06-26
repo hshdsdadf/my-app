@@ -8,18 +8,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Egg Survivor">
     <title>Egg Survivor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #050508;
-            overflow: hidden;
-            touch-action: none; /* Prevents pull-to-refresh and scrolling */
-            font-family: system-ui, -apple-system, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #050508; overflow: hidden;
+            touch-action: none;
+            font-family: 'Barlow', Arial, sans-serif;
+            user-select: none; -webkit-user-select: none;
         }
         canvas {
             display: block;
@@ -92,7 +89,7 @@
         .bar-label {
             position: absolute; top: 0; left: 8px; font-weight: 900; color: rgba(255,255,255,0.85);
             text-shadow: 1px 1px 2px black; letter-spacing: 2px;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Barlow', Arial, sans-serif;
         }
         .vitals-label { font-size: 9px; line-height: 16px; }
         .growth-label { font-size: 6px; line-height: 8px; opacity: 0.6; }
@@ -117,126 +114,133 @@
 
         .menu-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(3, 3, 5, 0.85);
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            background: rgba(4, 4, 6, 0.88);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             pointer-events: auto; opacity: 1; transition: opacity 0.3s ease;
         }
         .menu-overlay.hidden, #pause-btn.hidden, #hud.hidden { opacity: 0; pointer-events: none; }
 
         .menu-box {
-            background: rgba(10, 8, 8, 0.92); border: 1px solid rgba(255,255,255,0.07);
-            padding: 40px; border-radius: 6px; display: flex; flex-direction: column;
-            align-items: center; box-shadow: 0 10px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.03);
+            background: rgba(12, 10, 10, 0.95);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-top: 2px solid rgba(255,255,255,0.15);
+            padding: 44px 52px; border-radius: 2px;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.95), 0 0 0 1px rgba(0,0,0,0.5);
             transform: translateY(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-width: 90%; text-align: center;
+            max-width: 90%; text-align: center; min-width: 340px;
         }
-        .menu-overlay.hidden .menu-box { transform: translateY(30px); }
+        .menu-overlay.hidden .menu-box { transform: translateY(20px); }
 
         .menu-overlay h2 {
-            color: #c8c9c0; margin: 0 0 30px 0; font-size: 22px; letter-spacing: 6px;
-            text-shadow: 0 0 20px rgba(255,255,255,0.1);
-            font-family: 'Courier New', Courier, monospace; text-transform: uppercase;
-            border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 20px; width: 100%;
+            color: #ffffff; margin: 0 0 32px 0;
+            font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
+            font-size: 38px; font-weight: 400; letter-spacing: 6px;
+            text-shadow: 0 2px 20px rgba(255,255,255,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 24px; width: 100%;
         }
 
         /* Game Over Specific */
         @keyframes glitch-title {
-            0%, 82%, 100% { transform: none; opacity: 1; text-shadow: 0 0 25px rgba(200,0,0,0.9), 0 0 60px rgba(150,0,0,0.4); }
-            83% { transform: translateX(-4px) skewX(-6deg); opacity: 0.85; text-shadow: 4px 0 #ff0000, -2px 0 #550000; }
-            85% { transform: translateX(3px) skewX(3deg); opacity: 1; text-shadow: -4px 0 #cc0000, 3px 0 #880000; }
-            87% { transform: translateX(-2px); opacity: 0.9; }
-            89% { transform: none; opacity: 1; text-shadow: 0 0 25px rgba(200,0,0,0.9), 2px 0 #ff0000; }
-            91% { transform: skewX(-1deg) translateX(2px); opacity: 0.95; }
-            93% { transform: none; }
-        }
-        @keyframes scanlines {
-            0% { background-position: 0 0; }
-            100% { background-position: 0 8px; }
+            0%, 88%, 100% { transform: none; opacity: 1; }
+            89% { transform: translateX(-3px); opacity: 0.9; }
+            91% { transform: translateX(3px); opacity: 1; }
+            93% { transform: translateX(-1px); opacity: 0.95; }
+            95% { transform: none; }
         }
         @keyframes bleed-in {
-            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+            0% { opacity: 0; transform: translateY(-16px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 20px rgba(180,0,0,0.3), inset 0 0 30px rgba(80,0,0,0.2); }
-            50% { box-shadow: 0 0 40px rgba(200,0,0,0.5), inset 0 0 50px rgba(120,0,0,0.3); }
-        }
-        
+
         #gameover-menu {
-            background: radial-gradient(ellipse at center, rgba(30,0,0,0.97) 0%, rgba(5,5,8,0.99) 70%);
-        }
-        #gameover-menu::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
-            pointer-events: none; z-index: 0;
-            animation: scanlines 0.3s linear infinite;
+            background: rgba(6, 2, 2, 0.96);
         }
         #gameover-menu .menu-box {
             background: transparent; border: none; box-shadow: none;
             backdrop-filter: none; -webkit-backdrop-filter: none;
             position: relative; z-index: 1;
-            animation: bleed-in 0.8s ease-out forwards;
+            animation: bleed-in 0.6s ease-out forwards;
+            min-width: unset; padding: 20px;
+        }
+        .death-eyebrow {
+            font-family: 'Barlow', Arial, sans-serif;
+            font-size: 11px; font-weight: 700; letter-spacing: 5px;
+            color: rgba(160, 30, 30, 0.8); text-transform: uppercase;
+            margin-bottom: 14px;
         }
         .death-title {
-            color: #cc1111;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 28px; font-weight: 900; margin-bottom: 28px;
-            text-transform: uppercase; letter-spacing: 4px; max-width: 600px;
-            animation: glitch-title 5s infinite;
-            border-bottom: 1px solid rgba(180,0,0,0.3);
-            padding-bottom: 18px;
+            font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
+            font-size: 52px; font-weight: 400; letter-spacing: 3px;
+            color: #ffffff;
+            text-shadow: 0 0 40px rgba(180,0,0,0.6), 0 2px 4px rgba(0,0,0,0.9);
+            margin-bottom: 32px; max-width: 580px; line-height: 1.1;
+            animation: glitch-title 6s infinite;
         }
         .typewriter-text {
-            color: #c8a0a0;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 15px; line-height: 2.0;
-            margin-bottom: 30px; text-align: left; white-space: pre-wrap;
+            font-family: 'Barlow', Arial, sans-serif;
+            font-size: 16px; font-weight: 600; line-height: 2.1;
+            color: #b0b0b0;
+            margin-bottom: 32px; text-align: left; white-space: pre-wrap;
             width: 340px; min-height: 180px;
-            background: rgba(10,0,0,0.6);
-            border: 1px solid rgba(150,0,0,0.25);
-            border-left: 3px solid rgba(180,0,0,0.6);
-            padding: 16px 20px; border-radius: 4px;
-            box-shadow: 0 0 30px rgba(100,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.5);
-            animation: pulse-red 3s ease-in-out infinite;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-left: 3px solid rgba(180,20,20,0.7);
+            padding: 18px 22px; border-radius: 2px;
         }
         .menu-btn {
-            background: transparent; border: 1px solid rgba(80,80,80,0.5); color: #aaa;
-            padding: 14px 40px; margin: 6px; font-size: 16px; border-radius: 4px;
-            cursor: pointer; transition: all 0.25s; width: 260px; font-weight: 700;
-            letter-spacing: 2px; font-family: 'Courier New', Courier, monospace;
-            text-transform: uppercase;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.14);
+            color: #cccccc;
+            padding: 15px 40px; margin: 6px;
+            font-family: 'Barlow', Arial, sans-serif;
+            font-size: 15px; font-weight: 700;
+            letter-spacing: 3px; text-transform: uppercase;
+            border-radius: 2px; cursor: pointer;
+            transition: all 0.18s; width: 280px;
         }
         .menu-btn.primary {
-            border-color: rgba(160,0,0,0.7); color: #dd4444;
-            background: rgba(80,0,0,0.15);
-            text-shadow: 0 0 10px rgba(200,0,0,0.5);
+            border-color: rgba(200,30,30,0.6);
+            color: #fff;
+            background: rgba(140,0,0,0.25);
+            text-shadow: 0 0 12px rgba(255,60,60,0.4);
         }
-        .menu-btn:hover { background: rgba(150,0,0,0.3); color: #ff6666; border-color: #aa0000; transform: scale(1.03); box-shadow: 0 0 20px rgba(150,0,0,0.3); }
-        .menu-btn:active { transform: scale(0.97); }
+        .menu-btn:hover {
+            background: rgba(160,10,10,0.4); color: #fff;
+            border-color: rgba(220,40,40,0.8);
+            box-shadow: 0 0 24px rgba(160,0,0,0.3);
+            transform: scale(1.02);
+        }
+        .menu-btn:active { transform: scale(0.98); }
 
-        .slider-container { width: 300px; margin: 15px 0; display: flex; flex-direction: column; align-items: stretch; }
-        .slider-container label { color: #ccc; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: bold; }
+        .slider-container { width: 300px; margin: 12px 0; display: flex; flex-direction: column; align-items: stretch; }
+        .slider-container label {
+            color: #aaa; font-size: 13px; font-weight: 700;
+            margin-bottom: 8px; display: flex; justify-content: space-between;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
         
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none; height: 20px; width: 20px;
-            border-radius: 50%; background: #e4e6d9; cursor: pointer;
-            margin-top: -8px; box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            -webkit-appearance: none; height: 18px; width: 18px;
+            border-radius: 2px; background: #ddd; cursor: pointer;
+            margin-top: -7px; box-shadow: 0 0 8px rgba(255,255,255,0.3);
             transition: transform 0.1s;
         }
         input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px; cursor: pointer;
-            background: #333; border-radius: 2px;
+            width: 100%; height: 3px; cursor: pointer;
+            background: rgba(255,255,255,0.15); border-radius: 1px;
         }
 
         #countdown-display {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 140px; color: white; font-weight: bold; 
-            text-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.5);
-            pointer-events: none; opacity: 0;
+            font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
+            font-size: 160px; font-weight: 400; color: white;
+            text-shadow: 0 8px 40px rgba(0,0,0,0.9), 0 0 30px rgba(255,255,255,0.3);
+            pointer-events: none; opacity: 0; letter-spacing: 8px;
         }
         @keyframes pop {
             0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
@@ -308,10 +312,10 @@
         <!-- Game Over Menu -->
         <div id="gameover-menu" class="menu-overlay hidden">
             <div class="menu-box">
-                <div style="font-family:'Courier New',monospace; font-size:11px; letter-spacing:4px; color:rgba(150,0,0,0.6); margin-bottom:10px; text-transform:uppercase;">— TERMINATED —</div>
+                <div class="death-eyebrow">— You Died —</div>
                 <div id="death-title" class="death-title"></div>
                 <div id="typewriter" class="typewriter-text"></div>
-                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">[ Restart Run ]</button>
+                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">Restart Run</button>
             </div>
         </div>
 
@@ -427,13 +431,13 @@
 
             const score = Math.floor(timeAlive * 10) + (totalKills * 50) + ((currentRoom - 1) * 200);
 
-            const finalStats = `  KILLS ............... ${totalKills}
-  TIME ALIVE .......... ${Math.floor(timeAlive)}s
-  WEAPONS HELD ........ ${player.weapons}
-  ROOMS CLEARED ....... ${currentRoom - 1}
+            const finalStats = `Kills          ${totalKills}
+Time Alive     ${Math.floor(timeAlive)}s
+Weapons        ${player.weapons}
+Rooms Cleared  ${currentRoom - 1}
 
-  ─────────────────────────
-  SCORE ............... ${score}`;
+─────────────────────
+Score          ${score}`;
 
             let i = 0;
             clearInterval(typewriterInterval);
@@ -782,6 +786,7 @@
                 this.isAttacking = false;
                 this.attackTime = 0;
                 this.attackCooldown = 0;
+                this.hitCount = 0; // blood shows every 3 hits
                 
                 this.legs = [
                     new CreepyLeg(12, -18),
@@ -1821,7 +1826,8 @@
                         let dy = enemy.y - b.y;
                         if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
                             enemy.hp -= b.damage;
-                            
+                            enemy.hitCount++;
+
                             damageTexts.push({
                                 x: enemy.x + (Math.random() - 0.5) * 20,
                                 y: enemy.y - 20,
@@ -1830,42 +1836,25 @@
                                 vy: -40 - Math.random() * 20
                             });
 
-                            let hitAngle = Math.atan2(b.vy, b.vx);
-                            // Main blood spray - fast droplets in direction of bullet
-                            let numMain = 5 + Math.floor(Math.random() * 4);
-                            for(let p = 0; p < numMain; p++) {
-                                let spread = (Math.random() - 0.5) * 1.8;
-                                let speed = 80 + Math.random() * 280;
-                                let size = 2 + Math.random() * 5;
-                                let dark = Math.floor(Math.random() * 50);
-                                let color = `rgb(${55+dark}, ${dark/3}, ${dark/3})`;
-                                activeSplatter.push({
-                                    x: enemy.x,
-                                    y: enemy.y,
-                                    vx: Math.cos(hitAngle + spread) * speed,
-                                    vy: Math.sin(hitAngle + spread) * speed,
-                                    size, color,
-                                    friction: 0.72 + Math.random() * 0.1,
-                                    scaleX: 1.3 + Math.random() * 1.2,
-                                    angle: hitAngle + spread
-                                });
-                            }
-                            // Small satellite droplets - scatter widely
-                            let numSat = 3 + Math.floor(Math.random() * 3);
-                            for(let p = 0; p < numSat; p++) {
-                                let spread = (Math.random() - 0.5) * Math.PI;
-                                let speed = 30 + Math.random() * 80;
-                                let size = 1 + Math.random() * 2.5;
-                                activeSplatter.push({
-                                    x: enemy.x + (Math.random()-0.5)*8,
-                                    y: enemy.y + (Math.random()-0.5)*8,
-                                    vx: Math.cos(hitAngle + spread) * speed,
-                                    vy: Math.sin(hitAngle + spread) * speed,
-                                    size, color: '#3a0000',
-                                    friction: 0.65 + Math.random() * 0.1,
-                                    scaleX: 1.0 + Math.random() * 0.5,
-                                    angle: hitAngle + spread
-                                });
+                            // Only show blood every 3rd hit
+                            if (enemy.hitCount % 3 === 0) {
+                                let hitAngle = Math.atan2(b.vy, b.vx);
+                                let numHit = 1 + Math.floor(Math.random() * 2);
+                                for(let p = 0; p < numHit; p++) {
+                                    let spread = (Math.random() - 0.5) * 0.6;
+                                    let speed = 10 + Math.random() * 22;
+                                    let size = 0.7 + Math.random() * 1.1;
+                                    activeSplatter.push({
+                                        x: enemy.x + (Math.random()-0.5)*3,
+                                        y: enemy.y + (Math.random()-0.5)*3,
+                                        vx: Math.cos(hitAngle + spread) * speed,
+                                        vy: Math.sin(hitAngle + spread) * speed,
+                                        size, color: '#100000',
+                                        friction: 0.50,
+                                        scaleX: 1.0 + Math.random() * 0.3,
+                                        angle: hitAngle + spread
+                                    });
+                                }
                             }
 
                             bullets.splice(j, 1);
@@ -1873,33 +1862,43 @@
                         }
                     }
                     if (enemy.hp <= 0) {
-                        // Spawn a burst of blood on death
-                        let numDeath = 10 + Math.floor(Math.random() * 6);
+                        // Death blood burst — dark, heavy, stays near body
+                        let numDeath = 7 + Math.floor(Math.random() * 5);
                         for(let p = 0; p < numDeath; p++) {
                             let angle = Math.random() * Math.PI * 2;
-                            let speed = 40 + Math.random() * 200;
-                            let size = 2 + Math.random() * 7;
-                            let dark = Math.floor(Math.random() * 40);
+                            let speed = 15 + Math.random() * 65;
+                            let size = 1.2 + Math.random() * 3.0;
                             activeSplatter.push({
-                                x: enemy.x + (Math.random()-0.5)*10,
-                                y: enemy.y + (Math.random()-0.5)*10,
+                                x: enemy.x + (Math.random()-0.5)*5,
+                                y: enemy.y + (Math.random()-0.5)*5,
                                 vx: Math.cos(angle) * speed,
                                 vy: Math.sin(angle) * speed,
-                                size, color: `rgb(${45+dark},0,0)`,
-                                friction: 0.65 + Math.random() * 0.12,
-                                scaleX: 1.0 + Math.random() * 0.8,
+                                size, color: '#0e0000',
+                                friction: 0.55 + Math.random() * 0.1,
+                                scaleX: 1.0 + Math.random() * 0.4,
                                 angle
                             });
                         }
-                        // Add fallen body/puddle that persists for 5 seconds
+                        // Pre-compute blob offsets for organic puddle shape (14 blobs)
+                        let blobOffsets = [];
+                        for(let b = 0; b < 14; b++) {
+                            blobOffsets.push({
+                                a: Math.random() * Math.PI * 2,
+                                distFrac: 0.15 + Math.random() * 0.45,
+                                rFrac: 0.55 + Math.random() * 0.55,
+                                ox: (Math.random()-0.5) * 0.25,
+                                oy: (Math.random()-0.5) * 0.2
+                            });
+                        }
                         deadEnemies.push({
                             x: enemy.x, y: enemy.y,
                             facingAngle: enemy.facingAngle,
                             legs: enemy.legs,
                             life: 5.0, maxLife: 5.0,
-                            puddleRadius: 4,
-                            maxPuddleRadius: 28 + Math.random() * 18,
-                            drips: [] // small satellite drip offsets
+                            growDuration: 3.0,
+                            puddleRadius: 2,
+                            maxPuddleRadius: 52 + Math.random() * 32,
+                            blobOffsets
                         });
                         enemies.splice(i, 1);
                         enemiesKilledThisRoom++;
@@ -1950,9 +1949,10 @@
                 for (let i = deadEnemies.length - 1; i >= 0; i--) {
                     let d = deadEnemies[i];
                     d.life -= dt;
-                    // Puddle grows over first 1.2 seconds
-                    let growFrac = Math.min(1, (d.maxLife - d.life) / 1.2);
-                    d.puddleRadius = 4 + (d.maxPuddleRadius - 4) * growFrac;
+                    // Puddle grows over growDuration with ease-out curve
+                    let growFrac = Math.min(1, (d.maxLife - d.life) / d.growDuration);
+                    let eased = 1 - Math.pow(1 - growFrac, 2.8); // fast start, slow finish
+                    d.puddleRadius = 2 + (d.maxPuddleRadius - 2) * eased;
                     if (d.life <= 0) deadEnemies.splice(i, 1);
                 }
 
@@ -1980,86 +1980,109 @@
 
             // Draw fallen enemy corpses & blood puddles
             deadEnemies.forEach(d => {
-                const alpha = d.life > 2.5 ? 1.0 : d.life / 2.5;
+                const fadeStart = 2.0;
+                const alpha = d.life > fadeStart ? 1.0 : (d.life / fadeStart);
+                const pr = d.puddleRadius;
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                // Blood puddle - organic ellipse with gradient
-                const pr = d.puddleRadius;
-                const puddleGrad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, pr);
-                puddleGrad.addColorStop(0, 'rgba(60,0,0,0.95)');
-                puddleGrad.addColorStop(0.45, 'rgba(38,0,0,0.85)');
-                puddleGrad.addColorStop(0.78, 'rgba(20,0,0,0.55)');
-                puddleGrad.addColorStop(1, 'rgba(8,0,0,0)');
-                ctx.fillStyle = puddleGrad;
+                // === BLOOD PUDDLE ===
                 ctx.save();
                 ctx.translate(d.x, d.y);
                 ctx.rotate(d.facingAngle);
-                ctx.scale(1.4, 0.9);
-                ctx.beginPath();
-                ctx.arc(0, 0, pr, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+                ctx.scale(1.32, 0.76); // flatten into floor perspective
 
-                // Tiny irregular drip blobs around puddle edge
-                let seed = d.x * 137 + d.y * 31; // deterministic fake-random
-                for (let k = 0; k < 6; k++) {
-                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
-                    let blobAngle = (seed & 0xff) / 255 * Math.PI * 2;
-                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
-                    let blobDist = pr * (0.6 + ((seed & 0xff) / 255) * 0.55);
-                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
-                    let blobSize = 2 + ((seed & 0xff) / 255) * 4;
-                    ctx.fillStyle = 'rgba(45,0,0,0.7)';
+                // Layer 1: Outer organic edge blobs — irregular jagged border
+                d.blobOffsets.forEach(b => {
+                    let bx = Math.cos(b.a) * pr * b.distFrac + b.ox * pr;
+                    let by = Math.sin(b.a) * pr * b.distFrac * 0.7 + b.oy * pr;
+                    let br = pr * b.rFrac;
+                    let g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+                    g.addColorStop(0,   'rgba(16,1,1,0.82)');
+                    g.addColorStop(0.55,'rgba(10,0,0,0.52)');
+                    g.addColorStop(1,   'rgba(4,0,0,0)');
+                    ctx.fillStyle = g;
                     ctx.beginPath();
-                    ctx.arc(d.x + Math.cos(blobAngle) * blobDist, d.y + Math.sin(blobAngle) * blobDist, blobSize, 0, Math.PI * 2);
+                    ctx.arc(bx, by, br, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Layer 2: Main pool body — near-black center, dark maroon mid, fades at edge
+                const mainG = ctx.createRadialGradient(pr*0.05, pr*0.04, 0, 0, 0, pr * 0.9);
+                mainG.addColorStop(0,    'rgba(5,0,0,0.99)');   // almost pure black
+                mainG.addColorStop(0.28, 'rgba(10,0,0,0.97)');  // dark maroon
+                mainG.addColorStop(0.55, 'rgba(16,1,1,0.88)');  // maroon
+                mainG.addColorStop(0.78, 'rgba(14,0,0,0.60)');  // thinning
+                mainG.addColorStop(0.92, 'rgba(8,0,0,0.28)');
+                mainG.addColorStop(1,    'rgba(3,0,0,0)');
+                ctx.fillStyle = mainG;
+                ctx.beginPath();
+                ctx.arc(0, 0, pr * 0.9, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Layer 3: Wet specular sheen — subtle reddish gloss near top-left of pool
+                if (pr > 10) {
+                    let sheenR = pr * 0.2;
+                    let sheenG = ctx.createRadialGradient(-pr*0.12, -pr*0.1, 0, -pr*0.12, -pr*0.1, sheenR);
+                    sheenG.addColorStop(0, `rgba(65,8,8,${Math.min(0.22, pr/250)})`);
+                    sheenG.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = sheenG;
+                    ctx.beginPath();
+                    ctx.arc(-pr*0.12, -pr*0.1, sheenR, 0, Math.PI*2);
                     ctx.fill();
                 }
 
-                // Flattened/crumpled body on the ground
+                ctx.restore();
+
+                // === FALLEN BODY ===
+                // Legs sprawled out first (behind body)
+                if (d.legs) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(3,3,3,0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    d.legs.forEach(leg => {
+                        let attachX = d.x + Math.cos(d.facingAngle)*(leg.offsetX*0.5) - Math.sin(d.facingAngle)*(leg.offsetY*0.5);
+                        let attachY = d.y + Math.sin(d.facingAngle)*(leg.offsetX*0.5) + Math.cos(d.facingAngle)*(leg.offsetY*0.5);
+                        let deadAng = d.facingAngle + (leg.offsetY < 0 ? -1.15 : 1.15) + (leg.offsetX < 0 ? 0.35 : -0.35);
+                        let legEndX = d.x + Math.cos(deadAng) * 26;
+                        let legEndY = d.y + Math.sin(deadAng) * 26;
+                        ctx.beginPath();
+                        ctx.moveTo(attachX, attachY);
+                        ctx.quadraticCurveTo(
+                            (attachX+legEndX)*0.5 + Math.cos(deadAng+Math.PI/2)*7,
+                            (attachY+legEndY)*0.5 + Math.sin(deadAng+Math.PI/2)*7,
+                            legEndX, legEndY
+                        );
+                        ctx.stroke();
+                    });
+                    ctx.restore();
+                }
+                // Flattened body shell
                 ctx.save();
                 ctx.translate(d.x, d.y);
                 ctx.rotate(d.facingAngle);
-                ctx.scale(1, 0.28); // squash flat
-                ctx.fillStyle = '#060606';
+                ctx.scale(1, 0.26);
+                ctx.fillStyle = '#030303';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 24, 11, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 23, 11, 0, 0, Math.PI * 2);
                 ctx.fill();
-                // Legs splayed out flat
-                if (d.legs) {
-                    ctx.restore();
-                    ctx.save();
-                    ctx.strokeStyle = 'rgba(5,5,5,0.7)';
-                    ctx.lineWidth = 3;
-                    ctx.lineCap = 'round';
-                    d.legs.forEach((leg, idx) => {
-                        ctx.beginPath();
-                        let attachX = d.x + Math.cos(d.facingAngle) * (leg.offsetX * 0.5) - Math.sin(d.facingAngle) * (leg.offsetY * 0.5);
-                        let attachY = d.y + Math.sin(d.facingAngle) * (leg.offsetX * 0.5) + Math.cos(d.facingAngle) * (leg.offsetY * 0.5);
-                        // Droop legs to a static spread position
-                        let deadAngle = d.facingAngle + (leg.offsetY < 0 ? -1.2 : 1.2) + (leg.offsetX < 0 ? 0.4 : -0.4);
-                        let legEndX = d.x + Math.cos(deadAngle) * 28;
-                        let legEndY = d.y + Math.sin(deadAngle) * 28;
-                        ctx.moveTo(attachX, attachY);
-                        ctx.quadraticCurveTo((attachX + legEndX)/2 + Math.cos(deadAngle + Math.PI/2)*8, (attachY + legEndY)/2 + Math.sin(deadAngle + Math.PI/2)*8, legEndX, legEndY);
-                        ctx.stroke();
-                    });
-                } else {
-                    ctx.restore();
-                    ctx.save();
-                }
                 ctx.restore();
-                ctx.restore();
+
+                ctx.restore(); // alpha
             });
-            // Floor blood splatters (landed droplets)
+            // Floor blood splatters (landed hit droplets — very subtle dark marks)
             floorSplatters.forEach(s => {
-                // Fade out visually over the last 3 seconds of life
-                ctx.globalAlpha = Math.min(1, s.life / 3.0) * 0.82;
-                ctx.fillStyle = s.color;
+                ctx.globalAlpha = Math.min(1, s.life / 2.5) * 0.65;
                 ctx.save();
                 ctx.translate(s.x, s.y);
                 ctx.rotate(s.angle);
                 ctx.scale(s.scaleX, 1);
+                const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, s.size);
+                sg.addColorStop(0,   'rgba(10,0,0,0.92)');
+                sg.addColorStop(0.5, 'rgba(7,0,0,0.60)');
+                sg.addColorStop(1,   'rgba(3,0,0,0)');
+                ctx.fillStyle = sg;
                 ctx.beginPath();
                 ctx.arc(0, 0, s.size, 0, Math.PI * 2);
                 ctx.fill();
@@ -2068,18 +2091,20 @@
             ctx.globalAlpha = 1.0;
 
             activeSplatter.forEach(p => {
-                ctx.fillStyle = p.color;
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.angle);
                 ctx.scale(p.scaleX, 1);
-                ctx.beginPath();
                 let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
-                if (speed > 50) {
-                    ctx.ellipse(0, 0, p.size + speed * 0.015, p.size, 0, 0, Math.PI * 2);
-                } else {
-                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-                }
+                let rx = speed > 20 ? p.size + speed * 0.018 : p.size;
+                let ry = p.size * 0.75;
+                const ag = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry));
+                ag.addColorStop(0,   'rgba(12,0,0,0.95)');
+                ag.addColorStop(0.6, 'rgba(8,0,0,0.65)');
+                ag.addColorStop(1,   'rgba(3,0,0,0)');
+                ctx.fillStyle = ag;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             });
