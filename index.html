@@ -33,7 +33,7 @@
 
     <script>
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for no transparency on base layer
+        const ctx = canvas.getContext('2d', { alpha: false }); 
 
         let width = window.innerWidth;
         let height = window.innerHeight;
@@ -59,14 +59,12 @@
             e.preventDefault();
             const halfWidth = width / 2;
 
-            // Reset active states for tracking
             let leftFound = false;
             let rightFound = false;
 
             for (let i = 0; i < e.touches.length; i++) {
                 const touch = e.touches[i];
                 
-                // Left Side Touch (Movement)
                 if (touch.clientX < halfWidth) {
                     leftFound = true;
                     if (!input.left.active) {
@@ -80,7 +78,6 @@
                         input.left.currentY = touch.clientY;
                     }
                 } 
-                // Right Side Touch (Aim/Fire)
                 else {
                     rightFound = true;
                     if (!input.right.active) {
@@ -96,11 +93,9 @@
                 }
             }
 
-            // Clean up released touches
             if (!leftFound) input.left.active = false;
             if (!rightFound) input.right.active = false;
 
-            // Calculate Vectors
             ['left', 'right'].forEach(side => {
                 const stick = input[side];
                 if (stick.active) {
@@ -113,14 +108,13 @@
                         dy = (dy / dist) * JOYSTICK_MAX_RADIUS;
                         dist = JOYSTICK_MAX_RADIUS;
                         
-                        // Optional: Make the base follow the finger if pulled too far (floating joystick)
                         stick.baseX = stick.currentX - dx;
                         stick.baseY = stick.currentY - dy;
                     }
                     
                     stick.vectorX = dx / JOYSTICK_MAX_RADIUS;
                     stick.vectorY = dy / JOYSTICK_MAX_RADIUS;
-                    stick.magnitude = dist / JOYSTICK_MAX_RADIUS; // 0.0 to 1.0
+                    stick.magnitude = dist / JOYSTICK_MAX_RADIUS;
                 } else {
                     stick.vectorX = 0;
                     stick.vectorY = 0;
@@ -134,7 +128,6 @@
         window.addEventListener('touchend', handleTouch, { passive: false });
         window.addEventListener('touchcancel', handleTouch, { passive: false });
 
-        // Mouse fallback for desktop testing
         let mouseDown = false;
         window.addEventListener('mousedown', (e) => {
             mouseDown = true;
@@ -157,31 +150,25 @@
                 this.x = ROOM_SIZE / 2;
                 this.y = ROOM_SIZE / 2;
                 this.radius = 35;
-                this.speed = 400; // max pixels per second
+                this.speed = 400; 
                 this.animTime = 0;
                 this.facingAngle = 0;
             }
 
             update(dt) {
-                // Movement
                 const moveMag = input.left.magnitude;
                 if (moveMag > 0) {
-                    // Magnitude dictates speed (walk vs run)
                     this.x += input.left.vectorX * this.speed * moveMag * dt;
                     this.y += input.left.vectorY * this.speed * moveMag * dt;
                     
-                    // Keep in room bounds
                     this.x = Math.max(this.radius, Math.min(ROOM_SIZE - this.radius, this.x));
                     this.y = Math.max(this.radius, Math.min(ROOM_SIZE - this.radius, this.y));
 
-                    // Animation speed increases with movement magnitude
                     this.animTime += dt * (10 + moveMag * 15); 
                 } else {
-                    // Idle animation speed
                     this.animTime += dt * 3;
                 }
 
-                // Facing Angle (Aim overrides movement facing)
                 if (input.right.active && input.right.magnitude > 0.1) {
                     this.facingAngle = Math.atan2(input.right.vectorY, input.right.vectorX);
                 } else if (input.left.active && moveMag > 0.1) {
@@ -191,12 +178,11 @@
 
             draw(ctx) {
                 const isMoving = input.left.magnitude > 0.1;
-                const runIntensity = input.left.magnitude; // 0 to 1
+                const runIntensity = input.left.magnitude; 
                 
-                // Procedural Animation calculations
-                const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); // Body bounces
-                const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; // Leans into run
-                const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; // Gentle breathing
+                const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); 
+                const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
+                const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
 
                 ctx.save();
                 ctx.translate(this.x, this.y);
@@ -204,92 +190,86 @@
                 // Draw Shadow
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.beginPath();
-                // Shadow shrinks slightly as player bobs up
                 ctx.ellipse(0, 35 - bobbing*0.5, 30 - bobbing, 15 - bobbing*0.5, 0, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Apply body transformations (bobbing, leaning)
                 ctx.rotate(leanAngle);
                 ctx.translate(0, -bobbing);
                 ctx.scale(1, breathScale);
 
-                // --- LEGS (Procedural) ---
+                // --- LEGS ---
                 if (isMoving) {
                     const legStride = 20 * runIntensity;
                     const leftLegY = Math.sin(this.animTime) * legStride;
                     const rightLegY = Math.sin(this.animTime + Math.PI) * legStride;
                     
-                    ctx.fillStyle = '#333';
-                    // Left leg
-                    ctx.beginPath();
-                    ctx.arc(-12, 25 + Math.max(0, -leftLegY*0.5), 8, 0, Math.PI * 2);
-                    ctx.fill();
-                    // Right leg
-                    ctx.beginPath();
-                    ctx.arc(12, 25 + Math.max(0, -rightLegY*0.5), 8, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.fillStyle = '#111'; // Darker, creepy legs
+                    ctx.beginPath(); ctx.arc(-12, 25 + Math.max(0, -leftLegY*0.5), 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(12, 25 + Math.max(0, -rightLegY*0.5), 6, 0, Math.PI * 2); ctx.fill();
                 } else {
-                    // Idle legs
-                    ctx.fillStyle = '#333';
-                    ctx.beginPath(); ctx.arc(-10, 25, 8, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(10, 25, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#111';
+                    ctx.beginPath(); ctx.arc(-10, 25, 6, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(10, 25, 6, 0, Math.PI*2); ctx.fill();
                 }
 
-                // --- BODY (The Egg) ---
-                // Create a beautiful 3D radial gradient for the egg
+                // --- BODY (Uncanny Pale Egg) ---
                 const eggGrad = ctx.createRadialGradient(-10, -15, 5, 0, 0, this.radius + 10);
-                eggGrad.addColorStop(0, '#ffffff');    // Highlight
-                eggGrad.addColorStop(0.5, '#f4ecd8');  // Base egg color
-                eggGrad.addColorStop(1, '#c2b69d');    // Shadow edge
+                eggGrad.addColorStop(0, '#ffffff');    
+                eggGrad.addColorStop(0.4, '#e4e6d9');  // Pale, slightly sickly grey-greenish white
+                eggGrad.addColorStop(1, '#8b8e83');    // Darker, bruised-looking shadow
 
                 ctx.fillStyle = eggGrad;
                 ctx.beginPath();
-                // Draw an egg shape using bezier curves
                 ctx.moveTo(0, -this.radius * 1.2); 
-                ctx.bezierCurveTo(
-                    this.radius, -this.radius * 1.2, 
-                    this.radius, this.radius, 
-                    0, this.radius
-                );
-                ctx.bezierCurveTo(
-                    -this.radius, this.radius, 
-                    -this.radius, -this.radius * 1.2, 
-                    0, -this.radius * 1.2
-                );
+                ctx.bezierCurveTo(this.radius, -this.radius * 1.2, this.radius, this.radius, 0, this.radius);
+                ctx.bezierCurveTo(-this.radius, this.radius, -this.radius, -this.radius * 1.2, 0, -this.radius * 1.2);
                 ctx.fill();
 
-                // --- EYES (Track aiming direction) ---
+                // --- FACE (Uncanny & Weird) ---
                 ctx.save();
-                // Offset eyes based on facing angle to give 3D rotation effect
-                const eyeOffsetX = Math.cos(this.facingAngle) * 12;
-                const eyeOffsetY = Math.sin(this.facingAngle) * 10 - 5;
+                const faceOffsetX = Math.cos(this.facingAngle) * 10;
+                const faceOffsetY = Math.sin(this.facingAngle) * 8;
+                ctx.translate(faceOffsetX, faceOffsetY);
                 
-                ctx.translate(eyeOffsetX, eyeOffsetY);
-                
-                // Sclera (Whites)
+                // Mismatched Staring Eyes
                 ctx.fillStyle = 'white';
-                ctx.beginPath(); ctx.ellipse(-8, 0, 6, 8, 0, 0, Math.PI*2); ctx.fill(); // Left eye
-                ctx.beginPath(); ctx.ellipse(8, 0, 6, 8, 0, 0, Math.PI*2); ctx.fill();  // Right eye
+                // Left eye (larger, slightly lower)
+                ctx.beginPath(); ctx.arc(-12, -4, 9, 0, Math.PI*2); ctx.fill();
+                // Right eye (smaller, slightly higher)
+                ctx.beginPath(); ctx.arc(10, -6, 7, 0, Math.PI*2); ctx.fill();
                 
-                // Pupils
-                ctx.fillStyle = '#111';
-                const pupilOffsetX = Math.cos(this.facingAngle) * 3;
-                const pupilOffsetY = Math.sin(this.facingAngle) * 3;
-                ctx.beginPath(); ctx.arc(-8 + pupilOffsetX, pupilOffsetY, 3, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.arc(8 + pupilOffsetX, pupilOffsetY, 3, 0, Math.PI*2); ctx.fill();
+                // Tiny Pinprick Pupils (Creates a disturbing stare)
+                ctx.fillStyle = '#000';
+                const pupilOffsetX = Math.cos(this.facingAngle) * 4;
+                const pupilOffsetY = Math.sin(this.facingAngle) * 4;
+                ctx.beginPath(); ctx.arc(-12 + pupilOffsetX, -4 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(10 + pupilOffsetX, -6 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 
-                // Angry Eyebrows
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#333';
-                ctx.lineCap = 'round';
-                ctx.beginPath(); ctx.moveTo(-15, -8); ctx.lineTo(-3, -4); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(15, -8); ctx.lineTo(3, -4); ctx.stroke();
+                // Creepy Wide Grin
+                ctx.fillStyle = '#111'; // Deep black mouth
+                ctx.beginPath();
+                ctx.moveTo(-18, 8);
+                // Curves down into a wide smile
+                ctx.bezierCurveTo(-10, 22, 10, 20, 16, 6);
+                // Curves back up to close the shape thinly
+                ctx.bezierCurveTo(8, 14, -8, 14, -18, 8);
+                ctx.fill();
+
+                // Jagged teeth lines
+                ctx.strokeStyle = '#e4e6d9'; // pale teeth
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-10, 11); ctx.lineTo(-10, 16);
+                ctx.moveTo(-4, 12); ctx.lineTo(-4, 18);
+                ctx.moveTo(2, 12); ctx.lineTo(2, 17);
+                ctx.moveTo(8, 10); ctx.lineTo(8, 14);
+                ctx.stroke();
                 
                 ctx.restore();
 
                 // --- WEAPONS (Dual Pistols) ---
-                this.drawWeapon(ctx, -25, 10, this.facingAngle, true); // Left Gun
-                this.drawWeapon(ctx, 25, 10, this.facingAngle, false); // Right Gun
+                this.drawWeapon(ctx, -25, 12, this.facingAngle, true); 
+                this.drawWeapon(ctx, 25, 12, this.facingAngle, false); 
 
                 ctx.restore();
             }
@@ -297,41 +277,37 @@
             drawWeapon(ctx, offsetX, offsetY, aimAngle, isLeft) {
                 ctx.save();
                 
-                // Weapon sway while moving
                 const sway = (input.left.magnitude > 0.1) ? Math.sin(this.animTime + (isLeft ? 0 : Math.PI)) * 5 : 0;
-                
                 ctx.translate(offsetX, offsetY + sway);
-                
-                // Rotate gun towards aim angle. 
-                // We need to adjust rotation slightly if the gun is on the left/right of the body to point to the exact crosshair, 
-                // but for top-down parallel aiming looks great.
                 ctx.rotate(aimAngle);
 
-                // Gun Shadow
+                // --- FIX: Flip the gun if pointing left ---
+                // If the angle is pointing left (past 90 degrees up or down), flip the Y axis
+                const isAimingLeft = Math.abs(aimAngle) > Math.PI / 2;
+                if (isAimingLeft) {
+                    ctx.scale(1, -1);
+                }
+
                 ctx.shadowColor = 'rgba(0,0,0,0.5)';
                 ctx.shadowBlur = 5;
-                ctx.shadowOffsetY = 10;
+                ctx.shadowOffsetY = isAimingLeft ? -10 : 10; // Flip shadow offset if gun is flipped
 
-                // Gun Body (Metallic gradient)
                 const gunGrad = ctx.createLinearGradient(0, -4, 0, 4);
-                gunGrad.addColorStop(0, '#7a7a8c');
-                gunGrad.addColorStop(0.5, '#4b4b5c');
-                gunGrad.addColorStop(1, '#2c2c38');
-
+                gunGrad.addColorStop(0, '#5a5a6a');
+                gunGrad.addColorStop(0.5, '#3b3b4c');
+                gunGrad.addColorStop(1, '#1c1c28');
                 ctx.fillStyle = gunGrad;
                 
-                // Draw Pistol Shape
                 ctx.beginPath();
-                ctx.roundRect(5, -4, 20, 8, 2); // Barrel
-                ctx.roundRect(-2, -2, 10, 12, 2); // Grip (rotated slightly down implicitly by shape)
+                ctx.roundRect(5, -4, 20, 8, 2); 
+                ctx.roundRect(-2, -2, 10, 12, 2); 
                 ctx.fill();
 
-                // Gun Details (Highlights)
-                ctx.shadowColor = 'transparent'; // turn off shadow for details
-                ctx.fillStyle = '#111';
-                ctx.fillRect(18, -2, 5, 4); // Muzzle opening
-                ctx.fillStyle = '#999';
-                ctx.fillRect(8, -3, 8, 2); // Slide highlight
+                ctx.shadowColor = 'transparent'; 
+                ctx.fillStyle = '#050505';
+                ctx.fillRect(18, -2, 5, 4); 
+                ctx.fillStyle = '#888';
+                ctx.fillRect(8, -3, 8, 2); 
 
                 ctx.restore();
             }
@@ -339,14 +315,12 @@
 
         // --- ENVIRONMENT ---
         function drawRoom(ctx, camX, camY) {
-            // Fill background with a dark void color
             ctx.fillStyle = '#0a0a0c';
             ctx.fillRect(0, 0, width, height);
 
             ctx.save();
             ctx.translate(-camX, -camY);
 
-            // Draw Floor Grid/Tiles
             const tileSize = 100;
             const startX = Math.floor(camX / tileSize) * tileSize;
             const startY = Math.floor(camY / tileSize) * tileSize;
@@ -358,7 +332,6 @@
 
             for (let x = Math.max(0, startX); x <= Math.min(ROOM_SIZE, endX); x += tileSize) {
                 for (let y = Math.max(0, startY); y <= Math.min(ROOM_SIZE, endY); y += tileSize) {
-                    // Create a subtle checkerboard pattern
                     if ((x/tileSize + y/tileSize) % 2 === 0) {
                         ctx.fillStyle = '#16171d';
                     } else {
@@ -369,8 +342,7 @@
                 }
             }
 
-            // Draw Room Walls (Bounds)
-            ctx.strokeStyle = '#4a90e2'; // Sci-fi glowing border
+            ctx.strokeStyle = '#4a90e2'; 
             ctx.lineWidth = 10;
             ctx.shadowColor = '#4a90e2';
             ctx.shadowBlur = 20;
@@ -383,9 +355,8 @@
         function drawJoysticks(ctx) {
             ctx.lineWidth = 3;
             
-            // Draw Left Joystick (Movement)
+            // Draw Left Joystick (Movement) ONLY
             if (input.left.active) {
-                // Base
                 ctx.beginPath();
                 ctx.arc(input.left.baseX, input.left.baseY, JOYSTICK_MAX_RADIUS, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
@@ -393,81 +364,41 @@
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.stroke();
 
-                // Thumb
                 ctx.beginPath();
                 ctx.arc(input.left.currentX, input.left.currentY, 25, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
                 ctx.fill();
             }
-
-            // Draw Right Joystick (Aiming)
-            if (input.right.active) {
-                // Base
-                ctx.beginPath();
-                ctx.arc(input.right.baseX, input.right.baseY, JOYSTICK_MAX_RADIUS, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 50, 50, 0.1)';
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(255, 50, 50, 0.3)';
-                ctx.stroke();
-
-                // Thumb
-                ctx.beginPath();
-                ctx.arc(input.right.currentX, input.right.currentY, 25, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 50, 50, 0.6)';
-                ctx.fill();
-                
-                // Draw crosshair line indicating direction
-                ctx.beginPath();
-                ctx.moveTo(input.right.currentX, input.right.currentY);
-                const aimAngle = Math.atan2(input.right.vectorY, input.right.vectorX);
-                ctx.lineTo(
-                    input.right.currentX + Math.cos(aimAngle) * 60, 
-                    input.right.currentY + Math.sin(aimAngle) * 60
-                );
-                ctx.strokeStyle = 'rgba(255, 50, 50, 0.8)';
-                ctx.stroke();
-            }
+            
+            // Note: Right joystick visuals removed as requested! 
+            // The input logic in handleTouch still registers the right side perfectly.
         }
-
 
         // --- MAIN LOOP ---
         const player = new Player();
         let lastTime = performance.now();
 
         function gameLoop(currentTime) {
-            const dt = (currentTime - lastTime) / 1000; // Delta time in seconds
+            const dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
 
-            // Update
             player.update(dt);
 
-            // Camera calculations (Center player)
-            // Clamp camera to room bounds so we don't see outside the walls if close to edge
             let camX = player.x - width / 2;
             let camY = player.y - height / 2;
             
-            // Optional: Clamp camera inside room (Uncomment to lock camera to room edges)
-            /*
-            camX = Math.max(-50, Math.min(ROOM_SIZE - width + 50, camX));
-            camY = Math.max(-50, Math.min(ROOM_SIZE - height + 50, camY));
-            */
-
-            // Render
             drawRoom(ctx, camX, camY);
 
-            // Render entities relative to camera
             ctx.save();
             ctx.translate(-camX, -camY);
             player.draw(ctx);
             ctx.restore();
 
-            // Render UI over everything
             drawJoysticks(ctx);
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Start game
         requestAnimationFrame(gameLoop);
 
     </script>
