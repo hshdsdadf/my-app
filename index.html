@@ -71,7 +71,7 @@
             position: absolute; top: 20px; right: 20px;
             width: 50px; height: 50px;
             background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.2);
-            color: white; font-size: 20px; border-radius: 12px;
+            border-radius: 12px;
             pointer-events: auto; cursor: pointer;
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
             transition: all 0.2s ease;
@@ -80,6 +80,10 @@
         }
         #pause-btn:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
         #pause-btn:active { transform: scale(0.95); }
+
+        .pause-bar {
+            width: 6px; height: 20px; background: white; margin: 0 3px; border-radius: 3px;
+        }
 
         .menu-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -139,7 +143,7 @@
             80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
-        .pop-anim { animation: pop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .pop-anim { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
 <body>
@@ -152,7 +156,10 @@
 
     <!-- UI Overlay Layer -->
     <div id="ui-layer">
-        <button id="pause-btn" onclick="setGameState('paused')">⏸</button>
+        <button id="pause-btn" onclick="setGameState('paused')">
+            <div class="pause-bar"></div>
+            <div class="pause-bar"></div>
+        </button>
 
         <!-- Pause Menu -->
         <div id="pause-menu" class="menu-overlay hidden">
@@ -241,6 +248,9 @@
             
             if (state === 'playing') {
                 document.getElementById('pause-btn').classList.remove('hidden');
+                // Clear input so we don't dash/shoot immediately when unpausing
+                input.left.active = false;
+                input.right.active = false;
             } else if (state === 'paused') {
                 document.getElementById('pause-menu').classList.remove('hidden');
             } else if (state === 'settings') {
@@ -251,7 +261,7 @@
         function startCountdown() {
             setGameState('countdown');
             countdownValue = 3;
-            countdownTimer = 1.0;
+            countdownTimer = 0.5; // Sped up the countdown
             triggerCountdownAnim(countdownValue);
         }
 
@@ -284,6 +294,9 @@
         const JOYSTICK_MAX_RADIUS = 60;
 
         function handleTouch(e) {
+            // Allow UI buttons and sliders to receive touch events natively!
+            if (e.target !== canvas) return;
+
             // Only process input if game is active
             if (gameState !== 'playing') {
                 input.left.active = false;
@@ -370,6 +383,7 @@
 
         let mouseDown = false;
         window.addEventListener('mousedown', (e) => {
+            if (e.target !== canvas) return;
             if (gameState === 'playing') {
                 mouseDown = true;
                 handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] });
@@ -380,7 +394,9 @@
         });
         window.addEventListener('mouseup', (e) => {
             mouseDown = false;
-            handleTouch({ preventDefault: ()=>{}, touches: [] });
+            if (gameState === 'playing') {
+                handleTouch({ preventDefault: ()=>{}, touches: [] });
+            }
         });
 
         // --- GAME OBJECTS ---
@@ -388,7 +404,7 @@
 
         const bullets = [];
         const enemies = [];
-        const activeBlood = [];
+        const activeSplatter = [];
         const floorSplatters = [];
         const damageTexts = [];
 
@@ -1390,12 +1406,10 @@
                 if (countdownTimer <= 0) {
                     countdownValue--;
                     if (countdownValue > 0) {
-                        countdownTimer = 1.0;
+                        countdownTimer = 0.5; // Faster countdown
                         triggerCountdownAnim(countdownValue);
-                    } else if (countdownValue === 0) {
-                        countdownTimer = 1.0;
-                        triggerCountdownAnim("GO!");
                     } else {
+                        // Skip the "GO" message entirely
                         setGameState('playing');
                     }
                 }
@@ -1442,10 +1456,11 @@
                                 let spread = (Math.random() - 0.5) * 1.5; 
                                 let speed = 150 + Math.random() * 400; 
                                 let size = 1.5 + Math.random() * 4;
-                                let colors = ['#4a0505', '#240101', '#110101', '#050505'];
+                                // Dark shadow essence splatters
+                                let colors = ['#2a2a30', '#111216', '#050508', '#000000']; 
                                 let color = colors[Math.floor(Math.random() * colors.length)];
                                 
-                                activeBlood.push({
+                                activeSplatter.push({
                                     x: enemy.x - Math.cos(hitAngle)*10, 
                                     y: enemy.y - Math.sin(hitAngle)*10,
                                     vx: Math.cos(hitAngle + spread) * speed,
@@ -1472,8 +1487,8 @@
                     }
                 }
 
-                for (let i = activeBlood.length - 1; i >= 0; i--) {
-                    let p = activeBlood[i];
+                for (let i = activeSplatter.length - 1; i >= 0; i--) {
+                    let p = activeSplatter[i];
                     p.x += p.vx * dt;
                     p.y += p.vy * dt;
                     
@@ -1486,7 +1501,7 @@
 
                     if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
                         floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color});
-                        activeBlood.splice(i, 1);
+                        activeSplatter.splice(i, 1);
                     }
                 }
                 
@@ -1524,7 +1539,7 @@
                 ctx.fill();
             });
 
-            activeBlood.forEach(p => {
+            activeSplatter.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
