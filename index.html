@@ -3022,6 +3022,20 @@
                     rkOptions.forEach(o => {
                         if (o.id === 'lucky7_smg') {
                             player.lucky7SMG = true; player.lucky7ShotCount = 0;
+                            // Add the Lucky 7 as a visible orbiting gun
+                            const lucky7Cfg = {
+                                id: 'lucky7_smg', name: "Lucky 7's SMG", type: 'smg',
+                                color: '#f1c40f', dmg: 22, cooldown: 0.13, spread: 0.07,
+                                glowClass: 'glow-legendary', rarity: 'legendary',
+                                stats: {}
+                            };
+                            floatingGuns.push({
+                                config: lucky7Cfg,
+                                angle: 0, orbitRadius: 80,
+                                shootTimer: 0, recoil: 0, lookAngle: 0,
+                                burstRemaining: 0, burstDelay: 0,
+                                isLucky7: true
+                            });
                         } else if (o.id === 'dealers_deck') {
                             player.dealersDeck = true; player.dealersDeckTimer = 10;
                             player.dealersDeckBuff = null; player.dealersDeckBuffTimer = 0;
@@ -4559,6 +4573,46 @@
             if (player.echoVisualTimer > 0) player.echoVisualTimer -= deltaTime;
 
             // ── Collector's Orb: burn nearby enemies ──
+            // ── Dealer's Deck card indicator ──
+            if (player.dealersDeck) {
+                const buffColors = { spade:'#9b59b6', heart:'#e74c3c', diamond:'#3498db', club:'#2ecc71' };
+                const buffSuits  = { spade:'♠', heart:'♥', diamond:'♦', club:'♣' };
+                const bCol  = player.dealersDeckBuff ? buffColors[player.dealersDeckBuff] : 'rgba(200,187,168,0.3)';
+                const bSuit = player.dealersDeckBuff ? buffSuits[player.dealersDeckBuff] : '🃏';
+                ctx.save();
+                ctx.globalAlpha = 0.85;
+                ctx.font = 'bold 18px serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.shadowColor = bCol; ctx.shadowBlur = 10;
+                ctx.fillStyle = bCol;
+                // Orbiting card icon
+                const ddAng = performance.now() * 0.001 * 1.2;
+                const ddX = player.x + Math.cos(ddAng) * 52;
+                const ddY = player.y + Math.sin(ddAng) * 52 - 10;
+                ctx.fillText(bSuit, ddX, ddY);
+                ctx.restore();
+            }
+            // ── Housebreaker Charm — shield glow when ready ──
+            if (player.housebreakerCharm && player.housebreakerNextReady) {
+                ctx.save();
+                const hbPulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
+                ctx.globalAlpha = 0.18 + hbPulse * 0.18;
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([6, 4]);
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.size * 1.8 + hbPulse * 6, 0, Math.PI*2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 0.6 + hbPulse * 0.4;
+                ctx.font = 'bold 14px serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#e74c3c';
+                ctx.shadowColor = '#e74c3c'; ctx.shadowBlur = 14;
+                ctx.fillText('💀', player.x + player.size * 1.6, player.y - player.size * 1.6);
+                ctx.restore();
+            }
+
             if (player.collectorOrb) {
                 if (!player.collectorOrbAngle) player.collectorOrbAngle = 0;
                 player.collectorOrbAngle += deltaTime * 2.2;
@@ -4828,8 +4882,20 @@
                     e.x = Math.max(r.cx - hw + em, Math.min(r.cx + hw - em, e.x));
                     e.y = Math.max(r.cy - hh + em, Math.min(r.cy + hh - em, e.y));
                     if (e.isBoss) {
-                        if (e.x !== prevX) { e.kx = 0; e.chargeActive = false; }
-                        if (e.y !== prevY) { e.ky = 0; e.chargeActive = false; }
+                        if (e.x !== prevX) {
+                            e.kx = 0; e.chargeActive = false;
+                            if (e._vx) e._vx *= -0.25; // bounce away
+                        }
+                        if (e.y !== prevY) {
+                            e.ky = 0; e.chargeActive = false;
+                            if (e._vy) e._vy *= -0.25;
+                        }
+                        // RK boss: if it hit a wall, force orbit phase toward center
+                        if (e.type === 'rouletteKing' && (e.x !== prevX || e.y !== prevY)) {
+                            e._movePhase = 'orbit';
+                            e._moveTimer = 0;
+                            e._orbitDir = (player.x > e.x) ? -1 : 1;
+                        }
                     }
                 });
             }
@@ -4985,12 +5051,13 @@
                         triggerShake(3, 0.15);
                     }
                     killCount++;
-                    // Lucky 7 SMG: 7% chance for bonus XP
+                    const deadX = e.x, deadY = e.y; // must be before lucky7 check
+                    // Lucky 7 SMG: 7% chance for bonus XP on kill
                     if (player.lucky7SMG && Math.random() < 0.07) {
                         xpGems.push({ x: deadX + (Math.random()-0.5)*40, y: deadY + (Math.random()-0.5)*40, val: 100, color: '#f1c40f', size: 18, animTimer: Math.random()*10 });
-                        addFloatingText(deadX, deadY - 20, '7 BONUS XP!', '#f1c40f', 14);
+                        addFloatingText(deadX, deadY - 20, '✦ LUCKY 7!', '#f1c40f', 16);
+                        createExplosion(deadX, deadY, '#f1c40f', 8);
                     }
-                    const deadX = e.x, deadY = e.y;
                     let gemColor = e.type === 'shooter' ? '#a29bfe' : (e.type === 'tank' ? '#55efc4' : (e.type === 'shielder' ? '#74b9ff' : (e.type === 'emberling' ? '#ff7f50' : '#00f2fe'))); 
                     xpGems.push({ x: deadX, y: deadY, val: e.xpVal * (player.xpMultiplier || 1), color: gemColor, size: 12 + (e.xpVal / 60), animTimer: Math.random() * 10 }); 
                     enemies.splice(i, 1);
@@ -5393,6 +5460,18 @@
                 // Smooth velocity easing (lerp toward target vel)
                 if (!e._vx) { e._vx = 0; e._vy = 0; }
                 const lerpFactor = isEnrage ? 6 : 4;
+                // Wall repulsion: push away from room edges before clamping
+                if (currentRoom) {
+                    const _r = currentRoom;
+                    const _hw = _r.w / 2 - e.size - 40;
+                    const _hh = _r.h / 2 - e.size - 40;
+                    const dx = e.x - _r.cx, dy = e.y - _r.cy;
+                    const repulse = 600;
+                    if (dx > _hw)  tvx -= repulse;
+                    if (dx < -_hw) tvx += repulse;
+                    if (dy > _hh)  tvy -= repulse;
+                    if (dy < -_hh) tvy += repulse;
+                }
                 e._vx += (tvx - e._vx) * Math.min(1, lerpFactor * dt);
                 e._vy += (tvy - e._vy) * Math.min(1, lerpFactor * dt);
                 e.x += e._vx * dt;
@@ -11071,7 +11150,7 @@
             }
 
             // Reveal boss only when cinematic fully ends (prevents weapons killing him during intro)
-            if (T >= 23.5 && boss.introHidden) boss.introHidden = false;
+            if (T >= 29.5 && boss.introHidden) boss.introHidden = false;
 
             // Kick off with a proper wave announcement at the end
             if (T >= 28.5 && rk.active) {
@@ -11345,7 +11424,7 @@
         }
         
         // ── DEV MODE ──
-        const DEV_MODE = false;
+        const DEV_MODE = true;
 
         if (DEV_MODE) {
             game.wave = 10;
