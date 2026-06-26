@@ -156,40 +156,55 @@
         }
 
         #gameover-menu {
-            background: rgba(6, 2, 2, 0.96);
+            background: rgba(5, 2, 2, 0.97);
+            overflow-y: auto;
         }
         #gameover-menu .menu-box {
-            background: transparent; border: none; box-shadow: none;
-            backdrop-filter: none; -webkit-backdrop-filter: none;
-            position: relative; z-index: 1;
-            animation: bleed-in 0.6s ease-out forwards;
-            min-width: unset; padding: 20px;
+            background: rgba(14, 8, 8, 0.98);
+            border: 1px solid rgba(100, 0, 0, 0.3);
+            border-top: 2px solid rgba(160, 0, 0, 0.55);
+            padding: 28px 36px 24px;
+            border-radius: 2px;
+            box-shadow: 0 16px 60px rgba(0,0,0,0.85), 0 0 0 1px rgba(0,0,0,0.4);
+            animation: bleed-in 0.5s ease-out forwards;
+            min-width: unset;
+            width: min(380px, 88vw);
         }
         .death-eyebrow {
             font-family: 'Barlow', Arial, sans-serif;
-            font-size: 11px; font-weight: 700; letter-spacing: 5px;
-            color: rgba(160, 30, 30, 0.8); text-transform: uppercase;
-            margin-bottom: 14px;
+            font-size: 10px; font-weight: 700; letter-spacing: 5px;
+            color: rgba(140, 20, 20, 0.9); text-transform: uppercase;
+            margin-bottom: 10px;
         }
         .death-title {
             font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
-            font-size: 52px; font-weight: 400; letter-spacing: 3px;
-            color: #ffffff;
-            text-shadow: 0 0 40px rgba(180,0,0,0.6), 0 2px 4px rgba(0,0,0,0.9);
-            margin-bottom: 32px; max-width: 580px; line-height: 1.1;
+            font-size: 30px; font-weight: 400; letter-spacing: 2px;
+            color: #f0f0f0;
+            text-shadow: 0 0 28px rgba(160,0,0,0.45), 0 2px 4px rgba(0,0,0,0.8);
+            margin-bottom: 20px; line-height: 1.15;
             animation: glitch-title 6s infinite;
         }
-        .typewriter-text {
-            font-family: 'Barlow', Arial, sans-serif;
-            font-size: 16px; font-weight: 600; line-height: 2.1;
-            color: #b0b0b0;
-            margin-bottom: 32px; text-align: left; white-space: pre-wrap;
-            width: 340px; min-height: 180px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-left: 3px solid rgba(180,20,20,0.7);
-            padding: 18px 22px; border-radius: 2px;
+        .death-stats {
+            width: 100%;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 14px 0;
+            margin-bottom: 20px;
         }
+        .stat-row {
+            display: flex; justify-content: space-between; align-items: baseline;
+            padding: 5px 0;
+            font-family: 'Barlow', Arial, sans-serif;
+            font-size: 13px; font-weight: 600;
+        }
+        .stat-row span:first-child { color: #666; letter-spacing: 1px; text-transform: uppercase; font-size: 11px; }
+        .stat-row span:last-child { color: #ccc; font-size: 15px; font-weight: 700; }
+        .stat-row.stat-score {
+            margin-top: 10px; padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .stat-row.stat-score span:first-child { color: rgba(160,20,20,0.8); }
+        .stat-row.stat-score span:last-child { color: #fff; font-size: 18px; }
         .menu-btn {
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.14);
@@ -314,8 +329,13 @@
             <div class="menu-box">
                 <div class="death-eyebrow">— You Died —</div>
                 <div id="death-title" class="death-title"></div>
-                <div id="typewriter" class="typewriter-text"></div>
-                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">Restart Run</button>
+                <div class="death-stats">
+                    <div class="stat-row"><span>Kills</span><span id="ds-kills">—</span></div>
+                    <div class="stat-row"><span>Time Alive</span><span id="ds-time">—</span></div>
+                    <div class="stat-row"><span>Rooms Cleared</span><span id="ds-rooms">—</span></div>
+                    <div class="stat-row stat-score"><span>Score</span><span id="ds-score">—</span></div>
+                </div>
+                <button class="menu-btn primary" onclick="restartRun()">Restart Run</button>
             </div>
         </div>
 
@@ -414,34 +434,14 @@
 
         // --- GAME OVER SEQUENCE ---
         let lastDeathCause = 'a Smiler';
-        let typewriterInterval;
 
         function runGameOverSequence() {
-            document.getElementById('restart-btn').classList.add('hidden');
-            document.getElementById('typewriter').innerHTML = "";
-            
-            document.getElementById('death-title').innerText = `Perished by ${lastDeathCause}`;
-
             const score = Math.floor(timeAlive * 10) + (totalKills * 50) + ((currentRoom - 1) * 200);
-
-            const finalStats = `Kills          ${totalKills}
-Time Alive     ${Math.floor(timeAlive)}s
-Weapons        ${player.weapons}
-Rooms Cleared  ${currentRoom - 1}
-
-─────────────────────
-Score          ${score}`;
-
-            let i = 0;
-            clearInterval(typewriterInterval);
-            typewriterInterval = setInterval(() => {
-                document.getElementById('typewriter').innerHTML += finalStats.charAt(i);
-                i++;
-                if (i >= finalStats.length) {
-                    clearInterval(typewriterInterval);
-                    document.getElementById('restart-btn').classList.remove('hidden');
-                }
-            }, 55);
+            document.getElementById('death-title').innerText = `Perished by ${lastDeathCause}`;
+            document.getElementById('ds-kills').innerText = totalKills;
+            document.getElementById('ds-time').innerText = Math.floor(timeAlive) + 's';
+            document.getElementById('ds-rooms').innerText = currentRoom - 1;
+            document.getElementById('ds-score').innerText = score.toLocaleString();
         }
 
         function restartRun() {
@@ -1896,9 +1896,9 @@ Score          ${score}`;
                             facingAngle: enemy.facingAngle,
                             legs: enemy.legs,
                             life: 5.0, maxLife: 5.0,
-                            growDuration: 3.0,
+                            growDuration: 4.5,
                             puddleRadius: 2,
-                            maxPuddleRadius: 52 + Math.random() * 32,
+                            maxPuddleRadius: 20 + Math.random() * 10,
                             blobOffsets
                         });
                         enemies.splice(i, 1);
@@ -2036,37 +2036,57 @@ Score          ${score}`;
                 ctx.restore();
 
                 // === FALLEN BODY ===
-                // Legs sprawled out first (behind body)
+                // Legs sprawled out, radiating away from body center
                 if (d.legs) {
                     ctx.save();
-                    ctx.strokeStyle = 'rgba(3,3,3,0.8)';
-                    ctx.lineWidth = 3;
+                    ctx.lineWidth = 4;
                     ctx.lineCap = 'round';
-                    d.legs.forEach(leg => {
+                    ctx.globalAlpha = alpha;
+                    d.legs.forEach((leg, idx) => {
+                        // Attachment point on the body
                         let attachX = d.x + Math.cos(d.facingAngle)*(leg.offsetX*0.5) - Math.sin(d.facingAngle)*(leg.offsetY*0.5);
                         let attachY = d.y + Math.sin(d.facingAngle)*(leg.offsetX*0.5) + Math.cos(d.facingAngle)*(leg.offsetY*0.5);
-                        let deadAng = d.facingAngle + (leg.offsetY < 0 ? -1.15 : 1.15) + (leg.offsetX < 0 ? 0.35 : -0.35);
-                        let legEndX = d.x + Math.cos(deadAng) * 26;
-                        let legEndY = d.y + Math.sin(deadAng) * 26;
+                        // Spread dead legs outward from body naturally
+                        let sideSign = leg.offsetY < 0 ? -1 : 1;
+                        let deadAng = d.facingAngle + sideSign * (Math.PI * 0.48) + (leg.offsetX < 0 ? Math.PI * 0.15 : -Math.PI * 0.05);
+                        let legLen = 28 + idx * 2;
+                        let legEndX = d.x + Math.cos(deadAng) * legLen;
+                        let legEndY = d.y + Math.sin(deadAng) * legLen;
+                        // Upper segment
+                        ctx.strokeStyle = '#1a1a1a';
                         ctx.beginPath();
                         ctx.moveTo(attachX, attachY);
-                        ctx.quadraticCurveTo(
-                            (attachX+legEndX)*0.5 + Math.cos(deadAng+Math.PI/2)*7,
-                            (attachY+legEndY)*0.5 + Math.sin(deadAng+Math.PI/2)*7,
-                            legEndX, legEndY
-                        );
+                        let kneeX = attachX + Math.cos(deadAng) * legLen * 0.45;
+                        let kneeY = attachY + Math.sin(deadAng) * legLen * 0.45;
+                        ctx.lineTo(kneeX, kneeY);
+                        ctx.stroke();
+                        // Lower segment — slight angle change for knee
+                        ctx.strokeStyle = '#141414';
+                        ctx.beginPath();
+                        ctx.moveTo(kneeX, kneeY);
+                        ctx.lineTo(legEndX, legEndY);
                         ctx.stroke();
                     });
                     ctx.restore();
                 }
-                // Flattened body shell
+                // Body — same size as living, just dark and still
                 ctx.save();
                 ctx.translate(d.x, d.y);
                 ctx.rotate(d.facingAngle);
-                ctx.scale(1, 0.26);
-                ctx.fillStyle = '#030303';
+                ctx.globalAlpha = alpha;
+                // Shadow underneath
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetY = 3;
+                ctx.fillStyle = '#0e0a0a';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 23, 11, 0, 0, Math.PI * 2);
+                ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowColor = 'transparent';
+                // Blood soaked highlight on body
+                ctx.fillStyle = 'rgba(55,2,2,0.35)';
+                ctx.beginPath();
+                ctx.ellipse(-2, -2, 12, 6, -0.3, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
 
