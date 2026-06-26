@@ -97,6 +97,16 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // --- GLOBAL EFFECTS ---
+        let shakeTime = 0;
+        let shakeMag = 0;
+        function triggerShake(magnitude, duration) {
+            if (shakeMag < magnitude || shakeTime <= 0) {
+                shakeMag = magnitude;
+                shakeTime = duration;
+            }
+        }
+
         // --- INPUT MANAGEMENT (Multi-touch Joysticks) ---
         const input = {
             left: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 },
@@ -202,6 +212,7 @@
         const ROOM_SIZE = 1200; // Smaller, more claustrophobic room
 
         const bullets = [];
+        const enemies = [];
 
         class Bullet {
             constructor(x, y, angle) {
@@ -211,6 +222,7 @@
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
                 this.life = 1.0; // Shorter life since room is smaller
+                this.damage = 25; // Bullets do 25 dmg each
             }
             
             update(dt) {
@@ -248,11 +260,445 @@
             }
         }
 
+        class CreepyLeg {
+            constructor(offsetX, offsetY) {
+                this.offsetX = offsetX;
+                this.offsetY = offsetY;
+                this.x = 0;
+                this.y = 0;
+                this.targetX = 0;
+                this.targetY = 0;
+                this.startX = 0;
+                this.startY = 0;
+                this.stepProgress = 1;
+                this.initialized = false;
+            }
+
+            update(bodyX, bodyY, facingAngle, dt) {
+                // Calculate where the foot SHOULD be
+                const idealX = bodyX + Math.cos(facingAngle) * this.offsetX - Math.sin(facingAngle) * this.offsetY;
+                const idealY = bodyY + Math.sin(facingAngle) * this.offsetX + Math.cos(facingAngle) * this.offsetY;
+
+                if (!this.initialized) {
+                    this.x = idealX;
+                    this.y = idealY;
+                    this.initialized = true;
+                }
+
+                if (this.stepProgress >= 1) {
+                    let dx = idealX - this.x;
+                    let dy = idealY - this.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // If the foot gets too far behind, take a step forward
+                    if (dist > 25) {
+                        this.stepProgress = 0;
+                        this.startX = this.x;
+                        this.startY = this.y;
+                        // Overshoot the target slightly so it plants ahead of the crawl
+                        this.targetX = idealX + Math.cos(facingAngle) * 15;
+                        this.targetY = idealY + Math.sin(facingAngle) * 15;
+                    }
+                } else {
+                    this.stepProgress += dt * 7; // Speed of the leg snapping to new position
+                    if (this.stepProgress >= 1) {
+                        this.stepProgress = 1;
+                        this.x = this.targetX;
+                        this.y = this.targetY;
+                    } else {
+                        // Interpolate position during step
+                        this.x = this.startX + (this.targetX - this.startX) * this.stepProgress;
+                        this.y = this.startY + (this.targetY - this.startY) * this.stepProgress;
+                    }
+                }
+            }
+        }
+
+        class Smiler {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 15; // Much smaller collision hit box for the slender body
+                this.hp = 100;
+                this.speed = 130; // Creeping speed
+                this.facingAngle = 0;
+                this.distToPlayer = 1000;
+                
+                // Attack mechanics
+                this.isAttacking = false;
+                this.attackTime = 0;
+                this.attackCooldown = 0;
+                
+                // 4 articulated procedural legs
+                this.legs = [
+                    new CreepyLeg(12, -18), // Front Left
+                    new CreepyLeg(12, 18),  // Front Right
+                    new CreepyLeg(-15, -18), // Back Left
+                    new CreepyLeg(-15, 18)   // Back Right
+                ];
+                
+                this.drawX = x;
+                this.drawY = y;
+                this.drawAngle = 0;
+            }
+
+            update(dt, player, allEnemies) {
+                let dx = player.x - this.x;
+                let dy = player.y - this.y;
+                this.distToPlayer = Math.sqrt(dx*dx + dy*dy);
+                
+                if (this.distToPlayer > 0) {
+                    this.facingAngle = Math.atan2(dy, dx);
+                    
+                    let separationX = 0;
+                    let separationY = 0;
+                    for (let other of allEnemies) {
+                        if (other !== this) {
+                            let odx = this.x - other.x;
+                            let ody = this.y - other.y;
+                            let odist = Math.sqrt(odx*odx + ody*ody);
+                            let minDist = this.radius + other.radius + 15; // Keep them spread out
+                            if (odist > 0 && odist < minDist) {
+                                let push = (minDist - odist) / 2;
+                                separationX += (odx / odist) * push * 5;
+                                separationY += (ody / odist) * push * 5;
+                            }
+                        }
+                    }
+
+                    // Stop forward movement when hitting the edge of the player
+                    let forwardSpeed = 0;
+                    // Player radius is 35, plus ~25 for the long body of the smiler
+                    if (this.distToPlayer > player.radius + 25) {
+                        forwardSpeed = this.speed;
+                    } else {
+                        // Close enough to attack! Trigger the bite animation.
+                        if (this.attackCooldown <= 0) {
+                            this.isAttacking = true;
+                            this.attackTime = 0.3; // 0.3 second bite duration
+                            this.attackCooldown = 1.0; // Wait 1 second before biting again
+                        }
+                    }
+
+                    // Update attack timers
+                    if (this.attackCooldown > 0) this.attackCooldown -= dt;
+                    if (this.isAttacking) {
+                        this.attackTime -= dt;
+                        if (this.attackTime <= 0) this.isAttacking = false;
+                    }
+
+                    this.x += (Math.cos(this.facingAngle) * forwardSpeed + separationX) * dt;
+                    this.y += (Math.sin(this.facingAngle) * forwardSpeed + separationY) * dt;
+                    
+                    // Update procedural legs based on new body position
+                    this.legs.forEach(leg => leg.update(this.x, this.y, this.facingAngle, dt));
+                }
+            }
+
+            drawBody(ctx) {
+                ctx.save();
+                
+                // Draw Legs (beneath body)
+                ctx.strokeStyle = '#000000'; // Pure black sticks
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
+                this.legs.forEach(leg => {
+                    ctx.beginPath();
+                    // Joint attachment on the body
+                    let attachX = this.x + Math.cos(this.facingAngle) * (leg.offsetX*0.5) - Math.sin(this.facingAngle) * (leg.offsetY*0.5);
+                    let attachY = this.y + Math.sin(this.facingAngle) * (leg.offsetX*0.5) + Math.cos(this.facingAngle) * (leg.offsetY*0.5);
+                    
+                    ctx.moveTo(attachX, attachY);
+                    
+                    // Calculate a knee joint that bends upwards and outwards
+                    let midX = (attachX + leg.x) / 2;
+                    let midY = (attachY + leg.y) / 2;
+                    
+                    // Lift knee while stepping
+                    let stepLift = 0;
+                    if (leg.stepProgress < 1) {
+                        stepLift = Math.sin(leg.stepProgress * Math.PI) * 15;
+                    }
+                    
+                    let perpX = -(leg.y - attachY);
+                    let perpY = (leg.x - attachX);
+                    let len = Math.sqrt(perpX*perpX + perpY*perpY);
+                    if(len > 0) { perpX /= len; perpY /= len; }
+                    
+                    let kneeOutward = 12;
+                    let sign = leg.offsetY < 0 ? -1 : 1; 
+                    
+                    let kneeX = midX + perpX * kneeOutward * sign;
+                    let kneeY = midY + perpY * kneeOutward * sign - stepLift;
+
+                    // Draw leg from body -> knee -> foot
+                    ctx.quadraticCurveTo(kneeX, kneeY, leg.x, leg.y);
+                    ctx.stroke();
+                });
+
+                // Draw Torso (Black crawling pill shape)
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.facingAngle);
+                
+                ctx.fillStyle = '#030303';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2); // Long and skinny
+                ctx.fill();
+                
+                // Save coordinates for the smile layer
+                this.drawX = this.x;
+                this.drawY = this.y;
+                this.drawAngle = this.facingAngle;
+
+                ctx.restore();
+            }
+
+            drawSmile(ctx) {
+                ctx.save();
+                ctx.translate(this.drawX, this.drawY);
+                ctx.rotate(this.drawAngle);
+                
+                let lungeOffset = 0;
+                let attackOpenness = 0;
+                
+                // Apply a sudden snap forward and wide open mouth if attacking
+                if (this.isAttacking) {
+                    let progress = 1 - (this.attackTime / 0.3); // 0 to 1
+                    lungeOffset = Math.sin(progress * Math.PI) * 12; // Snap forward
+                    attackOpenness = Math.sin(progress * Math.PI) * 10; // Open mouth wide
+                }
+
+                // Move to the very front tip of the creature, plus the attack lunge
+                ctx.translate(18 + lungeOffset, 0); 
+                
+                // Distance factor (subtler scaling)
+                let factor = 1 - Math.min(1, Math.max(0, (this.distToPlayer - 80) / 400));
+                
+                // Tiny, creepy grin (adds the attack openness when biting)
+                let smileWidth = 4 + factor * 4; // Max half-width is 8
+                let smileHeight = 2 + factor * 3 + attackOpenness; 
+
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 6 + factor * 4;
+                ctx.fillStyle = '#ffffff';
+
+                // Draw the white mouth curve
+                ctx.beginPath();
+                ctx.moveTo(0, -smileWidth); // Top corner
+                ctx.quadraticCurveTo(smileHeight, 0, 0, smileWidth); // Front curve to bottom corner
+                ctx.quadraticCurveTo(smileHeight * 0.3, 0, 0, -smileWidth); // Back curve
+                ctx.fill();
+
+                // Draw jagged, thin needle teeth
+                ctx.shadowColor = 'transparent';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.lineJoin = 'miter';
+                
+                ctx.beginPath();
+                ctx.moveTo(0, -smileWidth + 1);
+                
+                let isOuter = true;
+                for (let y = -smileWidth + 2; y <= smileWidth - 1; y += 1.5) {
+                    ctx.lineTo(isOuter ? smileHeight * 0.7 : smileHeight * 0.2, y);
+                    isOuter = !isOuter;
+                }
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        class Trapdoor {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 140;
+                this.height = 100;
+                this.state = 'waiting'; 
+                this.timer = 0;
+                this.enemiesToSpawn = 4; // Wave 1 limit
+                this.delayTimer = 4.0; // Wait 4 FULL seconds before starting wave
+                this.openAngle = 0; 
+            }
+
+            update(dt) {
+                if (this.state === 'waiting') {
+                    this.delayTimer -= dt;
+                    if (this.delayTimer <= 0 && this.enemiesToSpawn > 0) {
+                        this.state = 'opening';
+                        this.timer = 0.25; // Speed of opening
+                        triggerShake(8, 0.2); // Rumble as it opens
+                    }
+                }
+                else if (this.state === 'opening') {
+                    this.openAngle = 1 - (this.timer / 0.25);
+                    this.timer -= dt;
+                    if (this.timer <= 0) {
+                        this.openAngle = 1;
+                        this.state = 'open';
+                        this.timer = 0.3; // Stay open briefly
+                        
+                        // Spawn 1 Enemy
+                        enemies.push(new Smiler(this.x, this.y));
+                        this.enemiesToSpawn--;
+                        
+                        triggerShake(15, 0.3); // Heavy slam when doors hit the floor
+                    }
+                }
+                else if (this.state === 'open') {
+                    this.timer -= dt;
+                    if (this.timer <= 0) {
+                        this.state = 'closing';
+                        this.timer = 0.2; // Fast slam shut
+                    }
+                }
+                else if (this.state === 'closing') {
+                    this.openAngle = Math.max(0, this.timer / 0.2);
+                    this.timer -= dt;
+                    if (this.timer <= 0) {
+                        this.openAngle = 0;
+                        this.state = 'waiting';
+                        // Random delay between 4.0 and 7.0 seconds before next spawn (Much Slower)
+                        this.delayTimer = Math.random() * 3.0 + 4.0; 
+                        
+                        triggerShake(6, 0.15); // Slam shut shake
+                    }
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // Thick cellar door base/rim
+                ctx.fillStyle = '#2a2a30';
+                ctx.strokeStyle = '#050505';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.roundRect(-this.width/2 - 10, -this.height/2 - 10, this.width + 20, this.height + 20, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                // Deep Dark Pit 
+                ctx.fillStyle = '#020202';
+                ctx.beginPath();
+                ctx.roundRect(-this.width/2, -this.height/2, this.width, this.height, 4);
+                ctx.fill();
+                
+                // Inner rim shading (gives the hole depth)
+                ctx.fillStyle = '#111';
+                ctx.fillRect(-this.width/2, -this.height/2, this.width, 20);
+
+                // Simulate 2.5D perspective for the doors swinging upwards
+                const scaleX = Math.cos(this.openAngle * (Math.PI / 2));
+                const popUpHeight = Math.sin(this.openAngle * (Math.PI / 2)) * 50;
+
+                const flapW = this.width / 2;
+                const numPlanks = 4;
+                const plankW = flapW / numPlanks;
+
+                // Helper function to draw a textured, 3D angled door flap
+                const drawTexturedFlap = (sign) => { // sign: -1 for left flap, 1 for right flap
+                    ctx.save();
+                    ctx.translate(sign * -flapW, -this.height/2); // Move to outer hinge
+                    
+                    // Draw Wooden Planks
+                    for(let i = 0; i < numPlanks; i++) {
+                        // Drawing inwards towards the center pit line
+                        let startX = i * plankW * sign; 
+                        let endX = (i + 1) * plankW * sign;
+                        
+                        let sStartX = startX * scaleX;
+                        let sEndX = endX * scaleX;
+                        
+                        let startYOffset = (Math.abs(startX) / flapW) * popUpHeight;
+                        let endYOffset = (Math.abs(endX) / flapW) * popUpHeight;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(sStartX, -startYOffset);
+                        ctx.lineTo(sStartX, this.height - startYOffset);
+                        ctx.lineTo(sEndX, this.height - endYOffset);
+                        ctx.lineTo(sEndX, -endYOffset);
+                        ctx.closePath();
+                        
+                        // Realistic rich wood gradient per plank
+                        let gradStartX = sign === 1 ? sStartX : sEndX;
+                        let gradEndX = sign === 1 ? sEndX : sStartX;
+                        let grad = ctx.createLinearGradient(gradStartX, 0, gradEndX, 0);
+                        grad.addColorStop(0, '#22120a');
+                        grad.addColorStop(0.5, '#402414');
+                        grad.addColorStop(1, '#1a0d07');
+                        
+                        ctx.fillStyle = grad;
+                        ctx.fill();
+                        
+                        // Wood plank dividing seams
+                        ctx.strokeStyle = '#050505';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+
+                    // Draw Iron Reinforcing Bands
+                    const bandHeights = [15, this.height - 30];
+                    const bandThickness = 12;
+                    ctx.fillStyle = '#111113'; 
+                    
+                    bandHeights.forEach(yBase => {
+                        ctx.beginPath();
+                        ctx.moveTo(0, yBase);
+                        ctx.lineTo(0, yBase + bandThickness);
+                        ctx.lineTo(flapW * sign * scaleX, yBase + bandThickness - popUpHeight);
+                        ctx.lineTo(flapW * sign * scaleX, yBase - popUpHeight);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        // Small Silver Iron Nails
+                        ctx.fillStyle = '#555';
+                        for(let i = 0; i < numPlanks; i++) {
+                            let midX = (i + 0.5) * plankW * sign * scaleX;
+                            let midYOffset = (Math.abs((i + 0.5) * plankW) / flapW) * popUpHeight;
+                            let nailY = yBase + (bandThickness/2) - midYOffset;
+                            
+                            ctx.beginPath();
+                            ctx.arc(midX, nailY, 2 * Math.max(0.3, scaleX), 0, Math.PI*2);
+                            ctx.fill();
+                        }
+                        ctx.fillStyle = '#111113'; 
+                    });
+
+                    // Outer thick iron frame for the flap
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, this.height);
+                    ctx.lineTo(flapW * sign * scaleX, this.height - popUpHeight);
+                    ctx.lineTo(flapW * sign * scaleX, -popUpHeight);
+                    ctx.closePath();
+                    ctx.strokeStyle = '#050505';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                    
+                    ctx.restore();
+                };
+
+                // Draw Left (-1) and Right (1) Flaps
+                drawTexturedFlap(-1);
+                drawTexturedFlap(1);
+
+                ctx.restore();
+            }
+        }
+
+        const trapdoor = new Trapdoor(ROOM_SIZE / 2, ROOM_SIZE / 2);
+
         class Torch {
             constructor(x, y, angle) {
                 this.x = x;
                 this.y = y;
-                this.angle = angle; // What direction the wall is
+                this.angle = angle; 
                 this.timeOffset = Math.random() * 100;
             }
 
@@ -272,17 +718,14 @@
                 ctx.shadowBlur = 10;
                 ctx.shadowOffsetY = 5;
 
-                // Base Plate
                 ctx.fillStyle = '#1a1a1a';
                 ctx.beginPath();
                 ctx.roundRect(-10, -12, 12, 24, 3);
                 ctx.fill();
 
-                // Metal support arm
                 ctx.fillStyle = '#0a0a0a';
                 ctx.fillRect(-5, -3, 15, 6);
 
-                // Wooden Torch Pole
                 const woodGrad = ctx.createLinearGradient(0, -6, 25, 6);
                 woodGrad.addColorStop(0, '#2d1606');
                 woodGrad.addColorStop(0.5, '#4a2511');
@@ -295,11 +738,10 @@
                 ctx.lineTo(5, 5);
                 ctx.fill();
                 
-                ctx.restore(); // Pop back to main translation
+                ctx.restore(); 
 
                 // --- 2. Draw Upright Basket and Fire ---
                 ctx.save();
-                // Move to the end of the angled pole
                 const poleEndX = Math.cos(this.angle) * 25;
                 const poleEndY = Math.sin(this.angle) * 25;
                 ctx.translate(poleEndX, poleEndY);
@@ -308,14 +750,12 @@
                 ctx.shadowBlur = 10;
                 ctx.shadowOffsetY = 5;
 
-                // Iron Basket (Always upright for 2.5D perspective)
                 const ironGrad = ctx.createLinearGradient(-8, -10, 8, 10);
                 ironGrad.addColorStop(0, '#555');
                 ironGrad.addColorStop(0.5, '#222');
                 ironGrad.addColorStop(1, '#111');
                 ctx.fillStyle = ironGrad;
                 ctx.beginPath();
-                // Draw a nice cup shape for the basket
                 ctx.moveTo(-10, -12);
                 ctx.lineTo(10, -12);
                 ctx.lineTo(6, 10);
@@ -323,57 +763,49 @@
                 ctx.closePath();
                 ctx.fill();
                 
-                // Embers inside basket
                 ctx.fillStyle = '#ff5500';
                 ctx.shadowColor = '#ff0000';
                 ctx.shadowBlur = 10;
                 ctx.beginPath();
-                // Draw embers near the top lip of the basket
                 ctx.ellipse(0, -12, 8, 4, 0, 0, Math.PI*2);
                 ctx.fill();
 
-                // -- Fire Animation --
                 ctx.shadowColor = 'transparent'; 
                 
                 const f1 = Math.sin(this.timeOffset * 2.0);
                 const f2 = Math.cos(this.timeOffset * 1.5);
                 const f3 = Math.sin(this.timeOffset * 3.1);
 
-                // Helper to draw realistic morphing flames
                 function drawFlame(ctx, height, width, yOff, color, blurColor, blurAmt) {
                     ctx.shadowColor = blurColor;
                     ctx.shadowBlur = blurAmt;
                     ctx.fillStyle = color;
                     ctx.beginPath();
                     ctx.moveTo(0, yOff);
-                    // Left edge
                     ctx.bezierCurveTo(-width, yOff - height/3, -width/2 + f2*3, yOff - height + 5, f3*4, yOff - height - Math.abs(f1)*5);
-                    // Right edge
                     ctx.bezierCurveTo(width/2 + f2*3, yOff - height + 5, width, yOff - height/3, 0, yOff);
                     ctx.fill();
                 }
 
-                // Rising Sparks!
                 for(let i = 0; i < 3; i++) {
                     const sparkY = -15 - ((this.timeOffset * 20 + i * 15) % 30);
                     const sparkX = Math.sin(this.timeOffset * 5 + i) * 6;
-                    const alpha = Math.max(0, 1 - Math.abs(sparkY)/40); // Fade out as they rise
+                    const alpha = Math.max(0, 1 - Math.abs(sparkY)/40); 
                     
                     ctx.shadowColor = '#ff9900';
                     ctx.shadowBlur = 5;
                     ctx.fillStyle = `rgba(255, 200, 0, ${alpha})`;
                     ctx.beginPath();
-                    ctx.arc(sparkX, sparkY - 12, 1.5, 0, Math.PI*2); // Start at embers
+                    ctx.arc(sparkX, sparkY - 12, 1.5, 0, Math.PI*2); 
                     ctx.fill();
                 }
 
-                // Draw multiple layers of heat centered perfectly over the basket
-                drawFlame(ctx, 40, 14, -10, 'rgba(220, 40, 0, 0.8)', '#ff2200', 15); // Outer Red
-                drawFlame(ctx, 28, 9, -12, 'rgba(255, 140, 0, 0.9)', '#ff8800', 10); // Mid Orange
-                drawFlame(ctx, 15, 4, -14, '#ffffff', 'transparent', 0);             // Inner White Hot Core
+                drawFlame(ctx, 40, 14, -10, 'rgba(220, 40, 0, 0.8)', '#ff2200', 15); 
+                drawFlame(ctx, 28, 9, -12, 'rgba(255, 140, 0, 0.9)', '#ff8800', 10); 
+                drawFlame(ctx, 15, 4, -14, '#ffffff', 'transparent', 0);             
 
                 ctx.restore();
-                ctx.restore(); // Main translate restore
+                ctx.restore(); 
             }
 
             getLightRadius() {
@@ -382,22 +814,21 @@
             }
         }
 
-        // Initialize 4 torches in the corners, angled to point towards the center
         const torches = [
-            new Torch(70, 70, Math.PI / 4),                  // Top-Left (Points Down-Right)
-            new Torch(ROOM_SIZE - 70, 70, 3 * Math.PI / 4),  // Top-Right (Points Down-Left)
-            new Torch(70, ROOM_SIZE - 70, -Math.PI / 4),     // Bottom-Left (Points Up-Right)
-            new Torch(ROOM_SIZE - 70, ROOM_SIZE - 70, -3 * Math.PI / 4) // Bottom-Right (Points Up-Left)
+            new Torch(70, 70, Math.PI / 4),                  
+            new Torch(ROOM_SIZE - 70, 70, 3 * Math.PI / 4),  
+            new Torch(70, ROOM_SIZE - 70, -Math.PI / 4),     
+            new Torch(ROOM_SIZE - 70, ROOM_SIZE - 70, -3 * Math.PI / 4) 
         ];
 
         class Player {
             constructor() {
                 this.x = ROOM_SIZE / 2;
-                this.y = ROOM_SIZE / 2;
+                this.y = ROOM_SIZE / 2 + 200; // Start slightly away from the trapdoor
                 this.radius = 35;
                 this.speed = 400; 
                 this.animTime = 0;
-                this.facingAngle = 0;
+                this.facingAngle = -Math.PI / 2; // Facing the trapdoor
                 
                 this.fireRate = 0.12; 
                 this.fireTimer = 0;
@@ -407,17 +838,16 @@
                 this.flashL = 0;
                 this.flashR = 0;
                 
-                // Coordinates to track muzzle flash locations for the lighting engine
                 this.muzzleX_L = 0; this.muzzleY_L = 0;
                 this.muzzleX_R = 0; this.muzzleY_R = 0;
 
                 // Dash mechanics
                 this.isDashing = false;
                 this.dashTime = 0;
-                this.dashDuration = 0.15; // 0.15 seconds of dashing
+                this.dashDuration = 0.15; 
                 this.dashSpeed = 1600;
                 this.dashCooldown = 0;
-                this.dashMaxCooldown = 0.8; // Can dash every 0.8 seconds
+                this.dashMaxCooldown = 0.8; 
                 this.dashDirX = 0;
                 this.dashDirY = 0;
                 this.dashParticles = [];
@@ -428,12 +858,10 @@
                 if (!this.isDashing && this.dashCooldown <= 0) {
                     let dx = 0, dy = 0;
                     
-                    // Dash in movement direction
                     if (input.left.magnitude > 0.1) {
                         dx = input.left.vectorX;
                         dy = input.left.vectorY;
                     } else {
-                        // If standing still, dash in the direction we are facing
                         dx = Math.cos(this.facingAngle);
                         dy = Math.sin(this.facingAngle);
                     }
@@ -446,29 +874,25 @@
                         this.dashTime = this.dashDuration;
                         this.dashCooldown = this.dashMaxCooldown;
                         
-                        // Add an expanding shockwave ring at the start of the dash
                         this.dashRings.push({x: this.x, y: this.y, radius: 15, life: 0.2, maxLife: 0.2});
                     }
                 }
             }
 
             update(dt) {
-                // Check for double tap input
                 if (input.right.doubleTapped) {
                     this.tryDash();
-                    input.right.doubleTapped = false; // Consume the input
+                    input.right.doubleTapped = false; 
                 }
 
                 const moveMag = input.left.magnitude;
                 const leanAngle = (moveMag > 0.1) ? input.left.vectorX * 0.15 * moveMag : 0;
 
-                // Handle Dash Timers & Movement
                 this.dashCooldown -= dt;
 
                 if (this.isDashing) {
                     this.dashTime -= dt;
                     
-                    // Spawn high-speed wind streaks behind the player
                     this.dashParticles.push({
                         x: this.x + (Math.random() - 0.5) * 30,
                         y: this.y + (Math.random() - 0.5) * 30,
@@ -486,7 +910,6 @@
                         this.isDashing = false;
                     }
                 } else if (moveMag > 0) {
-                    // Normal Movement
                     this.x += input.left.vectorX * this.speed * moveMag * dt;
                     this.y += input.left.vectorY * this.speed * moveMag * dt;
                     this.animTime += dt * (10 + moveMag * 15); 
@@ -494,7 +917,6 @@
                     this.animTime += dt * 3;
                 }
 
-                // Update Dash Effects
                 for (let i = this.dashParticles.length - 1; i >= 0; i--) {
                     let p = this.dashParticles[i];
                     p.x += p.vx * dt;
@@ -505,11 +927,10 @@
                 for (let i = this.dashRings.length - 1; i >= 0; i--) {
                     let r = this.dashRings[i];
                     r.life -= dt;
-                    r.radius += dt * 500; // Expand rapidly
+                    r.radius += dt * 500; 
                     if (r.life <= 0) this.dashRings.splice(i, 1);
                 }
                 
-                // Constrain player to room, considering walls
                 const wallThickness = 20;
                 this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
                 this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
@@ -526,7 +947,6 @@
                 this.flashR = Math.max(0, this.flashR - dt * 5);
 
                 this.fireTimer -= dt;
-                // Cannot shoot while dashing
                 if (!this.isDashing && input.right.active && input.right.magnitude > 0.1 && this.fireTimer <= 0) {
                     this.shoot();
                     this.fireTimer = this.fireRate;
@@ -538,14 +958,12 @@
                 const sway = (input.left.magnitude > 0.1) ? Math.sin(this.animTime + (this.leftGunNext ? 0 : Math.PI)) * 5 : 0;
                 const gunOffsetY = 12 + sway;
                 
-                // Match the visual body transformations applied in draw() to perfectly locate the gun
                 const isMoving = input.left.magnitude > 0.1;
                 const runIntensity = input.left.magnitude; 
                 const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); 
                 const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
                 const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
 
-                // Apply scale and rotation to find the exact pivot point on the side of the body
                 const scaledY = gunOffsetY * breathScale;
                 const rotatedX = gunOffsetX * Math.cos(leanAngle) - scaledY * Math.sin(leanAngle);
                 const rotatedY = gunOffsetX * Math.sin(leanAngle) + scaledY * Math.cos(leanAngle);
@@ -553,7 +971,6 @@
                 const pivotX = this.x + rotatedX;
                 const pivotY = this.y - bobbing + rotatedY;
                 
-                // Project forward from the pivot point based on aiming angle
                 const barrelLength = 25;
                 const tipX = pivotX + Math.cos(this.facingAngle) * barrelLength;
                 const tipY = pivotY + Math.sin(this.facingAngle) * barrelLength;
@@ -579,13 +996,11 @@
                 const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
                 const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
 
-                // Draw Dash Speed Streaks (World Space)
                 this.dashParticles.forEach(p => {
                     const alpha = Math.max(0, p.life / p.maxLife);
                     ctx.save();
                     ctx.beginPath();
                     ctx.moveTo(p.x, p.y);
-                    // Draw a line tracing backwards along its velocity
                     ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05);
                     ctx.strokeStyle = `rgba(200, 210, 220, ${alpha * 0.7})`;
                     ctx.lineWidth = p.size;
@@ -594,7 +1009,6 @@
                     ctx.restore();
                 });
 
-                // Draw Dash Impact Rings
                 this.dashRings.forEach(r => {
                     const alpha = Math.max(0, r.life / r.maxLife);
                     ctx.save();
@@ -608,14 +1022,6 @@
 
                 ctx.save();
                 ctx.translate(this.x, this.y);
-
-                // Squash and Stretch (smear animation) while actively dashing
-                if (this.isDashing) {
-                    const dashAngle = Math.atan2(this.dashDirY, this.dashDirX);
-                    ctx.rotate(dashAngle);
-                    ctx.scale(1.5, 0.6); // Stretch out, squash thin
-                    ctx.rotate(-dashAngle);
-                }
                 
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.beginPath();
@@ -718,21 +1124,18 @@
 
         // --- ENVIRONMENT ---
         function drawRoom(ctx, camX, camY) {
-            // Fill background void
             ctx.fillStyle = '#050508';
             ctx.fillRect(0, 0, width, height);
 
             ctx.save();
             ctx.translate(-camX, -camY);
 
-            // Draw dark gritty floor
             const tileSize = 60;
             ctx.strokeStyle = 'rgba(10, 10, 12, 0.4)';
             ctx.lineWidth = 2;
 
             for (let x = 0; x < ROOM_SIZE; x += tileSize) {
                 for (let y = 0; y < ROOM_SIZE; y += tileSize) {
-                    // Slight variation in tile color for grunge effect
                     if ((x/tileSize + y/tileSize) % 2 === 0) {
                         ctx.fillStyle = '#161412';
                     } else {
@@ -743,7 +1146,6 @@
                 }
             }
 
-            // Draw thick dark stone walls
             ctx.strokeStyle = '#0a0908'; 
             ctx.lineWidth = 40;
             ctx.strokeRect(0, 0, ROOM_SIZE, ROOM_SIZE);
@@ -753,26 +1155,23 @@
 
         // --- DYNAMIC LIGHTING ---
         function drawLighting(ctx, camX, camY) {
-            // Clear light canvas with pure darkness
             lightCtx.globalCompositeOperation = 'source-over';
-            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.96)'; // Almost pitch black
+            // Decreased the opacity from 0.85 to 0.70 to make the room a bit brighter
+            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.70)'; 
             lightCtx.fillRect(0, 0, width, height);
 
-            // Switch to destination-out to "punch holes" in the darkness
             lightCtx.globalCompositeOperation = 'destination-out';
 
-            // 1. Torch Lights
             torches.forEach(t => {
                 const screenX = t.x - camX;
                 const screenY = t.y - camY;
                 const radius = t.getLightRadius();
                 
-                // Only render if on/near screen for performance
                 if (screenX > -radius && screenX < width + radius && screenY > -radius && screenY < height + radius) {
                     const grad = lightCtx.createRadialGradient(screenX, screenY, 10, screenX, screenY, radius);
-                    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');      // Center is fully lit
-                    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');  // Mid dropoff
-                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Edge fades to dark
+                    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');      
+                    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');  
+                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
                     
                     lightCtx.fillStyle = grad;
                     lightCtx.beginPath();
@@ -781,19 +1180,31 @@
                 }
             });
 
-            // 2. Player Dim Personal Light (so they are never fully invisible)
             const pScreenX = player.x - camX;
             const pScreenY = player.y - camY;
             const pRadius = 180;
             const pGrad = lightCtx.createRadialGradient(pScreenX, pScreenY, 20, pScreenX, pScreenY, pRadius);
-            pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Dimmer center
+            pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
             pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             lightCtx.fillStyle = pGrad;
             lightCtx.beginPath();
             lightCtx.arc(pScreenX, pScreenY, pRadius, 0, Math.PI*2);
             lightCtx.fill();
 
-            // 3. Muzzle Flash Lighting
+            // Give the Smilers a tiny face glow so their smiles pierce the darkness
+            enemies.forEach(enemy => {
+                const smileX = enemy.drawX + Math.cos(enemy.drawAngle) * 18 - camX;
+                const smileY = enemy.drawY + Math.sin(enemy.drawAngle) * 18 - camY;
+                
+                const sGrad = lightCtx.createRadialGradient(smileX, smileY, 2, smileX, smileY, 25);
+                sGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                sGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                lightCtx.fillStyle = sGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(smileX, smileY, 25, 0, Math.PI*2);
+                lightCtx.fill();
+            });
+
             if (player.flashL > 0) {
                 drawMuzzleLight(player.muzzleX_L - camX, player.muzzleY_L - camY, player.flashL);
             }
@@ -802,7 +1213,7 @@
             }
 
             function drawMuzzleLight(x, y, flashAmount) {
-                const fRadius = 250 * (flashAmount / 0.1); // Scaled based on flash life
+                const fRadius = 250 * (flashAmount / 0.1); 
                 const fGrad = lightCtx.createRadialGradient(x, y, 5, x, y, fRadius);
                 fGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
                 fGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -812,7 +1223,6 @@
                 lightCtx.fill();
             }
 
-            // Draw the lighting layer over the main game
             ctx.save();
             ctx.globalCompositeOperation = 'source-over';
             ctx.drawImage(lightCanvas, 0, 0);
@@ -845,9 +1255,39 @@
             const dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
 
+            // Compute Screen Shake Once Per Frame
+            let currentShakeX = 0;
+            let currentShakeY = 0;
+            if (shakeTime > 0) {
+                shakeTime -= dt;
+                currentShakeX = (Math.random() - 0.5) * shakeMag * 2;
+                currentShakeY = (Math.random() - 0.5) * shakeMag * 2;
+            }
+
             // Updates
             player.update(dt);
             torches.forEach(t => t.update(dt));
+            trapdoor.update(dt);
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let enemy = enemies[i];
+                enemy.update(dt, player, enemies);
+
+                // Bullet Collision
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    let b = bullets[j];
+                    let dx = enemy.x - b.x;
+                    let dy = enemy.y - b.y;
+                    if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
+                        enemy.hp -= b.damage;
+                        bullets.splice(j, 1);
+                        break; 
+                    }
+                }
+                if (enemy.hp <= 0) {
+                    enemies.splice(i, 1);
+                }
+            }
 
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].update(dt);
@@ -857,18 +1297,26 @@
             }
 
             // Camera Setup
-            let camX = player.x - width / 2;
-            let camY = player.y - height / 2;
+            let camX = player.x - width / 2 + currentShakeX;
+            let camY = player.y - height / 2 + currentShakeY;
             
             // Render Background
             drawRoom(ctx, camX, camY);
 
-            // Render Entities (World Space)
+            // Render Entities (World Space) - Beneath Lighting
             ctx.save();
             ctx.translate(-camX, -camY);
             
+            trapdoor.draw(ctx);
             torches.forEach(t => t.draw(ctx));
             bullets.forEach(bullet => bullet.draw(ctx));
+            
+            // Draw enemy bodies AND smiles under the light, but BEFORE the player
+            enemies.forEach(enemy => {
+                enemy.drawBody(ctx);
+                enemy.drawSmile(ctx);
+            }); 
+            
             player.draw(ctx);
             
             ctx.restore();
