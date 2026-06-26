@@ -4573,43 +4573,80 @@
             if (player.echoVisualTimer > 0) player.echoVisualTimer -= deltaTime;
 
             // ── Collector's Orb: burn nearby enemies ──
-            // ── Dealer's Deck card indicator ──
+            // ── Dealer's Deck — orbiting playing card ──────────────────────
             if (player.dealersDeck) {
+                const _ddT  = performance.now() * 0.001;
+                const _ddAng = _ddT * 1.1;
+                const _ddX  = player.x + Math.cos(_ddAng) * 62;
+                const _ddY  = player.y + Math.sin(_ddAng) * 62;
                 const buffColors = { spade:'#9b59b6', heart:'#e74c3c', diamond:'#3498db', club:'#2ecc71' };
                 const buffSuits  = { spade:'♠', heart:'♥', diamond:'♦', club:'♣' };
-                const bCol  = player.dealersDeckBuff ? buffColors[player.dealersDeckBuff] : 'rgba(200,187,168,0.3)';
-                const bSuit = player.dealersDeckBuff ? buffSuits[player.dealersDeckBuff] : '🃏';
+                const _bActive  = !!player.dealersDeckBuff;
+                const _bCol = _bActive ? (buffColors[player.dealersDeckBuff]||'#c8bba8') : '#c8bba8';
+                const _bSuit = _bActive ? (buffSuits[player.dealersDeckBuff]||'♠') : '♠';
                 ctx.save();
-                ctx.globalAlpha = 0.85;
-                ctx.font = 'bold 18px serif';
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.shadowColor = bCol; ctx.shadowBlur = 10;
-                ctx.fillStyle = bCol;
-                // Orbiting card icon
-                const ddAng = performance.now() * 0.001 * 1.2;
-                const ddX = player.x + Math.cos(ddAng) * 52;
-                const ddY = player.y + Math.sin(ddAng) * 52 - 10;
-                ctx.fillText(bSuit, ddX, ddY);
+                ctx.translate(_ddX, _ddY);
+                ctx.rotate(_ddAng * 0.35); // slowly spin the card
+                // Card shadow
+                ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
+                ctx.fillRect(-8+2, -11+2, 16, 22);
+                ctx.globalAlpha = 1;
+                // Card body
+                ctx.fillStyle = _bActive ? '#fff5f5' : '#f5ecd5';
+                ctx.strokeStyle = _bCol; ctx.lineWidth = _bActive ? 2 : 1.2;
+                if (_bActive) { ctx.shadowColor = _bCol; ctx.shadowBlur = 12; }
+                ctx.beginPath(); ctx.roundRect(-8, -11, 16, 22, 2.5); ctx.fill(); ctx.stroke();
+                ctx.shadowBlur = 0;
+                // Suit symbol
+                ctx.fillStyle = _bCol;
+                ctx.font = 'bold 12px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(_bSuit, 0, 1);
+                // Corner pip
+                ctx.font = 'bold 5px serif';
+                ctx.fillText(_bSuit, -5, -8);
                 ctx.restore();
+                // Orbit trail
+                if (Math.random() < 0.08) {
+                    particles.push({x:_ddX,y:_ddY,vx:(Math.random()-0.5)*20,vy:-8-Math.random()*15,
+                        life:0.25,color:_bCol,size:2+Math.random()*2});
+                }
             }
-            // ── Housebreaker Charm — shield glow when ready ──
-            if (player.housebreakerCharm && player.housebreakerNextReady) {
+            // ── Housebreaker Charm — death-protection shield ──────────────
+            if (player.housebreakerCharm) {
+                const _hbT = performance.now() * 0.001;
+                const _hbReady = player.housebreakerNextReady;
+                const _hbPulse = 0.5 + 0.5 * Math.sin(_hbT * (_hbReady ? 4 : 1.5));
+                const _hbR = player.size * 2.0 + _hbPulse * 7;
                 ctx.save();
-                const hbPulse = 0.5 + 0.5 * Math.sin(performance.now() * 0.005);
-                ctx.globalAlpha = 0.18 + hbPulse * 0.18;
-                ctx.strokeStyle = '#e74c3c';
-                ctx.lineWidth = 3;
-                ctx.setLineDash([6, 4]);
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, player.size * 1.8 + hbPulse * 6, 0, Math.PI*2);
-                ctx.stroke();
+                // Outer glow ring
+                ctx.globalAlpha = (_hbReady ? 0.5 : 0.15) + _hbPulse * 0.2;
+                ctx.shadowColor = _hbReady ? '#e74c3c' : '#555';
+                ctx.shadowBlur = _hbReady ? 18 : 6;
+                ctx.strokeStyle = _hbReady ? '#e74c3c' : '#444';
+                ctx.lineWidth = _hbReady ? 2.5 : 1.5;
+                ctx.setLineDash([8, 5]);
+                ctx.lineDashOffset = -_hbT * 40;
+                ctx.beginPath(); ctx.arc(player.x, player.y, _hbR, 0, Math.PI*2); ctx.stroke();
                 ctx.setLineDash([]);
-                ctx.globalAlpha = 0.6 + hbPulse * 0.4;
-                ctx.font = 'bold 14px serif';
+                // Inner solid ring (when ready)
+                if (_hbReady) {
+                    ctx.globalAlpha = 0.12 + _hbPulse * 0.1;
+                    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 6;
+                    ctx.shadowBlur = 30;
+                    ctx.beginPath(); ctx.arc(player.x, player.y, _hbR, 0, Math.PI*2); ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+                // Skull icon orbiting at ring edge
+                const _skA = _hbT * (_hbReady ? 1.4 : 0.6);
+                const _skX = player.x + Math.cos(_skA) * _hbR;
+                const _skY = player.y + Math.sin(_skA) * _hbR;
+                ctx.globalAlpha = _hbReady ? (0.8 + _hbPulse * 0.2) : 0.35;
+                ctx.font = `bold ${_hbReady ? 16 : 12}px serif`;
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#e74c3c';
-                ctx.shadowColor = '#e74c3c'; ctx.shadowBlur = 14;
-                ctx.fillText('💀', player.x + player.size * 1.6, player.y - player.size * 1.6);
+                ctx.fillStyle = _hbReady ? '#e74c3c' : '#555';
+                if (_hbReady) { ctx.shadowColor = '#e74c3c'; ctx.shadowBlur = 12; }
+                ctx.fillText('💀', _skX, _skY);
+                ctx.shadowBlur = 0;
                 ctx.restore();
             }
 
@@ -10603,6 +10640,31 @@
                 ctx.globalAlpha = 1;
                 ctx.restore();
             });
+
+            // ── Lucky 7 SMG orbit ring ────────────────────────────────────────
+            const _l7 = floatingGuns.find(g => g.isLucky7);
+            if (_l7) {
+                const _t = Date.now() * 0.001;
+                // Glowing dashed orbit path
+                ctx.save();
+                ctx.globalAlpha = 0.28 + 0.12 * Math.sin(_t * 2.2);
+                ctx.strokeStyle = '#f1c40f';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([10, 7]);
+                ctx.lineDashOffset = -_t * 60;
+                ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 10;
+                ctx.beginPath(); ctx.arc(player.x, player.y, _l7.orbitRadius, 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]); ctx.restore();
+                // Emit gold sparkles along ring
+                if (Math.random() < 0.22) {
+                    const _sa = Math.random() * Math.PI * 2;
+                    particles.push({ x: player.x + Math.cos(_sa)*_l7.orbitRadius,
+                        y: player.y + Math.sin(_sa)*_l7.orbitRadius,
+                        vx:(Math.random()-0.5)*25, vy:-18-Math.random()*28,
+                        life:0.4+Math.random()*0.35, color:'#f1c40f', size:1.5+Math.random()*3 });
+                }
+            }
+
             floatingGuns.forEach(gun => { const gx = player.x + Math.cos(gun.angle) * gun.orbitRadius; const gy = player.y + Math.sin(gun.angle) * gun.orbitRadius; ctx.save(); ctx.translate(gx, gy);
 
                 // ── Orbiting weapon glow orb ──
@@ -10671,7 +10733,134 @@
 
                 ctx.strokeStyle = '#0a0906'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-                if (gun.config.type === 'rifle') {
+                if (gun.isLucky7) {
+                    // ══ LUCKY 7's SMG — Golden Edition ══
+                    const _T = Date.now() * 0.001;
+                    const _pulse = 0.7 + 0.3 * Math.sin(_T * 3.5);
+
+                    // Extra large gold halo (on top of normal glow)
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+                    ctx.globalAlpha = 0.35 * _pulse;
+                    const _halo = ctx.createRadialGradient(0,0,0,0,0,62);
+                    _halo.addColorStop(0, '#f1c40f'); _halo.addColorStop(0.4,'#f1c40faa'); _halo.addColorStop(1,'transparent');
+                    ctx.fillStyle = _halo; ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2); ctx.fill();
+                    ctx.restore();
+
+                    // Gold sparkle burst from gun
+                    if (Math.random() < 0.12) {
+                        particles.push({ x:gx+(Math.random()-0.5)*14, y:gy+(Math.random()-0.5)*14,
+                            vx:(Math.random()-0.5)*45, vy:-20-Math.random()*35,
+                            life:0.3+Math.random()*0.25, color: Math.random()<0.5?'#f1c40f':'#fff5a0',
+                            size:1.5+Math.random()*3 });
+                    }
+
+                    // Shadow
+                    ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(0,32,20,5,0,0,Math.PI*2); ctx.fill();
+                    ctx.rotate(gun.lookAngle);
+                    const _flip = (gun.lookAngle > Math.PI/2 || gun.lookAngle < -Math.PI/2);
+                    if (_flip) ctx.scale(1,-1);
+                    const _rc = gun.recoil;
+
+                    // ── BODY: tactical black with gold edging ──
+                    // Stock stub
+                    ctx.fillStyle = '#1a1a14'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.moveTo(-14-_rc,-5); ctx.quadraticCurveTo(-23-_rc,-5,-25-_rc,-1);
+                    ctx.quadraticCurveTo(-23-_rc,5,-14-_rc,5); ctx.closePath(); ctx.fill(); ctx.stroke();
+                    // Gold notches on stock
+                    ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 0.7; ctx.globalAlpha = 0.5;
+                    ctx.beginPath(); ctx.moveTo(-21-_rc,-2); ctx.lineTo(-17-_rc,-2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-21-_rc,2); ctx.lineTo(-17-_rc,2); ctx.stroke();
+                    ctx.globalAlpha = 1;
+
+                    // Main receiver — dark with gold trim
+                    ctx.fillStyle = '#111108'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(-12-_rc,-8); ctx.lineTo(28-_rc,-8);
+                    ctx.quadraticCurveTo(32-_rc,-8,32-_rc,-3); ctx.lineTo(32-_rc,8);
+                    ctx.lineTo(-12-_rc,8); ctx.quadraticCurveTo(-15-_rc,8,-15-_rc,3); ctx.closePath();
+                    ctx.fill(); ctx.stroke();
+                    // Gold highlight strip on top of receiver
+                    ctx.fillStyle = '#f1c40f'; ctx.globalAlpha = 0.18;
+                    ctx.beginPath(); ctx.roundRect(-11-_rc,-8,42,3,1); ctx.fill();
+                    ctx.globalAlpha = 1;
+
+                    // "7" engraved on receiver
+                    ctx.save();
+                    ctx.font = 'bold 9px serif';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#f1c40f'; ctx.shadowColor='#f1c40f'; ctx.shadowBlur=6;
+                    ctx.fillText('7', 8-_rc, 0);
+                    ctx.shadowBlur=0; ctx.restore();
+
+                    // Ejection port
+                    ctx.fillStyle = '#080806'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(4-_rc,-6,12,5,1); ctx.fill(); ctx.stroke();
+                    // Cocking handle — gold knob
+                    ctx.fillStyle = '#f1c40f'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.roundRect(22-_rc,-9,5,6,1); ctx.fill();
+
+                    // Barrel shroud — gold-edged
+                    ctx.fillStyle = '#1a1a14'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.roundRect(28-_rc,-6,20,12,2); ctx.fill(); ctx.stroke();
+                    // Vents
+                    ctx.strokeStyle = '#f1c40f33'; ctx.lineWidth = 0.7;
+                    for (let _gv=31-_rc; _gv<47-_rc; _gv+=4) {
+                        ctx.beginPath(); ctx.moveTo(_gv,-5); ctx.lineTo(_gv,5); ctx.stroke();
+                    }
+
+                    // Compensator (muzzle device)
+                    ctx.fillStyle = '#222218'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(46-_rc,-8,8,16,2); ctx.fill(); ctx.stroke();
+                    // Ports on comp
+                    ctx.strokeStyle = '#0a0906'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(48-_rc,-7); ctx.lineTo(52-_rc,-7); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(48-_rc,-4); ctx.lineTo(52-_rc,-4); ctx.stroke();
+                    // Muzzle hole
+                    ctx.fillStyle = '#0a0906';
+                    ctx.beginPath(); ctx.arc(53-_rc,0,2.5,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#1a1a14'; ctx.beginPath(); ctx.arc(53-_rc,0,1,0,Math.PI*2); ctx.fill();
+
+                    // Pistol grip — gold texture
+                    ctx.fillStyle = '#1a1a10'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(-2-_rc,8); ctx.quadraticCurveTo(-5-_rc,16,-2-_rc,22);
+                    ctx.lineTo(8-_rc,22); ctx.quadraticCurveTo(11-_rc,15,9-_rc,8); ctx.closePath();
+                    ctx.fill(); ctx.stroke();
+                    ctx.strokeStyle = '#f1c40f33'; ctx.lineWidth = 1;
+                    for (let _gr=-1-_rc; _gr<8-_rc; _gr+=2.5) {
+                        ctx.beginPath(); ctx.moveTo(_gr,10); ctx.lineTo(_gr,20); ctx.stroke();
+                    }
+                    // Trigger guard
+                    ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 1.8;
+                    ctx.beginPath(); ctx.arc(2-_rc,11,7,0,Math.PI,false); ctx.stroke();
+                    ctx.lineWidth = 1.6;
+                    ctx.beginPath(); ctx.moveTo(2-_rc,8); ctx.lineTo(3-_rc,14); ctx.stroke();
+
+                    // Extended gold magazine
+                    ctx.fillStyle = '#0d0d0a'; ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(10-_rc,8,13,30,2); ctx.fill(); ctx.stroke();
+                    // Gold band at mag base
+                    ctx.fillStyle = '#f1c40f'; ctx.globalAlpha = 0.8;
+                    ctx.beginPath(); ctx.roundRect(9-_rc,35,15,3.5,1); ctx.fill();
+                    ctx.globalAlpha = 1;
+                    // Mag follower line
+                    ctx.strokeStyle = '#f1c40f44'; ctx.lineWidth = 0.8;
+                    ctx.beginPath(); ctx.moveTo(16.5-_rc,12); ctx.lineTo(16.5-_rc,34); ctx.stroke();
+
+                    // Red laser sight on top
+                    ctx.fillStyle = '#cc0000'; ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.roundRect(-8-_rc,-13,18,4,1); ctx.fill(); ctx.stroke();
+                    // Laser dot (beam effect)
+                    if (!_flip) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.15 + 0.1*Math.sin(_T*8);
+                        ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 0.8;
+                        ctx.setLineDash([3,4]);
+                        ctx.beginPath(); ctx.moveTo(10-_rc,-11); ctx.lineTo(110-_rc,-11); ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.restore();
+                    }
+
+                } else if (gun.config.type === 'rifle') {
                     // ── Rifle: long, sleek, scoped ──
                     // Butt stock
                     ctx.fillStyle = gc; ctx.lineWidth = 3;
