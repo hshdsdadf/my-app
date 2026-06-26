@@ -213,6 +213,9 @@
 
         const bullets = [];
         const enemies = [];
+        const activeBlood = [];
+        const floorSplatters = [];
+        const damageTexts = [];
 
         class Bullet {
             constructor(x, y, angle) {
@@ -1156,8 +1159,8 @@
         // --- DYNAMIC LIGHTING ---
         function drawLighting(ctx, camX, camY) {
             lightCtx.globalCompositeOperation = 'source-over';
-            // Decreased the opacity from 0.85 to 0.70 to make the room a bit brighter
-            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.70)'; 
+            // Decreased the opacity from 0.70 to 0.55 to make the room brighter
+            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.55)'; 
             lightCtx.fillRect(0, 0, width, height);
 
             lightCtx.globalCompositeOperation = 'destination-out';
@@ -1280,6 +1283,38 @@
                     let dy = enemy.y - b.y;
                     if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
                         enemy.hp -= b.damage;
+                        
+                        // --- DAMAGE TEXT ---
+                        damageTexts.push({
+                            x: enemy.x + (Math.random() - 0.5) * 20,
+                            y: enemy.y - 20,
+                            text: "-" + b.damage,
+                            life: 0.8,
+                            vy: -60 - Math.random() * 20
+                        });
+
+                        // --- BLOOD SPLATTER ---
+                        let hitAngle = Math.atan2(b.vy, b.vx);
+                        let numParticles = 6 + Math.floor(Math.random() * 5);
+                        for(let p = 0; p < numParticles; p++) {
+                            let spread = (Math.random() - 0.5) * 1.5; // Splatter cone
+                            let speed = 150 + Math.random() * 400; // Burst speed
+                            let size = 1.5 + Math.random() * 4;
+                            // Dark gritty goop colors (Crimsons to pitch black)
+                            let colors = ['#4a0505', '#240101', '#110101', '#050505'];
+                            let color = colors[Math.floor(Math.random() * colors.length)];
+                            
+                            activeBlood.push({
+                                x: enemy.x - Math.cos(hitAngle)*10, // Start slightly inside the enemy
+                                y: enemy.y - Math.sin(hitAngle)*10,
+                                vx: Math.cos(hitAngle + spread) * speed,
+                                vy: Math.sin(hitAngle + spread) * speed,
+                                size: size,
+                                color: color,
+                                friction: 0.80 + Math.random() * 0.1
+                            });
+                        }
+
                         bullets.splice(j, 1);
                         break; 
                     }
@@ -1296,6 +1331,40 @@
                 }
             }
 
+            // Update Goop Splatter Particles
+            for (let i = activeBlood.length - 1; i >= 0; i--) {
+                let p = activeBlood[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                
+                // Keep splatters inside the room bounds
+                p.x = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.x));
+                p.y = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.y));
+                
+                // Realistic drag
+                let drag = Math.pow(p.friction, dt * 60);
+                p.vx *= drag;
+                p.vy *= drag;
+
+                // When slow enough, settle and stain the floor
+                if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
+                    floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color});
+                    activeBlood.splice(i, 1);
+                }
+            }
+            // Memory limit for permanent stains
+            if (floorSplatters.length > 1000) {
+                floorSplatters.splice(0, floorSplatters.length - 1000);
+            }
+
+            // Update Damage Texts
+            for (let i = damageTexts.length - 1; i >= 0; i--) {
+                let d = damageTexts[i];
+                d.y += d.vy * dt;
+                d.life -= dt;
+                if (d.life <= 0) damageTexts.splice(i, 1);
+            }
+
             // Camera Setup
             let camX = player.x - width / 2 + currentShakeX;
             let camY = player.y - height / 2 + currentShakeY;
@@ -1306,6 +1375,33 @@
             // Render Entities (World Space) - Beneath Lighting
             ctx.save();
             ctx.translate(-camX, -camY);
+
+            // Draw settled floor splatters
+            floorSplatters.forEach(s => {
+                ctx.fillStyle = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw actively moving blood physics
+            activeBlood.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                // Stretch moving liquid based on its speed for realism
+                let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
+                if (speed > 50) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(Math.atan2(p.vy, p.vx));
+                    ctx.ellipse(0, 0, p.size + speed * 0.015, p.size, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
             
             trapdoor.draw(ctx);
             torches.forEach(t => t.draw(ctx));
@@ -1323,6 +1419,22 @@
 
             // Render Dynamic Lighting Overlay (Screen Space)
             drawLighting(ctx, camX, camY);
+
+            // Draw floating damage texts over everything (World space)
+            ctx.save();
+            ctx.translate(-camX, -camY);
+            damageTexts.forEach(d => {
+                let alpha = Math.max(0, d.life / 0.8);
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#ff3333';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.strokeText(d.text, d.x, d.y);
+                ctx.fillText(d.text, d.x, d.y);
+            });
+            ctx.restore();
 
             // Render UI
             drawJoysticks(ctx);
