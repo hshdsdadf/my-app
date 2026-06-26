@@ -26,9 +26,53 @@
             width: 100%;
             height: 100%;
         }
+
+        /* --- PORTRAIT MODE WARNING --- */
+        #orientation-warning {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0a0a0c;
+            color: #e4e6d9;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        #orientation-warning h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        #orientation-warning p {
+            font-size: 18px;
+            color: #8b8e83;
+        }
+
+        /* Show the warning only when the device is held vertically */
+        @media screen and (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+            #gameCanvas {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
+    <div id="orientation-warning">
+        <h2>Please tilt your phone the other way.</h2>
+        <p>Rocktato plays in landscape.</p>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -245,25 +289,7 @@
                 ctx.beginPath(); ctx.arc(-12 + pupilOffsetX, -4 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(10 + pupilOffsetX, -6 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 
-                // Creepy Wide Grin
-                ctx.fillStyle = '#111'; // Deep black mouth
-                ctx.beginPath();
-                ctx.moveTo(-18, 8);
-                // Curves down into a wide smile
-                ctx.bezierCurveTo(-10, 22, 10, 20, 16, 6);
-                // Curves back up to close the shape thinly
-                ctx.bezierCurveTo(8, 14, -8, 14, -18, 8);
-                ctx.fill();
-
-                // Jagged teeth lines
-                ctx.strokeStyle = '#e4e6d9'; // pale teeth
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(-10, 11); ctx.lineTo(-10, 16);
-                ctx.moveTo(-4, 12); ctx.lineTo(-4, 18);
-                ctx.moveTo(2, 12); ctx.lineTo(2, 17);
-                ctx.moveTo(8, 10); ctx.lineTo(8, 14);
-                ctx.stroke();
+                // Mouth removed entirely!
                 
                 ctx.restore();
 
@@ -369,9 +395,6 @@
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
                 ctx.fill();
             }
-            
-            // Note: Right joystick visuals removed as requested! 
-            // The input logic in handleTouch still registers the right side perfectly.
         }
 
         // --- MAIN LOOP ---
