@@ -413,21 +413,14 @@
         }
 
         // --- GAME OVER SEQUENCE ---
-        const deathMessages = [
-            "Cracked like a Sunday morning breakfast.",
-            "Scrambled by the void.",
-            "Poached to perfection by the shadows.",
-            "Devoured alive by the creeping grins.",
-            "You cracked under the pressure."
-        ];
+        let lastDeathCause = 'a Smiler';
         let typewriterInterval;
 
         function runGameOverSequence() {
             document.getElementById('restart-btn').classList.add('hidden');
             document.getElementById('typewriter').innerHTML = "";
             
-            const randomDeath = deathMessages[Math.floor(Math.random() * deathMessages.length)];
-            document.getElementById('death-title').innerText = randomDeath;
+            document.getElementById('death-title').innerText = `Perished by ${lastDeathCause}`;
 
             const score = Math.floor(timeAlive * 10) + (totalKills * 50) + ((currentRoom - 1) * 200);
 
@@ -828,15 +821,22 @@ Score          ${score}`;
                     if (this.distToPlayer > player.radius + 20) {
                         forwardSpeed = this.speed;
                     } else {
-                        // Biting player! 10 dmg/sec
+                        // Biting player — 10 dmg/sec
                         player.hp -= 10 * dt;
-                        player.hurtTimer = 0.2; // Set hurt timer for flash effect
                         updateHUD();
 
                         if (this.attackCooldown <= 0) {
                             this.isAttacking = true;
-                            this.attackTime = 0.3; 
-                            this.attackCooldown = 1.0; 
+                            this.attackTime = 0.3;
+                            this.attackCooldown = 1.0;
+                            // Floating damage text above player's head
+                            damageTexts.push({
+                                x: player.x + (Math.random() - 0.5) * 16,
+                                y: player.y - 30,
+                                text: '-10',
+                                life: 0.7,
+                                vy: -55 - Math.random() * 20
+                            });
                         }
                     }
 
@@ -1391,6 +1391,7 @@ Score          ${score}`;
 
                 // Check death condition
                 if (this.hp <= 0 && gameState === 'playing') {
+                    lastDeathCause = 'a Smiler';
                     setGameState('gameover');
                 }
             }
@@ -1873,7 +1874,7 @@ Score          ${score}`;
                                 y: enemy.y + (Math.random()-0.5)*5,
                                 vx: Math.cos(angle) * speed,
                                 vy: Math.sin(angle) * speed,
-                                size, color: '#0e0000',
+                                size, color: '#4a0101',
                                 friction: 0.55 + Math.random() * 0.1,
                                 scaleX: 1.0 + Math.random() * 0.4,
                                 angle
@@ -1998,33 +1999,33 @@ Score          ${score}`;
                     let by = Math.sin(b.a) * pr * b.distFrac * 0.7 + b.oy * pr;
                     let br = pr * b.rFrac;
                     let g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-                    g.addColorStop(0,   'rgba(16,1,1,0.82)');
-                    g.addColorStop(0.55,'rgba(10,0,0,0.52)');
-                    g.addColorStop(1,   'rgba(4,0,0,0)');
+                    g.addColorStop(0,   'rgba(90,4,4,0.80)');
+                    g.addColorStop(0.55,'rgba(58,2,2,0.48)');
+                    g.addColorStop(1,   'rgba(22,0,0,0)');
                     ctx.fillStyle = g;
                     ctx.beginPath();
                     ctx.arc(bx, by, br, 0, Math.PI * 2);
                     ctx.fill();
                 });
 
-                // Layer 2: Main pool body — near-black center, dark maroon mid, fades at edge
+                // Layer 2: Main pool body — deep crimson center fading to near-black edge
                 const mainG = ctx.createRadialGradient(pr*0.05, pr*0.04, 0, 0, 0, pr * 0.9);
-                mainG.addColorStop(0,    'rgba(5,0,0,0.99)');   // almost pure black
-                mainG.addColorStop(0.28, 'rgba(10,0,0,0.97)');  // dark maroon
-                mainG.addColorStop(0.55, 'rgba(16,1,1,0.88)');  // maroon
-                mainG.addColorStop(0.78, 'rgba(14,0,0,0.60)');  // thinning
-                mainG.addColorStop(0.92, 'rgba(8,0,0,0.28)');
-                mainG.addColorStop(1,    'rgba(3,0,0,0)');
+                mainG.addColorStop(0,    'rgba(72,3,3,0.98)');
+                mainG.addColorStop(0.28, 'rgba(55,2,2,0.95)');
+                mainG.addColorStop(0.55, 'rgba(40,1,1,0.84)');
+                mainG.addColorStop(0.78, 'rgba(28,0,0,0.56)');
+                mainG.addColorStop(0.92, 'rgba(16,0,0,0.24)');
+                mainG.addColorStop(1,    'rgba(6,0,0,0)');
                 ctx.fillStyle = mainG;
                 ctx.beginPath();
                 ctx.arc(0, 0, pr * 0.9, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Layer 3: Wet specular sheen — subtle reddish gloss near top-left of pool
+                // Layer 3: Wet specular sheen
                 if (pr > 10) {
                     let sheenR = pr * 0.2;
                     let sheenG = ctx.createRadialGradient(-pr*0.12, -pr*0.1, 0, -pr*0.12, -pr*0.1, sheenR);
-                    sheenG.addColorStop(0, `rgba(65,8,8,${Math.min(0.22, pr/250)})`);
+                    sheenG.addColorStop(0, `rgba(140,18,18,${Math.min(0.28, pr/200)})`);
                     sheenG.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = sheenG;
                     ctx.beginPath();
@@ -2071,17 +2072,17 @@ Score          ${score}`;
 
                 ctx.restore(); // alpha
             });
-            // Floor blood splatters (landed hit droplets — very subtle dark marks)
+            // Floor blood splatters (landed hit droplets — subtle dark crimson marks)
             floorSplatters.forEach(s => {
-                ctx.globalAlpha = Math.min(1, s.life / 2.5) * 0.65;
+                ctx.globalAlpha = Math.min(1, s.life / 2.5) * 0.72;
                 ctx.save();
                 ctx.translate(s.x, s.y);
                 ctx.rotate(s.angle);
                 ctx.scale(s.scaleX, 1);
                 const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, s.size);
-                sg.addColorStop(0,   'rgba(10,0,0,0.92)');
-                sg.addColorStop(0.5, 'rgba(7,0,0,0.60)');
-                sg.addColorStop(1,   'rgba(3,0,0,0)');
+                sg.addColorStop(0,   'rgba(88,4,4,0.90)');
+                sg.addColorStop(0.5, 'rgba(55,2,2,0.58)');
+                sg.addColorStop(1,   'rgba(22,0,0,0)');
                 ctx.fillStyle = sg;
                 ctx.beginPath();
                 ctx.arc(0, 0, s.size, 0, Math.PI * 2);
@@ -2099,9 +2100,9 @@ Score          ${score}`;
                 let rx = speed > 20 ? p.size + speed * 0.018 : p.size;
                 let ry = p.size * 0.75;
                 const ag = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry));
-                ag.addColorStop(0,   'rgba(12,0,0,0.95)');
-                ag.addColorStop(0.6, 'rgba(8,0,0,0.65)');
-                ag.addColorStop(1,   'rgba(3,0,0,0)');
+                ag.addColorStop(0,   'rgba(100,5,5,0.95)');
+                ag.addColorStop(0.6, 'rgba(65,2,2,0.65)');
+                ag.addColorStop(1,   'rgba(30,0,0,0)');
                 ctx.fillStyle = ag;
                 ctx.beginPath();
                 ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
@@ -2125,7 +2126,7 @@ Score          ${score}`;
                 let alpha = Math.max(0, d.life / 0.6);
                 ctx.globalAlpha = alpha;
                 
-                ctx.font = 'bold 9px "Courier New", Courier, monospace';
+                ctx.font = 'bold 10px "Barlow", Arial, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#cc3333';
                 ctx.shadowColor = 'rgba(0,0,0,1)';
@@ -2139,29 +2140,17 @@ Score          ${score}`;
 
             drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
 
-            // Screen damage flash (Clean radial vignette instead of full block color)
-            if (player.hurtTimer > 0) {
-                ctx.save();
-                let alpha = (player.hurtTimer / 0.2) * 0.7; // Max opacity 0.7
-                let grad = ctx.createRadialGradient(width/2, height/2, height*0.3, width/2, height/2, height*0.8);
-                grad.addColorStop(0, 'rgba(180, 0, 0, 0)');
-                grad.addColorStop(1, `rgba(180, 0, 0, ${alpha})`);
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, width, height);
-                ctx.restore();
-            }
-
             if (roomTextTimer > 0) {
                 let alpha = Math.min(1, roomTextTimer / 1.5);
                 ctx.save();
                 ctx.globalAlpha = alpha;
-                ctx.font = 'bold 36px "Courier New", Courier, monospace';
+                ctx.font = '700 40px "Bebas Neue", "Arial Black", Arial, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillStyle = 'rgba(200,180,160,0.9)';
-                ctx.shadowColor = 'rgba(0,0,0,0.9)';
-                ctx.shadowBlur = 20;
+                ctx.fillStyle = 'rgba(220,210,200,0.92)';
+                ctx.shadowColor = 'rgba(0,0,0,0.95)';
+                ctx.shadowBlur = 22;
                 ctx.shadowOffsetY = 3;
-                ctx.fillText(`— ROOM ${currentRoom} —`, width/2, height/3);
+                ctx.fillText(`ROOM ${currentRoom}`, width/2, height/3);
                 ctx.restore();
             }
 
