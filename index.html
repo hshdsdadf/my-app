@@ -2651,6 +2651,12 @@
                 return;
             }
             if (game.wave === 10) return;
+            if (game.wave === 15 && !game.bossSpawned) {
+                spawnVoidSentinel();
+                game.bossSpawned = true;
+                game.roomEnemiesSpawned++;
+            }
+            if (game.wave === 15) return;
 
             const r = currentRoom;
             const margin = 180;
@@ -2834,6 +2840,24 @@
             rkIntro.wheelAngle = 0; rkIntro.wheelScale = 0;
             rkIntro.textMsg = ''; rkIntro.textAlpha = 0;
             isPaused = false;
+        }
+
+        function spawnVoidSentinel() {
+            const ex = currentRoom.cx, ey = currentRoom.cy;
+            enemies.push({
+                x: ex, y: ey, type: 'voidSentinel', isBoss: true, size: 52, hp: 8500, maxHp: 8500,
+                color: '#2a0845', introHidden: true,
+                // Movement
+                _vx: 0, _vy: 0, _movePhase: 'orbit', _moveTimer: 0, _orbitDir: 1,
+                // Attack timers
+                chargeTimer: 5, chargeActive: false, chargeTarget: null,
+                abilityTimer: 0, voidPoolTimer: 8, pulseTimer: 14,
+                // HP phases
+                phase: 1, phaseTriggers: [4250, 0]
+            });
+            const vsBoss = enemies[enemies.length - 1];
+            vsBoss.introHidden = true;
+            // No intro for VS — starts immediately after spawning
         }
 
         function checkChestInteract() {
@@ -3066,6 +3090,129 @@
                     closeLevelUp();
                 };
                 cardContainer.appendChild(rkBtn);
+
+            } else if (chestType === 'voidSentinel') {
+                // ── VOID SENTINEL'S ASCENDANT RELICS ──
+                const vsOptions = [
+                    {
+                        id: 'void_cloak',
+                        name: 'Void Cloak',
+                        type: 'vs_reward',
+                        color: '#2a0845',
+                        effect: 'Every 20s, vanish for 2s (untargetable). While cloaked, you heal 1% max HP per frame. Dodge chance +18%.',
+                        stats: { defense: 100, magic: 95, utility: 85 },
+                        rarity: 'Legendary'
+                    },
+                    {
+                        id: 'entropys_grasp',
+                        name: "Entropy's Grasp",
+                        type: 'vs_reward',
+                        color: '#a855f7',
+                        effect: 'All projectiles split into 3 when hitting enemies. Weapon cooldown -25%. Bullets gain split property.',
+                        stats: { damage: 105, fire: 90, utility: 80 },
+                        rarity: 'Legendary'
+                    },
+                    {
+                        id: 'crown_of_void',
+                        name: 'Crown of Void',
+                        type: 'vs_reward',
+                        color: '#ff3366',
+                        effect: 'Gain a rotating void shield that blocks 3 hits. Resets on room clear. When hit, deal 40 void damage to attacker.',
+                        stats: { defense: 110, magic: 100, damage: 70 },
+                        rarity: 'Mythic'
+                    }
+                ];
+
+                let vsTitle = document.getElementById('boss-chest-title');
+                if (!vsTitle) {
+                    vsTitle = document.createElement('div');
+                    vsTitle.id = 'boss-chest-title';
+                    levelUpTitle.parentNode.insertBefore(vsTitle, cardContainer);
+                }
+                vsTitle.innerText = '🟣 VOID RELICS 🟣';
+                vsTitle.style.textShadow = '0 0 20px #a855f7, 0 0 40px #ff3366, 0 0 80px #7d3c98';
+                levelUpTitle.style.display = 'none';
+
+                vsOptions.forEach((opt, idx) => {
+                    const glowMap = { void_cloak: 'glow-legendary', entropys_grasp: 'glow-legendary', crown_of_void: 'glow-void' };
+                    const glowClass = glowMap[opt.id] || 'glow-legendary';
+                    const card = createCardElement(opt, opt.rarity, glowClass, null, () => {});
+
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'boss-chest-card';
+                    wrapper.style.animationDelay = `${idx * 0.18}s, ${idx * 0.18}s`;
+                    wrapper.style.position = 'relative';
+
+                    const inner = document.createElement('div');
+                    inner.className = 'card-inner ' + card.className;
+                    inner.style.zIndex = '1'; inner.style.position = 'relative'; inner.style.cursor = 'pointer';
+
+                    const glow = document.createElement('div');
+                    glow.className = 'card-inner-glow';
+                    inner.appendChild(glow);
+                    while (card.firstChild) inner.appendChild(card.firstChild);
+
+                    const sparkleColors = ['#a855f7','#ff3366','#7d3c98','#fff','#9d4edd'];
+                    for (let sp = 0; sp < 8; sp++) {
+                        const spEl = document.createElement('div');
+                        spEl.className = 'sparkle';
+                        const spAng = (sp / 8) * Math.PI * 2;
+                        spEl.style.setProperty('--sx', `${Math.cos(spAng) * 85}px`);
+                        spEl.style.setProperty('--sy', `${Math.sin(spAng) * 125}px`);
+                        spEl.style.setProperty('--dur', `${1.3 + Math.random() * 1.7}s`);
+                        spEl.style.setProperty('--delay', `${sp * 0.22}s`);
+                        spEl.style.left = `${50 + Math.cos(spAng) * 30}%`;
+                        spEl.style.top = `${50 + Math.sin(spAng) * 30}%`;
+                        spEl.style.background = sparkleColors[sp % sparkleColors.length];
+                        spEl.style.width = spEl.style.height = `${4 + Math.random() * 5}px`;
+                        inner.appendChild(spEl);
+                    }
+
+                    inner.style.cursor = 'default'; 
+                    wrapper.appendChild(inner);
+                    cardContainer.appendChild(wrapper);
+                });
+
+                // ── CLAIM ALL THREE RELICS ──
+                const vsBtn = document.createElement('button');
+                vsBtn.className = 'boss-collect-btn';
+                vsBtn.innerText = '🟣 CLAIM THE VOID RELICS 🟣';
+                vsBtn.onclick = () => {
+                    vsOptions.forEach(o => {
+                        if (o.id === 'void_cloak') {
+                            player.voidCloak = true;
+                            player.voidCloakCooldown = 0;
+                            player.dodgeChance = (player.dodgeChance || 0) + 0.18;
+                        } else if (o.id === 'entropys_grasp') {
+                            player.entropysGrasp = true;
+                            player.cooldownMult = (player.cooldownMult || 1) * 0.75;
+                        } else if (o.id === 'crown_of_void') {
+                            player.crownOfVoid = true;
+                            player.voidShieldHits = 3;
+                        }
+                    });
+                    // Show rewards as floating text
+                    const rewards = vsOptions.map(o => o.name);
+                    let delay = 0;
+                    rewards.forEach(name => {
+                        setTimeout(() => {
+                            addFloatingText(
+                                player.x + (Math.random()-0.5)*120,
+                                player.y - 60 - Math.random()*60,
+                                '✦ ' + name,
+                                '#a855f7', 22
+                            );
+                            createExplosion(player.x, player.y, '#a855f7', 10);
+                        }, delay);
+                        delay += 350;
+                    });
+                    chests.length = 0; game.isChestOpen = false;
+                    const tt = document.getElementById('boss-chest-title');
+                    if (tt) tt.remove();
+                    levelUpTitle.style.display = '';
+                    closeLevelUp();
+                };
+                cardContainer.appendChild(vsBtn);
 
             } else if (isCollectorChest) {
                 const options = [
@@ -5027,6 +5174,8 @@
 
                 if (e.isBoss && e.type === 'collector') {
                     if (!collectorIntro.active) updateCollectorBoss(e, deltaTime, distToPlayer, angleToPlayer);
+                } else if (e.isBoss && e.type === 'voidSentinel') {
+                    updateVoidSentinel(e, deltaTime, distToPlayer, angleToPlayer);
                 } else if (e.isBoss && e.type === 'rouletteKing') {
                     if (!rkIntro.active) updateRouletteKing(e, deltaTime, distToPlayer, angleToPlayer);
                 } else if (e.type === 'shooter') {
@@ -5077,6 +5226,15 @@
                             setTimeout(() => {
                                 createExplosion(e.x + (Math.random()-0.5)*200, e.y + (Math.random()-0.5)*200, Math.random()<0.5?'#f1c40f':'#e74c3c', 30);
                                 triggerShake(15, 0.4);
+                    } else if (e.type === 'voidSentinel') {
+                        chests.push({ x: e.x, y: e.y, opened: false, timer: 0, chestType: 'voidSentinel' });
+                        triggerShake(45, 2.2);
+                        showWaveAnnouncement('🟣 VOID SENTINEL SHATTERED 🟣', '✦ Void Relic — press E to claim your ascendant power ✦', '#a855f7');
+                        // Void implosion
+                        for (let di = 0; di < 7; di++) {
+                            setTimeout(() => {
+                                createExplosion(e.x + (Math.random()-0.5)*220, e.y + (Math.random()-0.5)*220, '#7d3c98', 35);
+                                triggerShake(18, 0.5);
                             }, di * 200);
                         }
                     } else if (e.slotFiend) {
@@ -5383,7 +5541,121 @@
             }
         }
 
-        function updateRouletteKing(e, dt, distToPlayer, angleToPlayer) {
+        function updateVoidSentinel(e, dt, distToPlayer, angleToPlayer) {
+            const isEnrage = e.hp < e.maxHp * 0.5; // enrage at 50% HP
+            e.chargeTimer -= dt;
+            e.abilityTimer -= dt;
+            e.voidPoolTimer -= dt;
+            e.pulseTimer -= dt;
+
+            // ── CHARGE ATTACK ──────────────────────────────────────────────
+            if (e.chargeTimer <= 0 && !e.chargeActive) {
+                e.chargeActive = true;
+                e.chargeTarget = { x: player.x, y: player.y };
+                addFloatingText(e.x, e.y - e.size - 40, '⚡ VOID CHARGE!', '#7d3c98', 20);
+                triggerShake(12, 0.4);
+            }
+            if (e.chargeActive) {
+                const cAng = Math.atan2((e.chargeTarget.y - e.y), (e.chargeTarget.x - e.x));
+                const cSpd = isEnrage ? 650 : 500;
+                e._vx = Math.cos(cAng) * cSpd;
+                e._vy = Math.sin(cAng) * cSpd;
+                const cDist = Math.sqrt((e.chargeTarget.x - e.x)**2 + (e.chargeTarget.y - e.y)**2);
+                if (cDist < 120) {
+                    e.chargeActive = false;
+                    e.chargeTimer = isEnrage ? 4 : 6.5;
+                    triggerShake(15, 0.5);
+                    // Charge impact: void burst around sentinel
+                    for (let i = 0; i < 12; i++) {
+                        const a = (i / 12) * Math.PI * 2;
+                        enemies.push({
+                            x: e.x, y: e.y,
+                            vx: Math.cos(a) * 280, vy: Math.sin(a) * 280,
+                            life: 2.2, size: 9, isBossOrb: true,
+                            color: '#7d3c98', bounces: 1
+                        });
+                    }
+                }
+            } else {
+                // ── ORBIT MOVEMENT ────────────────────────────────────────
+                const idealDist = isEnrage ? 200 : 280;
+                const radialAdj = (distToPlayer - idealDist) * 0.4;
+                const tangentAng = angleToPlayer + Math.PI/2 * e._orbitDir;
+                e._vx = Math.cos(tangentAng) * 280 + Math.cos(angleToPlayer) * radialAdj;
+                e._vy = Math.sin(tangentAng) * 280 + Math.sin(angleToPlayer) * radialAdj;
+                // Weave
+                const weaveAmt = isEnrage ? 70 : 40;
+                const weaveAng = angleToPlayer + Math.PI/2;
+                e._vx += Math.cos(weaveAng) * Math.sin(e.abilityTimer * 3.5) * weaveAmt;
+                e._vy += Math.sin(weaveAng) * Math.sin(e.abilityTimer * 3.5) * weaveAmt;
+            }
+
+            // Wall repulsion
+            if (currentRoom) {
+                const r = currentRoom;
+                const hw = r.w / 2 - e.size - 40;
+                const hh = r.h / 2 - e.size - 40;
+                const dx = e.x - r.cx, dy = e.y - r.cy;
+                if (dx > hw) e._vx -= 700;
+                if (dx < -hw) e._vx += 700;
+                if (dy > hh) e._vy -= 700;
+                if (dy < -hh) e._vy += 700;
+            }
+            e._vx += (0 - e._vx) * Math.min(1, 8 * dt);
+            e._vy += (0 - e._vy) * Math.min(1, 8 * dt);
+            e.x += e._vx * dt;
+            e.y += e._vy * dt;
+
+            // ── VOID POOL ATTACK ──────────────────────────────────────────
+            if (e.voidPoolTimer <= 0) {
+                addFloatingText(e.x, e.y - e.size - 35, '💜 VOID POOLS', '#2a0845', 18);
+                const poolCount = isEnrage ? 5 : 3;
+                for (let i = 0; i < poolCount; i++) {
+                    const pAng = (i / poolCount) * Math.PI * 2 + Math.random() * 0.5;
+                    const pDist = 200 + Math.random() * 100;
+                    particles.push({
+                        x: e.x + Math.cos(pAng) * pDist,
+                        y: e.y + Math.sin(pAng) * pDist,
+                        vx: 0, vy: 0,
+                        life: 2.8,
+                        color: '#7d3c98',
+                        size: 35,
+                        isVoidPool: true,
+                        pulseTimer: 0
+                    });
+                }
+                triggerShake(8, 0.25);
+                e.voidPoolTimer = isEnrage ? 5 : 8;
+            }
+
+            // ── VOID PULSE (enrage only) ──────────────────────────────────
+            if (isEnrage && e.pulseTimer <= 0) {
+                addFloatingText(e.x, e.y, '⚡ VOID PULSE', '#a855f7', 16);
+                // 16-way burst
+                for (let i = 0; i < 16; i++) {
+                    const a = (i / 16) * Math.PI * 2;
+                    enemyBullets.push({
+                        x: e.x, y: e.y,
+                        vx: Math.cos(a) * 380, vy: Math.sin(a) * 380,
+                        life: 2, size: 8, isBossOrb: true,
+                        color: '#a855f7'
+                    });
+                }
+                triggerShake(10, 0.35);
+                e.pulseTimer = 9;
+            }
+
+            // Melee damage
+            const meleeR = e.size + 50;
+            const meleeDist = Math.sqrt((player.x - e.x)**2 + (player.y - e.y)**2);
+            if (meleeDist < meleeR && player.hp > 0) {
+                deathCause = 'the Void Sentinel\'s dark strike';
+                takeDamage(isEnrage ? 32 : 20);
+            }
+        }
+
+
+                function updateRouletteKing(e, dt, distToPlayer, angleToPlayer) {
             const isEnrage = e.phase === 2; // All-In phase at 25% HP
             const t = e.animTimer;
 
@@ -6266,6 +6538,8 @@
                 drawCollector(ctx, e);
             } else if (e.type === 'rouletteKing') {
                 drawRouletteKing(ctx, e);
+            } else if (e.type === 'voidSentinel') {
+                drawVoidSentinel(ctx, e);
             } else if (e.type === 'chaser') {
                 const facingLeft = Math.cos(e.facing) < 0;
                 if (facingLeft) ctx.scale(-1, 1);
@@ -6322,6 +6596,111 @@
                 ctx.fillStyle = pct > 0.5 ? '#2ecc71' : (pct > 0.25 ? '#f1c40f' : '#ff4b2b');
                 ctx.beginPath(); ctx.roundRect(bx, by, barW * pct, barH, 2); ctx.fill();
             }
+        }
+
+        // ── VOID SENTINEL BOSS ──
+        function drawVoidSentinel(ctx, e) {
+            const s = e.size;
+            const t = Date.now() * 0.001;
+            const pulse = 0.6 + 0.4 * Math.sin(t * 2.2);
+            const enraged = e.hp < e.maxHp * 0.5;
+
+            // Massive void aura
+            ctx.globalCompositeOperation = 'screen';
+            ctx.globalAlpha = 0.25 * pulse;
+            const auraGrd = ctx.createRadialGradient(0, 0, 0, 0, 0, s * 3.2);
+            auraGrd.addColorStop(0, '#7d3c98');
+            auraGrd.addColorStop(0.4, '#4a0080');
+            auraGrd.addColorStop(1, 'transparent');
+            ctx.fillStyle = auraGrd;
+            ctx.beginPath(); ctx.arc(0, 0, s * 3.2, 0, Math.PI * 2); ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Enrage glow
+            if (enraged) {
+                ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t * 4);
+                ctx.shadowColor = '#ff3366';
+                ctx.shadowBlur = 35;
+                ctx.fillStyle = '#ff336644';
+                ctx.beginPath(); ctx.arc(0, 0, s * 1.5, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            // Body — dark void sphere
+            ctx.fillStyle = '#1a0033';
+            ctx.strokeStyle = '#7d3c98';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(0, 0, s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            // Void spiral pattern on body
+            ctx.strokeStyle = '#4a0080';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.4 + 0.3 * Math.sin(t * 1.8);
+            for (let si = 0; si < 3; si++) {
+                ctx.beginPath();
+                for (let sa = 0; sa < Math.PI * 2; sa += 0.15) {
+                    const sx = Math.cos(sa + t * 2 + si) * (s * 0.6);
+                    const sy = Math.sin(sa + t * 2 + si) * (s * 0.5);
+                    if (sa === 0) ctx.moveTo(sx, sy);
+                    else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+
+            // Crown of void spikes on top
+            ctx.fillStyle = '#a855f7';
+            ctx.strokeStyle = '#7d3c98';
+            ctx.lineWidth = 2;
+            const spikeCount = 6;
+            for (let sp = 0; sp < spikeCount; sp++) {
+                const sa = (sp / spikeCount) * Math.PI * 2;
+                const sx = Math.cos(sa) * (s + 15);
+                const sy = Math.sin(sa) * (s + 15) - 20;
+                // Spike
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(Math.cos(sa) * (s + 35), Math.sin(sa) * (s + 35) - 45);
+                ctx.lineTo(Math.cos(sa + 0.2) * (s + 12), Math.sin(sa + 0.2) * (s + 12) - 15);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+            }
+
+            // Two glowing eyes
+            ctx.fillStyle = '#ff3366';
+            ctx.shadowColor = '#ff3366';
+            ctx.shadowBlur = 15;
+            ctx.beginPath(); ctx.arc(-15, -12, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(15, -12, 6, 0, Math.PI * 2); ctx.fill();
+            // Eye pupils
+            ctx.fillStyle = '#ffccdd';
+            ctx.shadowBlur = 0;
+            ctx.beginPath(); ctx.arc(-15, -12, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(15, -12, 2.5, 0, Math.PI * 2); ctx.fill();
+
+            // Charge indicator — rings when charging
+            if (e.chargeActive) {
+                ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t * 8);
+                ctx.strokeStyle = '#fff700';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([5, 5]);
+                ctx.lineDashOffset = -t * 40;
+                ctx.beginPath(); ctx.arc(0, 0, s * 1.3, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
+            }
+
+            // Health bar
+            const hpW = 100, hpH = 8;
+            const hpRatio = Math.max(0, e.hp / e.maxHp);
+            ctx.fillStyle = '#222';
+            ctx.beginPath(); ctx.roundRect(-hpW/2, -s - 35, hpW, hpH, 4); ctx.fill();
+            ctx.fillStyle = enraged ? '#ff3366' : '#7d3c98';
+            ctx.beginPath(); ctx.roundRect(-hpW/2, -s - 35, hpW * hpRatio, hpH, 4); ctx.fill();
+            ctx.strokeStyle = enraged ? '#ff3366' : '#a855f7';
+            ctx.lineWidth = 1;
+            ctx.stroke();
         }
 
         // ── CHASER: screaming rage-skull demon with jaw, trailing smoke, cracked glowing eyes ──
