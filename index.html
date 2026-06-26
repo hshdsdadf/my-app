@@ -56,15 +56,90 @@
             font-size: 18px;
         }
 
-        /* Show the warning only when the device is held vertically */
         @media screen and (orientation: portrait) {
-            #orientation-warning {
-                display: flex;
-            }
-            #gameCanvas {
-                display: none;
-            }
+            #orientation-warning { display: flex; }
+            #gameCanvas, #ui-layer { display: none !important; }
         }
+
+        /* --- UI & MENUS --- */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
+        }
+
+        #pause-btn {
+            position: absolute; top: 20px; right: 20px;
+            width: 50px; height: 50px;
+            background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.2);
+            color: white; font-size: 20px; border-radius: 12px;
+            pointer-events: auto; cursor: pointer;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #pause-btn:hover { background: rgba(255, 255, 255, 0.15); transform: scale(1.05); }
+        #pause-btn:active { transform: scale(0.95); }
+
+        .menu-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 8, 0.7);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            pointer-events: auto; opacity: 1; transition: opacity 0.3s ease;
+        }
+        .menu-overlay.hidden, #pause-btn.hidden { opacity: 0; pointer-events: none; }
+
+        .menu-box {
+            background: rgba(20, 20, 25, 0.8); border: 1px solid rgba(255,255,255,0.1);
+            padding: 40px; border-radius: 20px; display: flex; flex-direction: column;
+            align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            transform: translateY(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .menu-overlay.hidden .menu-box { transform: translateY(30px); }
+
+        .menu-overlay h2 { color: #e4e6d9; margin: 0 0 30px 0; font-size: 32px; letter-spacing: 3px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        .menu-btn {
+            background: transparent; border: 2px solid #555; color: #ccc;
+            padding: 15px 40px; margin: 8px; font-size: 18px; border-radius: 10px;
+            cursor: pointer; transition: all 0.2s; width: 260px; font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .menu-btn.primary { border-color: #e4e6d9; color: #fff; background: rgba(255,255,255,0.05); }
+        .menu-btn:hover { background: #e4e6d9; color: #050508; transform: scale(1.03); }
+        .menu-btn:active { transform: scale(0.97); }
+
+        .slider-container { width: 300px; margin: 15px 0; display: flex; flex-direction: column; align-items: stretch; }
+        .slider-container label { color: #ccc; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: bold; }
+        
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px;
+            border-radius: 50%; background: #e4e6d9; cursor: pointer;
+            margin-top: -8px; box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; cursor: pointer;
+            background: #333; border-radius: 2px;
+        }
+
+        #countdown-display {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 140px; color: white; font-weight: bold; 
+            text-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(255,255,255,0.5);
+            pointer-events: none; opacity: 0;
+        }
+        @keyframes pop {
+            0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+        .pop-anim { animation: pop 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
 <body>
@@ -75,11 +150,47 @@
 
     <canvas id="gameCanvas"></canvas>
 
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+        <button id="pause-btn" onclick="setGameState('paused')">⏸</button>
+
+        <!-- Pause Menu -->
+        <div id="pause-menu" class="menu-overlay hidden">
+            <div class="menu-box">
+                <h2>PAUSED</h2>
+                <button class="menu-btn primary" onclick="startCountdown()">Resume</button>
+                <button class="menu-btn" onclick="setGameState('settings')">Settings</button>
+                <button class="menu-btn" onclick="alert('Main Menu routing pending...')">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Settings Menu -->
+        <div id="settings-menu" class="menu-overlay hidden">
+            <div class="menu-box">
+                <h2>SETTINGS</h2>
+                <div class="slider-container">
+                    <label>Brightness <span id="val-brightness">55%</span></label>
+                    <input type="range" id="set-brightness" min="10" max="100" value="55" oninput="updateSettingsUI()">
+                </div>
+                <div class="slider-container">
+                    <label>Camera Zoom <span id="val-zoom">100%</span></label>
+                    <input type="range" id="set-zoom" min="50" max="150" value="100" oninput="updateSettingsUI()">
+                </div>
+                <div class="slider-container">
+                    <label>Screen Shake <span id="val-shake">100%</span></label>
+                    <input type="range" id="set-shake" min="0" max="200" value="100" oninput="updateSettingsUI()">
+                </div>
+                <button class="menu-btn primary" style="margin-top: 20px;" onclick="setGameState('paused')">Back</button>
+            </div>
+        </div>
+
+        <div id="countdown-display"></div>
+    </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false }); 
 
-        // Dynamic Lighting Canvas (Offscreen for performance)
         const lightCanvas = document.createElement('canvas');
         const lightCtx = lightCanvas.getContext('2d');
 
@@ -97,9 +208,66 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- GLOBAL EFFECTS ---
+        // --- GLOBAL STATE & SETTINGS ---
+        let gameState = 'playing'; // 'playing', 'paused', 'settings', 'countdown'
+        let countdownValue = 0;
+        let countdownTimer = 0;
+
+        const settings = {
+            brightness: 0.55, 
+            zoom: 1.0,
+            shake: 1.0
+        };
+
+        function updateSettingsUI() {
+            const b = document.getElementById('set-brightness').value;
+            const z = document.getElementById('set-zoom').value;
+            const s = document.getElementById('set-shake').value;
+            
+            document.getElementById('val-brightness').innerText = b + "%";
+            document.getElementById('val-zoom').innerText = z + "%";
+            document.getElementById('val-shake').innerText = s + "%";
+
+            settings.brightness = parseInt(b) / 100;
+            settings.zoom = parseInt(z) / 100;
+            settings.shake = parseInt(s) / 100;
+        }
+
+        function setGameState(state) {
+            gameState = state;
+            document.getElementById('pause-menu').classList.add('hidden');
+            document.getElementById('settings-menu').classList.add('hidden');
+            document.getElementById('pause-btn').classList.add('hidden');
+            
+            if (state === 'playing') {
+                document.getElementById('pause-btn').classList.remove('hidden');
+            } else if (state === 'paused') {
+                document.getElementById('pause-menu').classList.remove('hidden');
+            } else if (state === 'settings') {
+                document.getElementById('settings-menu').classList.remove('hidden');
+            }
+        }
+
+        function startCountdown() {
+            setGameState('countdown');
+            countdownValue = 3;
+            countdownTimer = 1.0;
+            triggerCountdownAnim(countdownValue);
+        }
+
+        function triggerCountdownAnim(text) {
+            const el = document.getElementById('countdown-display');
+            el.innerText = text;
+            el.classList.remove('pop-anim');
+            void el.offsetWidth; // Force reflow
+            el.classList.add('pop-anim');
+        }
+
         let shakeTime = 0;
         let shakeMag = 0;
+        let currentShakeX = 0;
+        let currentShakeY = 0;
+
         function triggerShake(magnitude, duration) {
             if (shakeMag < magnitude || shakeTime <= 0) {
                 shakeMag = magnitude;
@@ -107,7 +275,7 @@
             }
         }
 
-        // --- INPUT MANAGEMENT (Multi-touch Joysticks) ---
+        // --- INPUT MANAGEMENT ---
         const input = {
             left: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 },
             right: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0, lastTapTime: 0, doubleTapped: false }
@@ -116,6 +284,13 @@
         const JOYSTICK_MAX_RADIUS = 60;
 
         function handleTouch(e) {
+            // Only process input if game is active
+            if (gameState !== 'playing') {
+                input.left.active = false;
+                input.right.active = false;
+                return;
+            }
+
             e.preventDefault();
             const halfWidth = width / 2;
             let leftFound = false;
@@ -135,15 +310,13 @@
                         input.left.currentX = touch.clientX;
                         input.left.currentY = touch.clientY;
                     }
-                } 
-                else {
+                } else {
                     rightFound = true;
                     if (!input.right.active) {
                         const now = performance.now();
-                        // Check for double tap (within 300 milliseconds)
                         if (now - input.right.lastTapTime < 300) {
                             input.right.doubleTapped = true;
-                            input.right.lastTapTime = 0; // Reset to prevent triple-tap firing twice
+                            input.right.lastTapTime = 0; 
                         } else {
                             input.right.lastTapTime = now;
                         }
@@ -197,11 +370,13 @@
 
         let mouseDown = false;
         window.addEventListener('mousedown', (e) => {
-            mouseDown = true;
-            handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] });
+            if (gameState === 'playing') {
+                mouseDown = true;
+                handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] });
+            }
         });
         window.addEventListener('mousemove', (e) => {
-            if (mouseDown) handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] });
+            if (mouseDown && gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] });
         });
         window.addEventListener('mouseup', (e) => {
             mouseDown = false;
@@ -209,7 +384,7 @@
         });
 
         // --- GAME OBJECTS ---
-        const ROOM_SIZE = 1200; // Smaller, more claustrophobic room
+        const ROOM_SIZE = 1200;
 
         const bullets = [];
         const enemies = [];
@@ -224,8 +399,8 @@
                 this.speed = 1200; 
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
-                this.life = 1.0; // Shorter life since room is smaller
-                this.damage = 25; // Bullets do 25 dmg each
+                this.life = 1.0; 
+                this.damage = 25; 
             }
             
             update(dt) {
@@ -278,7 +453,6 @@
             }
 
             update(bodyX, bodyY, facingAngle, dt) {
-                // Calculate where the foot SHOULD be
                 const idealX = bodyX + Math.cos(facingAngle) * this.offsetX - Math.sin(facingAngle) * this.offsetY;
                 const idealY = bodyY + Math.sin(facingAngle) * this.offsetX + Math.cos(facingAngle) * this.offsetY;
 
@@ -293,23 +467,20 @@
                     let dy = idealY - this.y;
                     let dist = Math.sqrt(dx*dx + dy*dy);
                     
-                    // If the foot gets too far behind, take a step forward
                     if (dist > 25) {
                         this.stepProgress = 0;
                         this.startX = this.x;
                         this.startY = this.y;
-                        // Overshoot the target slightly so it plants ahead of the crawl
                         this.targetX = idealX + Math.cos(facingAngle) * 15;
                         this.targetY = idealY + Math.sin(facingAngle) * 15;
                     }
                 } else {
-                    this.stepProgress += dt * 7; // Speed of the leg snapping to new position
+                    this.stepProgress += dt * 7; 
                     if (this.stepProgress >= 1) {
                         this.stepProgress = 1;
                         this.x = this.targetX;
                         this.y = this.targetY;
                     } else {
-                        // Interpolate position during step
                         this.x = this.startX + (this.targetX - this.startX) * this.stepProgress;
                         this.y = this.startY + (this.targetY - this.startY) * this.stepProgress;
                     }
@@ -321,23 +492,21 @@
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.radius = 15; // Much smaller collision hit box for the slender body
+                this.radius = 15; 
                 this.hp = 100;
-                this.speed = 130; // Creeping speed
+                this.speed = 130; 
                 this.facingAngle = 0;
                 this.distToPlayer = 1000;
                 
-                // Attack mechanics
                 this.isAttacking = false;
                 this.attackTime = 0;
                 this.attackCooldown = 0;
                 
-                // 4 articulated procedural legs
                 this.legs = [
-                    new CreepyLeg(12, -18), // Front Left
-                    new CreepyLeg(12, 18),  // Front Right
-                    new CreepyLeg(-15, -18), // Back Left
-                    new CreepyLeg(-15, 18)   // Back Right
+                    new CreepyLeg(12, -18),
+                    new CreepyLeg(12, 18),
+                    new CreepyLeg(-15, -18),
+                    new CreepyLeg(-15, 18)
                 ];
                 
                 this.drawX = x;
@@ -360,7 +529,7 @@
                             let odx = this.x - other.x;
                             let ody = this.y - other.y;
                             let odist = Math.sqrt(odx*odx + ody*ody);
-                            let minDist = this.radius + other.radius + 15; // Keep them spread out
+                            let minDist = this.radius + other.radius + 15; 
                             if (odist > 0 && odist < minDist) {
                                 let push = (minDist - odist) / 2;
                                 separationX += (odx / odist) * push * 5;
@@ -369,21 +538,17 @@
                         }
                     }
 
-                    // Stop forward movement when hitting the edge of the player
                     let forwardSpeed = 0;
-                    // Player radius is 35, plus ~25 for the long body of the smiler
                     if (this.distToPlayer > player.radius + 25) {
                         forwardSpeed = this.speed;
                     } else {
-                        // Close enough to attack! Trigger the bite animation.
                         if (this.attackCooldown <= 0) {
                             this.isAttacking = true;
-                            this.attackTime = 0.3; // 0.3 second bite duration
-                            this.attackCooldown = 1.0; // Wait 1 second before biting again
+                            this.attackTime = 0.3; 
+                            this.attackCooldown = 1.0; 
                         }
                     }
 
-                    // Update attack timers
                     if (this.attackCooldown > 0) this.attackCooldown -= dt;
                     if (this.isAttacking) {
                         this.attackTime -= dt;
@@ -393,7 +558,6 @@
                     this.x += (Math.cos(this.facingAngle) * forwardSpeed + separationX) * dt;
                     this.y += (Math.sin(this.facingAngle) * forwardSpeed + separationY) * dt;
                     
-                    // Update procedural legs based on new body position
                     this.legs.forEach(leg => leg.update(this.x, this.y, this.facingAngle, dt));
                 }
             }
@@ -401,25 +565,21 @@
             drawBody(ctx) {
                 ctx.save();
                 
-                // Draw Legs (beneath body)
-                ctx.strokeStyle = '#000000'; // Pure black sticks
+                ctx.strokeStyle = '#000000'; 
                 ctx.lineWidth = 4;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
 
                 this.legs.forEach(leg => {
                     ctx.beginPath();
-                    // Joint attachment on the body
                     let attachX = this.x + Math.cos(this.facingAngle) * (leg.offsetX*0.5) - Math.sin(this.facingAngle) * (leg.offsetY*0.5);
                     let attachY = this.y + Math.sin(this.facingAngle) * (leg.offsetX*0.5) + Math.cos(this.facingAngle) * (leg.offsetY*0.5);
                     
                     ctx.moveTo(attachX, attachY);
                     
-                    // Calculate a knee joint that bends upwards and outwards
                     let midX = (attachX + leg.x) / 2;
                     let midY = (attachY + leg.y) / 2;
                     
-                    // Lift knee while stepping
                     let stepLift = 0;
                     if (leg.stepProgress < 1) {
                         stepLift = Math.sin(leg.stepProgress * Math.PI) * 15;
@@ -436,21 +596,18 @@
                     let kneeX = midX + perpX * kneeOutward * sign;
                     let kneeY = midY + perpY * kneeOutward * sign - stepLift;
 
-                    // Draw leg from body -> knee -> foot
                     ctx.quadraticCurveTo(kneeX, kneeY, leg.x, leg.y);
                     ctx.stroke();
                 });
 
-                // Draw Torso (Black crawling pill shape)
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.facingAngle);
                 
                 ctx.fillStyle = '#030303';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2); // Long and skinny
+                ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2); 
                 ctx.fill();
                 
-                // Save coordinates for the smile layer
                 this.drawX = this.x;
                 this.drawY = this.y;
                 this.drawAngle = this.facingAngle;
@@ -466,35 +623,29 @@
                 let lungeOffset = 0;
                 let attackOpenness = 0;
                 
-                // Apply a sudden snap forward and wide open mouth if attacking
                 if (this.isAttacking) {
-                    let progress = 1 - (this.attackTime / 0.3); // 0 to 1
-                    lungeOffset = Math.sin(progress * Math.PI) * 12; // Snap forward
-                    attackOpenness = Math.sin(progress * Math.PI) * 10; // Open mouth wide
+                    let progress = 1 - (this.attackTime / 0.3); 
+                    lungeOffset = Math.sin(progress * Math.PI) * 12; 
+                    attackOpenness = Math.sin(progress * Math.PI) * 10; 
                 }
 
-                // Move to the very front tip of the creature, plus the attack lunge
                 ctx.translate(18 + lungeOffset, 0); 
                 
-                // Distance factor (subtler scaling)
                 let factor = 1 - Math.min(1, Math.max(0, (this.distToPlayer - 80) / 400));
                 
-                // Tiny, creepy grin (adds the attack openness when biting)
-                let smileWidth = 4 + factor * 4; // Max half-width is 8
+                let smileWidth = 4 + factor * 4; 
                 let smileHeight = 2 + factor * 3 + attackOpenness; 
 
                 ctx.shadowColor = '#ffffff';
                 ctx.shadowBlur = 6 + factor * 4;
                 ctx.fillStyle = '#ffffff';
 
-                // Draw the white mouth curve
                 ctx.beginPath();
-                ctx.moveTo(0, -smileWidth); // Top corner
-                ctx.quadraticCurveTo(smileHeight, 0, 0, smileWidth); // Front curve to bottom corner
-                ctx.quadraticCurveTo(smileHeight * 0.3, 0, 0, -smileWidth); // Back curve
+                ctx.moveTo(0, -smileWidth); 
+                ctx.quadraticCurveTo(smileHeight, 0, 0, smileWidth); 
+                ctx.quadraticCurveTo(smileHeight * 0.3, 0, 0, -smileWidth); 
                 ctx.fill();
 
-                // Draw jagged, thin needle teeth
                 ctx.shadowColor = 'transparent';
                 ctx.strokeStyle = '#000000';
                 ctx.lineWidth = 1;
@@ -522,8 +673,8 @@
                 this.height = 100;
                 this.state = 'waiting'; 
                 this.timer = 0;
-                this.enemiesToSpawn = 4; // Wave 1 limit
-                this.delayTimer = 4.0; // Wait 4 FULL seconds before starting wave
+                this.enemiesToSpawn = 4; 
+                this.delayTimer = 4.0; 
                 this.openAngle = 0; 
             }
 
@@ -532,8 +683,8 @@
                     this.delayTimer -= dt;
                     if (this.delayTimer <= 0 && this.enemiesToSpawn > 0) {
                         this.state = 'opening';
-                        this.timer = 0.25; // Speed of opening
-                        triggerShake(8, 0.2); // Rumble as it opens
+                        this.timer = 0.25; 
+                        triggerShake(8, 0.2); 
                     }
                 }
                 else if (this.state === 'opening') {
@@ -542,20 +693,19 @@
                     if (this.timer <= 0) {
                         this.openAngle = 1;
                         this.state = 'open';
-                        this.timer = 0.3; // Stay open briefly
+                        this.timer = 0.3; 
                         
-                        // Spawn 1 Enemy
                         enemies.push(new Smiler(this.x, this.y));
                         this.enemiesToSpawn--;
                         
-                        triggerShake(15, 0.3); // Heavy slam when doors hit the floor
+                        triggerShake(15, 0.3); 
                     }
                 }
                 else if (this.state === 'open') {
                     this.timer -= dt;
                     if (this.timer <= 0) {
                         this.state = 'closing';
-                        this.timer = 0.2; // Fast slam shut
+                        this.timer = 0.2; 
                     }
                 }
                 else if (this.state === 'closing') {
@@ -564,10 +714,8 @@
                     if (this.timer <= 0) {
                         this.openAngle = 0;
                         this.state = 'waiting';
-                        // Random delay between 4.0 and 7.0 seconds before next spawn (Much Slower)
                         this.delayTimer = Math.random() * 3.0 + 4.0; 
-                        
-                        triggerShake(6, 0.15); // Slam shut shake
+                        triggerShake(6, 0.15); 
                     }
                 }
             }
@@ -576,7 +724,6 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
 
-                // Thick cellar door base/rim
                 ctx.fillStyle = '#2a2a30';
                 ctx.strokeStyle = '#050505';
                 ctx.lineWidth = 6;
@@ -585,17 +732,14 @@
                 ctx.fill();
                 ctx.stroke();
 
-                // Deep Dark Pit 
                 ctx.fillStyle = '#020202';
                 ctx.beginPath();
                 ctx.roundRect(-this.width/2, -this.height/2, this.width, this.height, 4);
                 ctx.fill();
                 
-                // Inner rim shading (gives the hole depth)
                 ctx.fillStyle = '#111';
                 ctx.fillRect(-this.width/2, -this.height/2, this.width, 20);
 
-                // Simulate 2.5D perspective for the doors swinging upwards
                 const scaleX = Math.cos(this.openAngle * (Math.PI / 2));
                 const popUpHeight = Math.sin(this.openAngle * (Math.PI / 2)) * 50;
 
@@ -603,14 +747,11 @@
                 const numPlanks = 4;
                 const plankW = flapW / numPlanks;
 
-                // Helper function to draw a textured, 3D angled door flap
-                const drawTexturedFlap = (sign) => { // sign: -1 for left flap, 1 for right flap
+                const drawTexturedFlap = (sign) => { 
                     ctx.save();
-                    ctx.translate(sign * -flapW, -this.height/2); // Move to outer hinge
+                    ctx.translate(sign * -flapW, -this.height/2); 
                     
-                    // Draw Wooden Planks
                     for(let i = 0; i < numPlanks; i++) {
-                        // Drawing inwards towards the center pit line
                         let startX = i * plankW * sign; 
                         let endX = (i + 1) * plankW * sign;
                         
@@ -627,7 +768,6 @@
                         ctx.lineTo(sEndX, -endYOffset);
                         ctx.closePath();
                         
-                        // Realistic rich wood gradient per plank
                         let gradStartX = sign === 1 ? sStartX : sEndX;
                         let gradEndX = sign === 1 ? sEndX : sStartX;
                         let grad = ctx.createLinearGradient(gradStartX, 0, gradEndX, 0);
@@ -638,13 +778,11 @@
                         ctx.fillStyle = grad;
                         ctx.fill();
                         
-                        // Wood plank dividing seams
                         ctx.strokeStyle = '#050505';
                         ctx.lineWidth = 1;
                         ctx.stroke();
                     }
 
-                    // Draw Iron Reinforcing Bands
                     const bandHeights = [15, this.height - 30];
                     const bandThickness = 12;
                     ctx.fillStyle = '#111113'; 
@@ -659,7 +797,6 @@
                         ctx.fill();
                         ctx.stroke();
                         
-                        // Small Silver Iron Nails
                         ctx.fillStyle = '#555';
                         for(let i = 0; i < numPlanks; i++) {
                             let midX = (i + 0.5) * plankW * sign * scaleX;
@@ -673,7 +810,6 @@
                         ctx.fillStyle = '#111113'; 
                     });
 
-                    // Outer thick iron frame for the flap
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.lineTo(0, this.height);
@@ -687,7 +823,6 @@
                     ctx.restore();
                 };
 
-                // Draw Left (-1) and Right (1) Flaps
                 drawTexturedFlap(-1);
                 drawTexturedFlap(1);
 
@@ -713,7 +848,6 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
 
-                // --- 1. Draw Angled Base and Arm ---
                 ctx.save();
                 ctx.rotate(this.angle);
 
@@ -743,7 +877,6 @@
                 
                 ctx.restore(); 
 
-                // --- 2. Draw Upright Basket and Fire ---
                 ctx.save();
                 const poleEndX = Math.cos(this.angle) * 25;
                 const poleEndY = Math.sin(this.angle) * 25;
@@ -827,11 +960,11 @@
         class Player {
             constructor() {
                 this.x = ROOM_SIZE / 2;
-                this.y = ROOM_SIZE / 2 + 200; // Start slightly away from the trapdoor
+                this.y = ROOM_SIZE / 2 + 200; 
                 this.radius = 35;
                 this.speed = 400; 
                 this.animTime = 0;
-                this.facingAngle = -Math.PI / 2; // Facing the trapdoor
+                this.facingAngle = -Math.PI / 2; 
                 
                 this.fireRate = 0.12; 
                 this.fireTimer = 0;
@@ -844,7 +977,6 @@
                 this.muzzleX_L = 0; this.muzzleY_L = 0;
                 this.muzzleX_R = 0; this.muzzleY_R = 0;
 
-                // Dash mechanics
                 this.isDashing = false;
                 this.dashTime = 0;
                 this.dashDuration = 0.15; 
@@ -953,6 +1085,7 @@
                 if (!this.isDashing && input.right.active && input.right.magnitude > 0.1 && this.fireTimer <= 0) {
                     this.shoot();
                     this.fireTimer = this.fireRate;
+                    triggerShake(2, 0.1); 
                 }
             }
 
@@ -1126,13 +1259,7 @@
         }
 
         // --- ENVIRONMENT ---
-        function drawRoom(ctx, camX, camY) {
-            ctx.fillStyle = '#050508';
-            ctx.fillRect(0, 0, width, height);
-
-            ctx.save();
-            ctx.translate(-camX, -camY);
-
+        function drawRoom(ctx) {
             const tileSize = 60;
             ctx.strokeStyle = 'rgba(10, 10, 12, 0.4)';
             ctx.lineWidth = 2;
@@ -1152,52 +1279,48 @@
             ctx.strokeStyle = '#0a0908'; 
             ctx.lineWidth = 40;
             ctx.strokeRect(0, 0, ROOM_SIZE, ROOM_SIZE);
-
-            ctx.restore();
         }
 
         // --- DYNAMIC LIGHTING ---
-        function drawLighting(ctx, camX, camY) {
+        function drawLighting(ctx, camX, camY, sx, sy) {
             lightCtx.globalCompositeOperation = 'source-over';
-            // Decreased the opacity from 0.70 to 0.55 to make the room brighter
-            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.55)'; 
+            
+            let opacity = 1 - settings.brightness;
+            lightCtx.fillStyle = `rgba(4, 4, 6, ${opacity})`; 
             lightCtx.fillRect(0, 0, width, height);
 
             lightCtx.globalCompositeOperation = 'destination-out';
 
+            lightCtx.save();
+            lightCtx.translate(width / 2, height / 2);
+            lightCtx.scale(settings.zoom, settings.zoom);
+            lightCtx.translate(-camX + sx, -camY + sy);
+
             torches.forEach(t => {
-                const screenX = t.x - camX;
-                const screenY = t.y - camY;
                 const radius = t.getLightRadius();
+                const grad = lightCtx.createRadialGradient(t.x, t.y, 10, t.x, t.y, radius);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 1)');      
+                grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');  
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
                 
-                if (screenX > -radius && screenX < width + radius && screenY > -radius && screenY < height + radius) {
-                    const grad = lightCtx.createRadialGradient(screenX, screenY, 10, screenX, screenY, radius);
-                    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');      
-                    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');  
-                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
-                    
-                    lightCtx.fillStyle = grad;
-                    lightCtx.beginPath();
-                    lightCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
-                    lightCtx.fill();
-                }
+                lightCtx.fillStyle = grad;
+                lightCtx.beginPath();
+                lightCtx.arc(t.x, t.y, radius, 0, Math.PI * 2);
+                lightCtx.fill();
             });
 
-            const pScreenX = player.x - camX;
-            const pScreenY = player.y - camY;
             const pRadius = 180;
-            const pGrad = lightCtx.createRadialGradient(pScreenX, pScreenY, 20, pScreenX, pScreenY, pRadius);
+            const pGrad = lightCtx.createRadialGradient(player.x, player.y, 20, player.x, player.y, pRadius);
             pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); 
             pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             lightCtx.fillStyle = pGrad;
             lightCtx.beginPath();
-            lightCtx.arc(pScreenX, pScreenY, pRadius, 0, Math.PI*2);
+            lightCtx.arc(player.x, player.y, pRadius, 0, Math.PI*2);
             lightCtx.fill();
 
-            // Give the Smilers a tiny face glow so their smiles pierce the darkness
             enemies.forEach(enemy => {
-                const smileX = enemy.drawX + Math.cos(enemy.drawAngle) * 18 - camX;
-                const smileY = enemy.drawY + Math.sin(enemy.drawAngle) * 18 - camY;
+                const smileX = enemy.drawX + Math.cos(enemy.drawAngle) * 18;
+                const smileY = enemy.drawY + Math.sin(enemy.drawAngle) * 18;
                 
                 const sGrad = lightCtx.createRadialGradient(smileX, smileY, 2, smileX, smileY, 25);
                 sGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
@@ -1209,10 +1332,10 @@
             });
 
             if (player.flashL > 0) {
-                drawMuzzleLight(player.muzzleX_L - camX, player.muzzleY_L - camY, player.flashL);
+                drawMuzzleLight(player.muzzleX_L, player.muzzleY_L, player.flashL);
             }
             if (player.flashR > 0) {
-                drawMuzzleLight(player.muzzleX_R - camX, player.muzzleY_R - camY, player.flashR);
+                drawMuzzleLight(player.muzzleX_R, player.muzzleY_R, player.flashR);
             }
 
             function drawMuzzleLight(x, y, flashAmount) {
@@ -1225,6 +1348,8 @@
                 lightCtx.arc(x, y, fRadius, 0, Math.PI*2);
                 lightCtx.fill();
             }
+
+            lightCtx.restore();
 
             ctx.save();
             ctx.globalCompositeOperation = 'source-over';
@@ -1255,128 +1380,143 @@
         let lastTime = performance.now();
 
         function gameLoop(currentTime) {
-            const dt = (currentTime - lastTime) / 1000; 
+            let dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
+            if (dt > 0.1) dt = 0.1; // Cap dt to prevent huge jumps when unpausing
 
-            // Compute Screen Shake Once Per Frame
-            let currentShakeX = 0;
-            let currentShakeY = 0;
-            if (shakeTime > 0) {
-                shakeTime -= dt;
-                currentShakeX = (Math.random() - 0.5) * shakeMag * 2;
-                currentShakeY = (Math.random() - 0.5) * shakeMag * 2;
-            }
-
-            // Updates
-            player.update(dt);
-            torches.forEach(t => t.update(dt));
-            trapdoor.update(dt);
-
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                let enemy = enemies[i];
-                enemy.update(dt, player, enemies);
-
-                // Bullet Collision
-                for (let j = bullets.length - 1; j >= 0; j--) {
-                    let b = bullets[j];
-                    let dx = enemy.x - b.x;
-                    let dy = enemy.y - b.y;
-                    if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
-                        enemy.hp -= b.damage;
-                        
-                        // --- DAMAGE TEXT ---
-                        damageTexts.push({
-                            x: enemy.x + (Math.random() - 0.5) * 20,
-                            y: enemy.y - 20,
-                            text: "-" + b.damage,
-                            life: 0.8,
-                            vy: -60 - Math.random() * 20
-                        });
-
-                        // --- BLOOD SPLATTER ---
-                        let hitAngle = Math.atan2(b.vy, b.vx);
-                        let numParticles = 6 + Math.floor(Math.random() * 5);
-                        for(let p = 0; p < numParticles; p++) {
-                            let spread = (Math.random() - 0.5) * 1.5; // Splatter cone
-                            let speed = 150 + Math.random() * 400; // Burst speed
-                            let size = 1.5 + Math.random() * 4;
-                            // Dark gritty goop colors (Crimsons to pitch black)
-                            let colors = ['#4a0505', '#240101', '#110101', '#050505'];
-                            let color = colors[Math.floor(Math.random() * colors.length)];
-                            
-                            activeBlood.push({
-                                x: enemy.x - Math.cos(hitAngle)*10, // Start slightly inside the enemy
-                                y: enemy.y - Math.sin(hitAngle)*10,
-                                vx: Math.cos(hitAngle + spread) * speed,
-                                vy: Math.sin(hitAngle + spread) * speed,
-                                size: size,
-                                color: color,
-                                friction: 0.80 + Math.random() * 0.1
-                            });
-                        }
-
-                        bullets.splice(j, 1);
-                        break; 
+            // Handle UI states
+            if (gameState === 'countdown') {
+                countdownTimer -= dt;
+                if (countdownTimer <= 0) {
+                    countdownValue--;
+                    if (countdownValue > 0) {
+                        countdownTimer = 1.0;
+                        triggerCountdownAnim(countdownValue);
+                    } else if (countdownValue === 0) {
+                        countdownTimer = 1.0;
+                        triggerCountdownAnim("GO!");
+                    } else {
+                        setGameState('playing');
                     }
                 }
-                if (enemy.hp <= 0) {
-                    enemies.splice(i, 1);
-                }
             }
 
-            for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].update(dt);
-                if (bullets[i].life <= 0) {
-                    bullets.splice(i, 1);
+            // Only update game mechanics if actively playing
+            if (gameState === 'playing') {
+                if (shakeTime > 0) {
+                    shakeTime -= dt;
+                    currentShakeX = (Math.random() - 0.5) * shakeMag * 2 * settings.shake;
+                    currentShakeY = (Math.random() - 0.5) * shakeMag * 2 * settings.shake;
+                } else {
+                    currentShakeX = 0;
+                    currentShakeY = 0;
                 }
-            }
 
-            // Update Goop Splatter Particles
-            for (let i = activeBlood.length - 1; i >= 0; i--) {
-                let p = activeBlood[i];
-                p.x += p.vx * dt;
-                p.y += p.vy * dt;
+                player.update(dt);
+                torches.forEach(t => t.update(dt));
+                trapdoor.update(dt);
+
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    let enemy = enemies[i];
+                    enemy.update(dt, player, enemies);
+
+                    for (let j = bullets.length - 1; j >= 0; j--) {
+                        let b = bullets[j];
+                        let dx = enemy.x - b.x;
+                        let dy = enemy.y - b.y;
+                        if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
+                            enemy.hp -= b.damage;
+                            
+                            // Smaller, white crisp text with a tiny drop shadow outline
+                            damageTexts.push({
+                                x: enemy.x + (Math.random() - 0.5) * 20,
+                                y: enemy.y - 20,
+                                text: "-" + b.damage,
+                                life: 0.8,
+                                vy: -40 - Math.random() * 20
+                            });
+
+                            let hitAngle = Math.atan2(b.vy, b.vx);
+                            let numParticles = 6 + Math.floor(Math.random() * 5);
+                            for(let p = 0; p < numParticles; p++) {
+                                let spread = (Math.random() - 0.5) * 1.5; 
+                                let speed = 150 + Math.random() * 400; 
+                                let size = 1.5 + Math.random() * 4;
+                                let colors = ['#4a0505', '#240101', '#110101', '#050505'];
+                                let color = colors[Math.floor(Math.random() * colors.length)];
+                                
+                                activeBlood.push({
+                                    x: enemy.x - Math.cos(hitAngle)*10, 
+                                    y: enemy.y - Math.sin(hitAngle)*10,
+                                    vx: Math.cos(hitAngle + spread) * speed,
+                                    vy: Math.sin(hitAngle + spread) * speed,
+                                    size: size,
+                                    color: color,
+                                    friction: 0.80 + Math.random() * 0.1
+                                });
+                            }
+
+                            bullets.splice(j, 1);
+                            break; 
+                        }
+                    }
+                    if (enemy.hp <= 0) {
+                        enemies.splice(i, 1);
+                    }
+                }
+
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    bullets[i].update(dt);
+                    if (bullets[i].life <= 0) {
+                        bullets.splice(i, 1);
+                    }
+                }
+
+                for (let i = activeBlood.length - 1; i >= 0; i--) {
+                    let p = activeBlood[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    
+                    p.x = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.x));
+                    p.y = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.y));
+                    
+                    let drag = Math.pow(p.friction, dt * 60);
+                    p.vx *= drag;
+                    p.vy *= drag;
+
+                    if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
+                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color});
+                        activeBlood.splice(i, 1);
+                    }
+                }
                 
-                // Keep splatters inside the room bounds
-                p.x = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.x));
-                p.y = Math.max(20 + p.size, Math.min(ROOM_SIZE - 20 - p.size, p.y));
-                
-                // Realistic drag
-                let drag = Math.pow(p.friction, dt * 60);
-                p.vx *= drag;
-                p.vy *= drag;
+                if (floorSplatters.length > 1000) {
+                    floorSplatters.splice(0, floorSplatters.length - 1000);
+                }
 
-                // When slow enough, settle and stain the floor
-                if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
-                    floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color});
-                    activeBlood.splice(i, 1);
+                for (let i = damageTexts.length - 1; i >= 0; i--) {
+                    let d = damageTexts[i];
+                    d.y += d.vy * dt;
+                    d.life -= dt;
+                    if (d.life <= 0) damageTexts.splice(i, 1);
                 }
             }
-            // Memory limit for permanent stains
-            if (floorSplatters.length > 1000) {
-                floorSplatters.splice(0, floorSplatters.length - 1000);
-            }
 
-            // Update Damage Texts
-            for (let i = damageTexts.length - 1; i >= 0; i--) {
-                let d = damageTexts[i];
-                d.y += d.vy * dt;
-                d.life -= dt;
-                if (d.life <= 0) damageTexts.splice(i, 1);
-            }
+            // Fill empty void 
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, width, height);
 
-            // Camera Setup
-            let camX = player.x - width / 2 + currentShakeX;
-            let camY = player.y - height / 2 + currentShakeY;
-            
-            // Render Background
-            drawRoom(ctx, camX, camY);
+            let camX = player.x;
+            let camY = player.y;
 
-            // Render Entities (World Space) - Beneath Lighting
+            // Render World Space (with global zoom and camera shake applied!)
             ctx.save();
-            ctx.translate(-camX, -camY);
+            ctx.translate(width / 2, height / 2);
+            ctx.scale(settings.zoom, settings.zoom);
+            ctx.translate(-camX + currentShakeX, -camY + currentShakeY);
 
-            // Draw settled floor splatters
+            drawRoom(ctx);
+
             floorSplatters.forEach(s => {
                 ctx.fillStyle = s.color;
                 ctx.beginPath();
@@ -1384,11 +1524,9 @@
                 ctx.fill();
             });
 
-            // Draw actively moving blood physics
             activeBlood.forEach(p => {
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
-                // Stretch moving liquid based on its speed for realism
                 let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
                 if (speed > 50) {
                     ctx.save();
@@ -1407,34 +1545,32 @@
             torches.forEach(t => t.draw(ctx));
             bullets.forEach(bullet => bullet.draw(ctx));
             
-            // Draw enemy bodies AND smiles under the light, but BEFORE the player
             enemies.forEach(enemy => {
                 enemy.drawBody(ctx);
                 enemy.drawSmile(ctx);
             }); 
             
             player.draw(ctx);
-            
-            ctx.restore();
 
-            // Render Dynamic Lighting Overlay (Screen Space)
-            drawLighting(ctx, camX, camY);
-
-            // Draw floating damage texts over everything (World space)
-            ctx.save();
-            ctx.translate(-camX, -camY);
             damageTexts.forEach(d => {
                 let alpha = Math.max(0, d.life / 0.8);
                 ctx.globalAlpha = alpha;
-                ctx.fillStyle = '#ff3333';
-                ctx.strokeStyle = '#000000';
-                ctx.lineWidth = 3;
-                ctx.font = 'bold 22px system-ui, -apple-system, sans-serif';
+                
+                // Smaller, cleaner white text with shadow
+                ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.strokeText(d.text, d.x, d.y);
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetY = 2;
+                
                 ctx.fillText(d.text, d.x, d.y);
             });
-            ctx.restore();
+
+            ctx.restore(); // End World Space
+
+            // Render Dynamic Lighting Overlay (Screen Space)
+            drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
 
             // Render UI
             drawJoysticks(ctx);
