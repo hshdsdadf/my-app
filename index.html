@@ -100,7 +100,7 @@
         // --- INPUT MANAGEMENT (Multi-touch Joysticks) ---
         const input = {
             left: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 },
-            right: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 }
+            right: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0, lastTapTime: 0, doubleTapped: false }
         };
 
         const JOYSTICK_MAX_RADIUS = 60;
@@ -129,6 +129,15 @@
                 else {
                     rightFound = true;
                     if (!input.right.active) {
+                        const now = performance.now();
+                        // Check for double tap (within 300 milliseconds)
+                        if (now - input.right.lastTapTime < 300) {
+                            input.right.doubleTapped = true;
+                            input.right.lastTapTime = 0; // Reset to prevent triple-tap firing twice
+                        } else {
+                            input.right.lastTapTime = now;
+                        }
+
                         input.right.active = true;
                         input.right.id = touch.identifier;
                         input.right.baseX = touch.clientX;
@@ -401,23 +410,109 @@
                 // Coordinates to track muzzle flash locations for the lighting engine
                 this.muzzleX_L = 0; this.muzzleY_L = 0;
                 this.muzzleX_R = 0; this.muzzleY_R = 0;
+
+                // Dash mechanics
+                this.isDashing = false;
+                this.dashTime = 0;
+                this.dashDuration = 0.15; // 0.15 seconds of dashing
+                this.dashSpeed = 1600;
+                this.dashCooldown = 0;
+                this.dashMaxCooldown = 0.8; // Can dash every 0.8 seconds
+                this.dashDirX = 0;
+                this.dashDirY = 0;
+                this.dashParticles = [];
+                this.dashRings = [];
+            }
+
+            tryDash() {
+                if (!this.isDashing && this.dashCooldown <= 0) {
+                    let dx = 0, dy = 0;
+                    
+                    // Dash in movement direction
+                    if (input.left.magnitude > 0.1) {
+                        dx = input.left.vectorX;
+                        dy = input.left.vectorY;
+                    } else {
+                        // If standing still, dash in the direction we are facing
+                        dx = Math.cos(this.facingAngle);
+                        dy = Math.sin(this.facingAngle);
+                    }
+                    
+                    const mag = Math.sqrt(dx*dx + dy*dy);
+                    if (mag > 0) {
+                        this.dashDirX = dx / mag;
+                        this.dashDirY = dy / mag;
+                        this.isDashing = true;
+                        this.dashTime = this.dashDuration;
+                        this.dashCooldown = this.dashMaxCooldown;
+                        
+                        // Add an expanding shockwave ring at the start of the dash
+                        this.dashRings.push({x: this.x, y: this.y, radius: 15, life: 0.2, maxLife: 0.2});
+                    }
+                }
             }
 
             update(dt) {
+                // Check for double tap input
+                if (input.right.doubleTapped) {
+                    this.tryDash();
+                    input.right.doubleTapped = false; // Consume the input
+                }
+
                 const moveMag = input.left.magnitude;
-                if (moveMag > 0) {
+                const leanAngle = (moveMag > 0.1) ? input.left.vectorX * 0.15 * moveMag : 0;
+
+                // Handle Dash Timers & Movement
+                this.dashCooldown -= dt;
+
+                if (this.isDashing) {
+                    this.dashTime -= dt;
+                    
+                    // Spawn high-speed wind streaks behind the player
+                    this.dashParticles.push({
+                        x: this.x + (Math.random() - 0.5) * 30,
+                        y: this.y + (Math.random() - 0.5) * 30,
+                        vx: -this.dashDirX * (800 + Math.random() * 400),
+                        vy: -this.dashDirY * (800 + Math.random() * 400),
+                        life: 0.15,
+                        maxLife: 0.15,
+                        size: Math.random() * 3 + 1
+                    });
+                    
+                    this.x += this.dashDirX * this.dashSpeed * dt;
+                    this.y += this.dashDirY * this.dashSpeed * dt;
+                    
+                    if (this.dashTime <= 0) {
+                        this.isDashing = false;
+                    }
+                } else if (moveMag > 0) {
+                    // Normal Movement
                     this.x += input.left.vectorX * this.speed * moveMag * dt;
                     this.y += input.left.vectorY * this.speed * moveMag * dt;
-                    
-                    // Constrain player to room, considering walls
-                    const wallThickness = 20;
-                    this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
-                    this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
-
                     this.animTime += dt * (10 + moveMag * 15); 
                 } else {
                     this.animTime += dt * 3;
                 }
+
+                // Update Dash Effects
+                for (let i = this.dashParticles.length - 1; i >= 0; i--) {
+                    let p = this.dashParticles[i];
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.life -= dt;
+                    if (p.life <= 0) this.dashParticles.splice(i, 1);
+                }
+                for (let i = this.dashRings.length - 1; i >= 0; i--) {
+                    let r = this.dashRings[i];
+                    r.life -= dt;
+                    r.radius += dt * 500; // Expand rapidly
+                    if (r.life <= 0) this.dashRings.splice(i, 1);
+                }
+                
+                // Constrain player to room, considering walls
+                const wallThickness = 20;
+                this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
+                this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
 
                 if (input.right.active && input.right.magnitude > 0.1) {
                     this.facingAngle = Math.atan2(input.right.vectorY, input.right.vectorX);
@@ -431,7 +526,8 @@
                 this.flashR = Math.max(0, this.flashR - dt * 5);
 
                 this.fireTimer -= dt;
-                if (input.right.active && input.right.magnitude > 0.1 && this.fireTimer <= 0) {
+                // Cannot shoot while dashing
+                if (!this.isDashing && input.right.active && input.right.magnitude > 0.1 && this.fireTimer <= 0) {
                     this.shoot();
                     this.fireTimer = this.fireRate;
                 }
@@ -442,9 +538,22 @@
                 const sway = (input.left.magnitude > 0.1) ? Math.sin(this.animTime + (this.leftGunNext ? 0 : Math.PI)) * 5 : 0;
                 const gunOffsetY = 12 + sway;
                 
-                const pivotX = this.x + gunOffsetX * Math.cos(this.facingAngle) - gunOffsetY * Math.sin(this.facingAngle);
-                const pivotY = this.y + gunOffsetX * Math.sin(this.facingAngle) + gunOffsetY * Math.cos(this.facingAngle);
+                // Match the visual body transformations applied in draw() to perfectly locate the gun
+                const isMoving = input.left.magnitude > 0.1;
+                const runIntensity = input.left.magnitude; 
+                const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); 
+                const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
+                const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
+
+                // Apply scale and rotation to find the exact pivot point on the side of the body
+                const scaledY = gunOffsetY * breathScale;
+                const rotatedX = gunOffsetX * Math.cos(leanAngle) - scaledY * Math.sin(leanAngle);
+                const rotatedY = gunOffsetX * Math.sin(leanAngle) + scaledY * Math.cos(leanAngle);
                 
+                const pivotX = this.x + rotatedX;
+                const pivotY = this.y - bobbing + rotatedY;
+                
+                // Project forward from the pivot point based on aiming angle
                 const barrelLength = 25;
                 const tipX = pivotX + Math.cos(this.facingAngle) * barrelLength;
                 const tipY = pivotY + Math.sin(this.facingAngle) * barrelLength;
@@ -470,8 +579,43 @@
                 const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
                 const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
 
+                // Draw Dash Speed Streaks (World Space)
+                this.dashParticles.forEach(p => {
+                    const alpha = Math.max(0, p.life / p.maxLife);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    // Draw a line tracing backwards along its velocity
+                    ctx.lineTo(p.x - p.vx * 0.05, p.y - p.vy * 0.05);
+                    ctx.strokeStyle = `rgba(200, 210, 220, ${alpha * 0.7})`;
+                    ctx.lineWidth = p.size;
+                    ctx.lineCap = 'round';
+                    ctx.stroke();
+                    ctx.restore();
+                });
+
+                // Draw Dash Impact Rings
+                this.dashRings.forEach(r => {
+                    const alpha = Math.max(0, r.life / r.maxLife);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(220, 230, 240, ${alpha * 0.5})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.restore();
+                });
+
                 ctx.save();
                 ctx.translate(this.x, this.y);
+
+                // Squash and Stretch (smear animation) while actively dashing
+                if (this.isDashing) {
+                    const dashAngle = Math.atan2(this.dashDirY, this.dashDirX);
+                    ctx.rotate(dashAngle);
+                    ctx.scale(1.5, 0.6); // Stretch out, squash thin
+                    ctx.rotate(-dashAngle);
+                }
                 
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.beginPath();
