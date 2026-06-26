@@ -67,9 +67,32 @@
             pointer-events: none; z-index: 100;
         }
 
+        /* HUD: Health & XP Bars */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px 80px 15px 20px; 
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+        }
+        .bar-bg {
+            width: 100%; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px; position: relative; overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .bar-bg.vitals-bg { height: 24px; }
+        .bar-bg.growth-bg { height: 14px; border-color: rgba(255,255,255,0.05); }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.2s ease-out; }
+        .vitals-fill { background: linear-gradient(90deg, #9d0208, #d00000); box-shadow: 0 0 10px #d00000; }
+        .growth-fill { background: linear-gradient(90deg, #0077b6, #00b4d8); box-shadow: 0 0 10px #00b4d8; }
+        .bar-label {
+            position: absolute; top: 0; left: 12px; font-weight: 800; color: white;
+            text-shadow: 1px 1px 3px black; letter-spacing: 2px;
+        }
+        .vitals-label { font-size: 14px; line-height: 24px; }
+        .growth-label { font-size: 10px; line-height: 14px; opacity: 0.8; }
+
         #pause-btn {
-            position: absolute; top: 20px; right: 20px;
-            width: 50px; height: 50px;
+            position: absolute; top: 15px; right: 20px;
+            width: 45px; height: 45px;
             background: rgba(255, 255, 255, 0.05); border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             pointer-events: auto; cursor: pointer;
@@ -92,17 +115,25 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             pointer-events: auto; opacity: 1; transition: opacity 0.3s ease;
         }
-        .menu-overlay.hidden, #pause-btn.hidden { opacity: 0; pointer-events: none; }
+        .menu-overlay.hidden, #pause-btn.hidden, #hud.hidden { opacity: 0; pointer-events: none; }
 
         .menu-box {
             background: rgba(20, 20, 25, 0.8); border: 1px solid rgba(255,255,255,0.1);
             padding: 40px; border-radius: 20px; display: flex; flex-direction: column;
             align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             transform: translateY(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 90%; text-align: center;
         }
         .menu-overlay.hidden .menu-box { transform: translateY(30px); }
 
         .menu-overlay h2 { color: #e4e6d9; margin: 0 0 30px 0; font-size: 32px; letter-spacing: 3px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        /* Game Over Specific */
+        .typewriter-text {
+            color: #ccc; font-family: monospace; font-size: 18px; line-height: 1.6;
+            margin-bottom: 30px; text-align: left; white-space: pre-wrap; width: 100%; min-height: 160px;
+        }
+        .death-title { color: #d00000; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
 
         .menu-btn {
             background: transparent; border: 2px solid #555; color: #ccc;
@@ -156,6 +187,19 @@
 
     <!-- UI Overlay Layer -->
     <div id="ui-layer">
+        
+        <!-- HUD -->
+        <div id="hud">
+            <div class="bar-bg vitals-bg">
+                <div id="vitals-bar" class="bar-fill vitals-fill" style="width: 100%;"></div>
+                <div class="bar-label vitals-label">VITALS</div>
+            </div>
+            <div class="bar-bg growth-bg">
+                <div id="growth-bar" class="bar-fill growth-fill" style="width: 0%;"></div>
+                <div class="bar-label growth-label">GROWTH</div>
+            </div>
+        </div>
+
         <button id="pause-btn" onclick="setGameState('paused')">
             <div class="pause-bar"></div>
             <div class="pause-bar"></div>
@@ -167,11 +211,10 @@
                 <h2>PAUSED</h2>
                 <button class="menu-btn primary" onclick="startCountdown()">Resume</button>
                 <button class="menu-btn" onclick="setGameState('settings')">Settings</button>
-                <button class="menu-btn" onclick="alert('Main Menu routing pending...')">Main Menu</button>
             </div>
         </div>
 
-        <!-- Settings Menu (Clamped Values) -->
+        <!-- Settings Menu -->
         <div id="settings-menu" class="menu-overlay hidden">
             <div class="menu-box">
                 <h2>SETTINGS</h2>
@@ -188,6 +231,15 @@
                     <input type="range" id="set-shake" min="0" max="200" value="100" oninput="updateSettingsUI()">
                 </div>
                 <button class="menu-btn primary" style="margin-top: 20px;" onclick="setGameState('paused')">Back</button>
+            </div>
+        </div>
+
+        <!-- Game Over Menu -->
+        <div id="gameover-menu" class="menu-overlay hidden">
+            <div class="menu-box">
+                <div id="death-title" class="death-title"></div>
+                <div id="typewriter" class="typewriter-text"></div>
+                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">Restart Run</button>
             </div>
         </div>
 
@@ -216,7 +268,7 @@
         resize();
 
         // --- GLOBAL STATE, PROGRESSION, & SETTINGS ---
-        let gameState = 'playing'; 
+        let gameState = 'playing'; // playing, paused, settings, countdown, gameover
         let countdownValue = 0;
         let countdownTimer = 0;
 
@@ -224,7 +276,14 @@
         let totalEnemiesThisRoom = 4;
         let enemiesKilledThisRoom = 0;
         let hasKey = false;
-        let roomTextTimer = 4.0;
+        
+        let roomTextTimer = 2.0;
+        let keyDroppedTimer = 0;
+        let exitDoorProgress = 0; // 0 = locked, 1 = fully open
+
+        // Stats Tracking
+        let totalKills = 0;
+        let timeAlive = 0;
 
         const settings = {
             brightness: 0.55, 
@@ -250,7 +309,9 @@
             gameState = state;
             document.getElementById('pause-menu').classList.add('hidden');
             document.getElementById('settings-menu').classList.add('hidden');
+            document.getElementById('gameover-menu').classList.add('hidden');
             document.getElementById('pause-btn').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
             
             if (state === 'playing') {
                 document.getElementById('pause-btn').classList.remove('hidden');
@@ -260,7 +321,71 @@
                 document.getElementById('pause-menu').classList.remove('hidden');
             } else if (state === 'settings') {
                 document.getElementById('settings-menu').classList.remove('hidden');
+            } else if (state === 'gameover') {
+                document.getElementById('gameover-menu').classList.remove('hidden');
+                document.getElementById('hud').classList.add('hidden');
+                runGameOverSequence();
             }
+        }
+
+        function updateHUD() {
+            const hpPercent = Math.max(0, (player.hp / player.maxHp) * 100);
+            const xpPercent = Math.min(100, (player.xp / player.maxXp) * 100);
+            document.getElementById('vitals-bar').style.width = `${hpPercent}%`;
+            document.getElementById('growth-bar').style.width = `${xpPercent}%`;
+        }
+
+        // --- GAME OVER SEQUENCE ---
+        const deathMessages = [
+            "Cracked like a Sunday morning breakfast.",
+            "Scrambled by the void.",
+            "Poached to perfection by the shadows.",
+            "Devoured alive by the creeping grins.",
+            "You cracked under the pressure."
+        ];
+        let typewriterInterval;
+
+        function runGameOverSequence() {
+            document.getElementById('restart-btn').classList.add('hidden');
+            document.getElementById('typewriter').innerHTML = "";
+            
+            const randomDeath = deathMessages[Math.floor(Math.random() * deathMessages.length)];
+            document.getElementById('death-title').innerText = randomDeath;
+
+            const score = Math.floor(timeAlive * 10) + (totalKills * 50) + ((currentRoom - 1) * 200);
+
+            const finalStats = `KILLS: ${totalKills}
+TIME ALIVE: ${Math.floor(timeAlive)}s
+WEAPONS HELD: ${player.weapons}
+ROOMS CLEARED: ${currentRoom - 1}
+
+--------------------------
+TOTAL SCORE: ${score}`;
+
+            let i = 0;
+            clearInterval(typewriterInterval);
+            typewriterInterval = setInterval(() => {
+                document.getElementById('typewriter').innerHTML += finalStats.charAt(i);
+                i++;
+                if (i >= finalStats.length) {
+                    clearInterval(typewriterInterval);
+                    document.getElementById('restart-btn').classList.remove('hidden');
+                }
+            }, 30); // Speed of typing
+        }
+
+        function restartRun() {
+            player.hp = player.maxHp = 100;
+            player.xp = 0; player.level = 1;
+            player.x = 200; player.y = ROOM_SIZE / 2;
+            
+            timeAlive = 0;
+            totalKills = 0;
+            currentRoom = 0; // Will be incremented to 1 by startNextRoom
+            
+            updateHUD();
+            startNextRoom();
+            setGameState('playing');
         }
 
         function startCountdown() {
@@ -280,12 +405,12 @@
 
         function startNextRoom() {
             currentRoom++;
-            // +1 enemy per room, capping the bonus at +9 (so max 13 enemies by room 10)
             totalEnemiesThisRoom = 4 + Math.min(currentRoom - 1, 9);
             enemiesKilledThisRoom = 0;
             hasKey = false;
+            exitDoorProgress = 0;
             
-            player.x = 200; // Spawn near the left wall
+            player.x = 200; 
             player.y = ROOM_SIZE / 2;
             
             enemies.length = 0;
@@ -293,14 +418,16 @@
             keys.length = 0;
             activeSplatter.length = 0;
             damageTexts.length = 0;
+            floorSplatters.length = 0; // Clean the room
             
             trapdoor.state = 'waiting';
             trapdoor.timer = 0;
             trapdoor.enemiesToSpawn = totalEnemiesThisRoom;
-            trapdoor.delayTimer = 3.0; 
+            trapdoor.delayTimer = 2.0; 
             trapdoor.openAngle = 0;
             
-            roomTextTimer = 4.0;
+            roomTextTimer = 1.5;
+            keyDroppedTimer = 0;
         }
 
         let shakeTime = 0;
@@ -454,7 +581,7 @@
                 ctx.beginPath();
                 ctx.arc(-10, 0, 6, 0, Math.PI*2);
                 ctx.fill();
-                ctx.fillStyle = '#050508'; // Hole in key head
+                ctx.fillStyle = '#050508'; 
                 ctx.beginPath();
                 ctx.arc(-10, 0, 2, 0, Math.PI*2);
                 ctx.fill();
@@ -477,7 +604,7 @@
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
                 this.life = 1.0; 
-                this.damage = 10; // Reduced starter damage
+                this.damage = 10; 
             }
             
             update(dt) {
@@ -616,9 +743,14 @@
                     }
 
                     let forwardSpeed = 0;
-                    if (this.distToPlayer > player.radius + 25) {
+                    if (this.distToPlayer > player.radius + 20) {
                         forwardSpeed = this.speed;
                     } else {
+                        // Biting player! 10 dmg/sec
+                        player.hp -= 10 * dt;
+                        player.hurtTimer = 0.1;
+                        updateHUD();
+
                         if (this.attackCooldown <= 0) {
                             this.isAttacking = true;
                             this.attackTime = 0.3; 
@@ -1036,6 +1168,13 @@
 
         class Player {
             constructor() {
+                this.hp = 100;
+                this.maxHp = 100;
+                this.xp = 0;
+                this.maxXp = 100;
+                this.level = 1;
+                this.weapons = 2; // dual pistols
+
                 this.x = 200; 
                 this.y = ROOM_SIZE / 2; 
                 this.radius = 35;
@@ -1050,6 +1189,7 @@
                 this.recoilR = 0;
                 this.flashL = 0;
                 this.flashR = 0;
+                this.hurtTimer = 0;
                 
                 this.muzzleX_L = 0; this.muzzleY_L = 0;
                 this.muzzleX_R = 0; this.muzzleY_R = 0;
@@ -1092,6 +1232,8 @@
             }
 
             update(dt) {
+                if (this.hurtTimer > 0) this.hurtTimer -= dt;
+
                 if (input.right.doubleTapped) {
                     this.tryDash();
                     input.right.doubleTapped = false; 
@@ -1163,6 +1305,11 @@
                     this.shoot();
                     this.fireTimer = this.fireRate;
                     triggerShake(2, 0.1); 
+                }
+
+                // Check death condition
+                if (this.hp <= 0 && gameState === 'playing') {
+                    setGameState('gameover');
                 }
             }
 
@@ -1245,10 +1392,17 @@
                 ctx.translate(0, -bobbing);
                 ctx.scale(1, breathScale);
 
+                // Blend body gradient with red if taking damage
                 const eggGrad = ctx.createRadialGradient(-10, -15, 5, 0, 0, this.radius + 10);
-                eggGrad.addColorStop(0, '#ffffff');    
-                eggGrad.addColorStop(0.4, '#e4e6d9'); 
-                eggGrad.addColorStop(1, '#8b8e83');   
+                if (this.hurtTimer > 0) {
+                    eggGrad.addColorStop(0, '#ff9999');    
+                    eggGrad.addColorStop(0.4, '#ff3333'); 
+                    eggGrad.addColorStop(1, '#990000'); 
+                } else {
+                    eggGrad.addColorStop(0, '#ffffff');    
+                    eggGrad.addColorStop(0.4, '#e4e6d9'); 
+                    eggGrad.addColorStop(1, '#8b8e83');   
+                }
 
                 ctx.fillStyle = eggGrad;
                 ctx.beginPath();
@@ -1362,22 +1516,59 @@
             ctx.save();
             ctx.translate(ROOM_SIZE, ROOM_SIZE / 2);
             
+            // Blast door opening progress
+            if (hasKey && exitDoorProgress < 1) {
+                exitDoorProgress += 0.015; // Smooth opening speed
+            }
+            
+            // Hallway background behind door
+            ctx.fillStyle = '#010102';
+            ctx.fillRect(-20, -70, 40, 140);
+            
+            // Glowing core light inside
+            const coreGrad = ctx.createLinearGradient(-20, 0, 20, 0);
+            coreGrad.addColorStop(0, hasKey ? 'rgba(0, 255, 100, 0)' : 'rgba(255, 0, 0, 0)');
+            coreGrad.addColorStop(1, hasKey ? 'rgba(0, 255, 100, 0.8)' : 'rgba(255, 0, 0, 0.5)');
+            ctx.fillStyle = coreGrad;
+            ctx.fillRect(-20, -70, 40, 140);
+            
+            const slideOffset = exitDoorProgress * 70; // Doors slide up/down
+
             ctx.fillStyle = '#111';
-            ctx.fillRect(-20, -60, 40, 120);
-            
-            ctx.fillStyle = hasKey ? '#1a2b1a' : '#2b1a1a'; 
-            ctx.fillRect(-15, -55, 30, 110);
-            
             ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(-15, -55, 30, 110);
+            ctx.lineWidth = 3;
             
-            ctx.fillStyle = hasKey ? '#00ff00' : '#ff0000';
-            ctx.shadowColor = ctx.fillStyle;
-            ctx.shadowBlur = 15;
+            // Top Blast Panel
+            ctx.save();
+            ctx.translate(0, -slideOffset);
             ctx.beginPath();
-            ctx.arc(-5, 0, 4, 0, Math.PI*2);
-            ctx.fill();
+            ctx.moveTo(-15, 0); ctx.lineTo(-15, -70); ctx.lineTo(15, -70); ctx.lineTo(15, 0);
+            ctx.lineTo(5, -10); ctx.lineTo(-5, -10); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            
+            // Hazard stripes on top panel
+            ctx.fillStyle = hasKey ? '#1a2b1a' : '#2b1a1a';
+            ctx.fillRect(-10, -50, 20, 30);
+            ctx.restore();
+
+            // Bottom Blast Panel
+            ctx.save();
+            ctx.translate(0, slideOffset);
+            ctx.beginPath();
+            ctx.moveTo(-15, 0); ctx.lineTo(-15, 70); ctx.lineTo(15, 70); ctx.lineTo(15, 0);
+            ctx.lineTo(5, 10); ctx.lineTo(-5, 10); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+            
+            // Hazard stripes on bottom panel
+            ctx.fillStyle = hasKey ? '#1a2b1a' : '#2b1a1a';
+            ctx.fillRect(-10, 20, 20, 30);
+            ctx.restore();
+
+            // Heavy metallic frame casing
+            ctx.fillStyle = '#18181c';
+            ctx.fillRect(-25, -80, 50, 10); // Top frame
+            ctx.fillRect(-25, 70, 50, 10);  // Bottom frame
+            ctx.fillRect(-25, -70, 5, 140); // Left frame
             
             ctx.restore();
         }
@@ -1419,12 +1610,12 @@
             lightCtx.arc(player.x, player.y, pRadius, 0, Math.PI*2);
             lightCtx.fill();
 
-            const dGrad = lightCtx.createRadialGradient(ROOM_SIZE, ROOM_SIZE / 2, 5, ROOM_SIZE, ROOM_SIZE / 2, 100);
+            const dGrad = lightCtx.createRadialGradient(ROOM_SIZE, ROOM_SIZE / 2, 5, ROOM_SIZE, ROOM_SIZE / 2, 100 + (exitDoorProgress * 50));
             dGrad.addColorStop(0, hasKey ? 'rgba(0, 255, 0, 0.4)' : 'rgba(255, 0, 0, 0.4)');
             dGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
             lightCtx.fillStyle = dGrad;
             lightCtx.beginPath();
-            lightCtx.arc(ROOM_SIZE, ROOM_SIZE / 2, 100, 0, Math.PI * 2);
+            lightCtx.arc(ROOM_SIZE, ROOM_SIZE / 2, 150, 0, Math.PI * 2);
             lightCtx.fill();
 
             keys.forEach(k => {
@@ -1517,6 +1708,8 @@
             }
 
             if (gameState === 'playing') {
+                timeAlive += dt; // Track score
+
                 if (shakeTime > 0) {
                     shakeTime -= dt;
                     currentShakeX = (Math.random() - 0.5) * shakeMag * 2 * settings.shake;
@@ -1527,6 +1720,7 @@
                 }
 
                 if (roomTextTimer > 0) roomTextTimer -= dt;
+                if (keyDroppedTimer > 0) keyDroppedTimer -= dt;
 
                 player.update(dt);
                 torches.forEach(t => t.update(dt));
@@ -1539,6 +1733,7 @@
                     let dy = player.y - k.y;
                     if (dx*dx + dy*dy < 2500) { 
                         hasKey = true;
+                        keyDroppedTimer = 3.0; // Flash key text
                         keys.splice(i, 1);
                     }
                 }
@@ -1562,7 +1757,7 @@
                                 x: enemy.x + (Math.random() - 0.5) * 20,
                                 y: enemy.y - 20,
                                 text: "-" + b.damage,
-                                life: 0.8,
+                                life: 0.6,
                                 vy: -40 - Math.random() * 20
                             });
 
@@ -1571,8 +1766,9 @@
                             for(let p = 0; p < numParticles; p++) {
                                 let spread = (Math.random() - 0.5) * 1.5; 
                                 let speed = 150 + Math.random() * 400; 
-                                let size = 1.5 + Math.random() * 4;
-                                let colors = ['#2a2a30', '#111216', '#050508', '#000000']; 
+                                // Much bigger, chunkier blood splatters
+                                let size = 3 + Math.random() * 6;
+                                let colors = ['#6a040f', '#370617', '#9d0208', '#03071e']; 
                                 let color = colors[Math.floor(Math.random() * colors.length)];
                                 
                                 activeSplatter.push({
@@ -1593,6 +1789,7 @@
                     if (enemy.hp <= 0) {
                         enemies.splice(i, 1);
                         enemiesKilledThisRoom++;
+                        totalKills++;
                         if (enemiesKilledThisRoom === totalEnemiesThisRoom) {
                             keys.push(new Key(enemy.x, enemy.y));
                         }
@@ -1619,13 +1816,18 @@
                     p.vy *= drag;
 
                     if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
-                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color});
+                        // Floor splatters now live for 15 seconds!
+                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color, life: 15.0});
                         activeSplatter.splice(i, 1);
                     }
                 }
                 
-                if (floorSplatters.length > 1000) {
-                    floorSplatters.splice(0, floorSplatters.length - 1000);
+                // Fade out floor splatters
+                for (let i = floorSplatters.length - 1; i >= 0; i--) {
+                    floorSplatters[i].life -= dt;
+                    if (floorSplatters[i].life <= 0) {
+                        floorSplatters.splice(i, 1);
+                    }
                 }
 
                 for (let i = damageTexts.length - 1; i >= 0; i--) {
@@ -1651,11 +1853,14 @@
             drawExitDoor(ctx);
 
             floorSplatters.forEach(s => {
+                // Fade out visually over the last 2 seconds of life
+                ctx.globalAlpha = Math.min(1, s.life / 2.0); 
                 ctx.fillStyle = s.color;
                 ctx.beginPath();
                 ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
             });
+            ctx.globalAlpha = 1.0;
 
             activeSplatter.forEach(p => {
                 ctx.fillStyle = p.color;
@@ -1687,15 +1892,15 @@
             player.draw(ctx);
 
             damageTexts.forEach(d => {
-                let alpha = Math.max(0, d.life / 0.8);
+                let alpha = Math.max(0, d.life / 0.6);
                 ctx.globalAlpha = alpha;
                 
-                ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetY = 2;
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetY = 1;
                 
                 ctx.fillText(d.text, d.x, d.y);
             });
@@ -1705,11 +1910,11 @@
             drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
 
             if (roomTextTimer > 0) {
-                let alpha = Math.min(1, roomTextTimer);
+                let alpha = Math.min(1, roomTextTimer / 1.5);
                 ctx.save();
                 ctx.globalAlpha = alpha;
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 70px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 40px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
                 ctx.shadowBlur = 10;
@@ -1718,7 +1923,22 @@
                 ctx.restore();
             }
 
-            drawJoysticks(ctx);
+            if (keyDroppedTimer > 0) {
+                let alpha = Math.min(1, keyDroppedTimer / 1.5);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#ffea00';
+                ctx.font = 'bold 30px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(255,200,0,0.8)';
+                ctx.shadowBlur = 15;
+                ctx.fillText(`KEY DROPPED!`, width/2, height/2 - 100);
+                ctx.restore();
+            }
+
+            if (gameState === 'playing') {
+                drawJoysticks(ctx);
+            }
 
             requestAnimationFrame(gameLoop);
         }
