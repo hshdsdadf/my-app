@@ -69,26 +69,33 @@
 
         /* HUD: Health & XP Bars */
         #hud {
-            position: absolute; top: 0; left: 0; width: 100%; padding: 15px 80px 15px 20px; 
-            box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;
+            position: absolute; top: 0; left: 0; width: 100%; padding: 12px 80px 12px 16px; 
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 5px;
             pointer-events: none;
         }
         .bar-bg {
-            width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px; position: relative; overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            width: 100%; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 3px; position: relative; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        .bar-bg.vitals-bg { height: 14px; }
-        .bar-bg.growth-bg { height: 8px; border-color: rgba(255,255,255,0.05); }
-        .bar-fill { height: 100%; width: 100%; transition: width 0.2s ease-out; }
-        .vitals-fill { background: linear-gradient(90deg, #9d0208, #d00000); box-shadow: 0 0 10px #d00000; }
-        .growth-fill { background: linear-gradient(90deg, #0077b6, #00b4d8); box-shadow: 0 0 10px #00b4d8; }
+        .bar-bg.vitals-bg { height: 16px; }
+        .bar-bg.growth-bg { height: 8px; border-color: rgba(255,255,255,0.04); }
+        .bar-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
+        .vitals-fill {
+            background: linear-gradient(90deg, #5a0000 0%, #9d0208 50%, #d00000 80%, #ff2222 100%);
+            box-shadow: 0 0 12px #aa0000, inset 0 1px 0 rgba(255,100,100,0.3);
+        }
+        .growth-fill {
+            background: linear-gradient(90deg, #003a5a, #0077b6, #00b4d8);
+            box-shadow: 0 0 8px #0077b6;
+        }
         .bar-label {
-            position: absolute; top: 0; left: 8px; font-weight: 800; color: white;
-            text-shadow: 1px 1px 3px black; letter-spacing: 1.5px;
+            position: absolute; top: 0; left: 8px; font-weight: 900; color: rgba(255,255,255,0.85);
+            text-shadow: 1px 1px 2px black; letter-spacing: 2px;
+            font-family: 'Courier New', Courier, monospace;
         }
-        .vitals-label { font-size: 10px; line-height: 14px; }
-        .growth-label { font-size: 6px; line-height: 8px; opacity: 0.8; }
+        .vitals-label { font-size: 9px; line-height: 16px; }
+        .growth-label { font-size: 6px; line-height: 8px; opacity: 0.6; }
 
         #pause-btn {
             position: absolute; top: 15px; right: 20px;
@@ -110,43 +117,103 @@
 
         .menu-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 5, 8, 0.7);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(3, 3, 5, 0.85);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             pointer-events: auto; opacity: 1; transition: opacity 0.3s ease;
         }
         .menu-overlay.hidden, #pause-btn.hidden, #hud.hidden { opacity: 0; pointer-events: none; }
 
         .menu-box {
-            background: rgba(20, 20, 25, 0.8); border: 1px solid rgba(255,255,255,0.1);
-            padding: 40px; border-radius: 20px; display: flex; flex-direction: column;
-            align-items: center; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            background: rgba(10, 8, 8, 0.92); border: 1px solid rgba(255,255,255,0.07);
+            padding: 40px; border-radius: 6px; display: flex; flex-direction: column;
+            align-items: center; box-shadow: 0 10px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,255,255,0.03);
             transform: translateY(0); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-width: 90%; text-align: center;
         }
         .menu-overlay.hidden .menu-box { transform: translateY(30px); }
 
-        .menu-overlay h2 { color: #e4e6d9; margin: 0 0 30px 0; font-size: 32px; letter-spacing: 3px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .menu-overlay h2 {
+            color: #c8c9c0; margin: 0 0 30px 0; font-size: 22px; letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
+            font-family: 'Courier New', Courier, monospace; text-transform: uppercase;
+            border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 20px; width: 100%;
+        }
 
         /* Game Over Specific */
+        @keyframes glitch-title {
+            0%, 82%, 100% { transform: none; opacity: 1; text-shadow: 0 0 25px rgba(200,0,0,0.9), 0 0 60px rgba(150,0,0,0.4); }
+            83% { transform: translateX(-4px) skewX(-6deg); opacity: 0.85; text-shadow: 4px 0 #ff0000, -2px 0 #550000; }
+            85% { transform: translateX(3px) skewX(3deg); opacity: 1; text-shadow: -4px 0 #cc0000, 3px 0 #880000; }
+            87% { transform: translateX(-2px); opacity: 0.9; }
+            89% { transform: none; opacity: 1; text-shadow: 0 0 25px rgba(200,0,0,0.9), 2px 0 #ff0000; }
+            91% { transform: skewX(-1deg) translateX(2px); opacity: 0.95; }
+            93% { transform: none; }
+        }
+        @keyframes scanlines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 8px; }
+        }
+        @keyframes bleed-in {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 20px rgba(180,0,0,0.3), inset 0 0 30px rgba(80,0,0,0.2); }
+            50% { box-shadow: 0 0 40px rgba(200,0,0,0.5), inset 0 0 50px rgba(120,0,0,0.3); }
+        }
+        
+        #gameover-menu {
+            background: radial-gradient(ellipse at center, rgba(30,0,0,0.97) 0%, rgba(5,5,8,0.99) 70%);
+        }
+        #gameover-menu::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px);
+            pointer-events: none; z-index: 0;
+            animation: scanlines 0.3s linear infinite;
+        }
         #gameover-menu .menu-box {
-            background: transparent; border: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+            background: transparent; border: none; box-shadow: none;
+            backdrop-filter: none; -webkit-backdrop-filter: none;
+            position: relative; z-index: 1;
+            animation: bleed-in 0.8s ease-out forwards;
+        }
+        .death-title {
+            color: #cc1111;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 28px; font-weight: 900; margin-bottom: 28px;
+            text-transform: uppercase; letter-spacing: 4px; max-width: 600px;
+            animation: glitch-title 5s infinite;
+            border-bottom: 1px solid rgba(180,0,0,0.3);
+            padding-bottom: 18px;
         }
         .typewriter-text {
-            color: #ffcccc; font-family: monospace; font-size: 22px; line-height: 1.8;
-            margin-bottom: 30px; text-align: center; white-space: pre-wrap; width: 100%; min-height: 160px;
-            text-shadow: 0 2px 10px rgba(255,0,0,0.8); font-weight: bold;
+            color: #c8a0a0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px; line-height: 2.0;
+            margin-bottom: 30px; text-align: left; white-space: pre-wrap;
+            width: 340px; min-height: 180px;
+            background: rgba(10,0,0,0.6);
+            border: 1px solid rgba(150,0,0,0.25);
+            border-left: 3px solid rgba(180,0,0,0.6);
+            padding: 16px 20px; border-radius: 4px;
+            box-shadow: 0 0 30px rgba(100,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.5);
+            animation: pulse-red 3s ease-in-out infinite;
         }
-        .death-title { color: #ff3333; font-size: 36px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 15px rgba(255,0,0,1); letter-spacing: 2px; }
-
         .menu-btn {
-            background: transparent; border: 2px solid #555; color: #ccc;
-            padding: 15px 40px; margin: 8px; font-size: 18px; border-radius: 10px;
-            cursor: pointer; transition: all 0.2s; width: 260px; font-weight: bold;
-            letter-spacing: 1px;
+            background: transparent; border: 1px solid rgba(80,80,80,0.5); color: #aaa;
+            padding: 14px 40px; margin: 6px; font-size: 16px; border-radius: 4px;
+            cursor: pointer; transition: all 0.25s; width: 260px; font-weight: 700;
+            letter-spacing: 2px; font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase;
         }
-        .menu-btn.primary { border-color: #e4e6d9; color: #fff; background: rgba(255,255,255,0.05); }
-        .menu-btn:hover { background: #e4e6d9; color: #050508; transform: scale(1.03); }
+        .menu-btn.primary {
+            border-color: rgba(160,0,0,0.7); color: #dd4444;
+            background: rgba(80,0,0,0.15);
+            text-shadow: 0 0 10px rgba(200,0,0,0.5);
+        }
+        .menu-btn:hover { background: rgba(150,0,0,0.3); color: #ff6666; border-color: #aa0000; transform: scale(1.03); box-shadow: 0 0 20px rgba(150,0,0,0.3); }
         .menu-btn:active { transform: scale(0.97); }
 
         .slider-container { width: 300px; margin: 15px 0; display: flex; flex-direction: column; align-items: stretch; }
@@ -241,9 +308,10 @@
         <!-- Game Over Menu -->
         <div id="gameover-menu" class="menu-overlay hidden">
             <div class="menu-box">
+                <div style="font-family:'Courier New',monospace; font-size:11px; letter-spacing:4px; color:rgba(150,0,0,0.6); margin-bottom:10px; text-transform:uppercase;">— TERMINATED —</div>
                 <div id="death-title" class="death-title"></div>
                 <div id="typewriter" class="typewriter-text"></div>
-                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">Restart Run</button>
+                <button id="restart-btn" class="menu-btn primary hidden" onclick="restartRun()">[ Restart Run ]</button>
             </div>
         </div>
 
@@ -359,13 +427,13 @@
 
             const score = Math.floor(timeAlive * 10) + (totalKills * 50) + ((currentRoom - 1) * 200);
 
-            const finalStats = `KILLS: ${totalKills}
-TIME ALIVE: ${Math.floor(timeAlive)}s
-WEAPONS HELD: ${player.weapons}
-ROOMS CLEARED: ${currentRoom - 1}
+            const finalStats = `  KILLS ............... ${totalKills}
+  TIME ALIVE .......... ${Math.floor(timeAlive)}s
+  WEAPONS HELD ........ ${player.weapons}
+  ROOMS CLEARED ....... ${currentRoom - 1}
 
---------------------------
-TOTAL SCORE: ${score}`;
+  ─────────────────────────
+  SCORE ............... ${score}`;
 
             let i = 0;
             clearInterval(typewriterInterval);
@@ -376,7 +444,7 @@ TOTAL SCORE: ${score}`;
                     clearInterval(typewriterInterval);
                     document.getElementById('restart-btn').classList.remove('hidden');
                 }
-            }, 80); // Speed of typing (Slowed down for drama)
+            }, 55);
         }
 
         function restartRun() {
@@ -388,6 +456,7 @@ TOTAL SCORE: ${score}`;
             totalKills = 0;
             currentRoom = 0; // Will be incremented to 1 by startNextRoom
             deathParticles = []; // Clear particles
+            deadEnemies.length = 0; // Clear corpses
             
             updateHUD();
             startNextRoom();
@@ -425,6 +494,7 @@ TOTAL SCORE: ${score}`;
             activeSplatter.length = 0;
             damageTexts.length = 0;
             floorSplatters.length = 0; // Clean the room
+            deadEnemies.length = 0; // Remove corpses
             
             trapdoor.state = 'waiting';
             trapdoor.timer = 0;
@@ -563,6 +633,7 @@ TOTAL SCORE: ${score}`;
 
         const bullets = [];
         const enemies = [];
+        const deadEnemies = []; // Corpses that linger with blood puddles
         const activeSplatter = [];
         const floorSplatters = [];
         const damageTexts = [];
@@ -1760,23 +1831,39 @@ TOTAL SCORE: ${score}`;
                             });
 
                             let hitAngle = Math.atan2(b.vy, b.vx);
-                            let numParticles = 2 + Math.floor(Math.random() * 2); // 2 to 3 bigger puddles
-                            for(let p = 0; p < numParticles; p++) {
-                                let spread = (Math.random() - 0.5) * 1.5; 
-                                let speed = 50 + Math.random() * 100; // Slower, heavier burst
-                                let size = 8 + Math.random() * 12; // Much bigger puddles
-                                let colors = ['#6a040f', '#370617', '#9d0208', '#03071e']; 
-                                let color = colors[Math.floor(Math.random() * colors.length)];
-                                
+                            // Main blood spray - fast droplets in direction of bullet
+                            let numMain = 5 + Math.floor(Math.random() * 4);
+                            for(let p = 0; p < numMain; p++) {
+                                let spread = (Math.random() - 0.5) * 1.8;
+                                let speed = 80 + Math.random() * 280;
+                                let size = 2 + Math.random() * 5;
+                                let dark = Math.floor(Math.random() * 50);
+                                let color = `rgb(${55+dark}, ${dark/3}, ${dark/3})`;
                                 activeSplatter.push({
-                                    x: enemy.x - Math.cos(hitAngle)*10, 
-                                    y: enemy.y - Math.sin(hitAngle)*10,
+                                    x: enemy.x,
+                                    y: enemy.y,
                                     vx: Math.cos(hitAngle + spread) * speed,
                                     vy: Math.sin(hitAngle + spread) * speed,
-                                    size: size,
-                                    color: color,
-                                    friction: 0.80 + Math.random() * 0.1,
-                                    scaleX: 1.2 + Math.random() * 0.8, // Elliptical stretch
+                                    size, color,
+                                    friction: 0.72 + Math.random() * 0.1,
+                                    scaleX: 1.3 + Math.random() * 1.2,
+                                    angle: hitAngle + spread
+                                });
+                            }
+                            // Small satellite droplets - scatter widely
+                            let numSat = 3 + Math.floor(Math.random() * 3);
+                            for(let p = 0; p < numSat; p++) {
+                                let spread = (Math.random() - 0.5) * Math.PI;
+                                let speed = 30 + Math.random() * 80;
+                                let size = 1 + Math.random() * 2.5;
+                                activeSplatter.push({
+                                    x: enemy.x + (Math.random()-0.5)*8,
+                                    y: enemy.y + (Math.random()-0.5)*8,
+                                    vx: Math.cos(hitAngle + spread) * speed,
+                                    vy: Math.sin(hitAngle + spread) * speed,
+                                    size, color: '#3a0000',
+                                    friction: 0.65 + Math.random() * 0.1,
+                                    scaleX: 1.0 + Math.random() * 0.5,
                                     angle: hitAngle + spread
                                 });
                             }
@@ -1786,12 +1873,41 @@ TOTAL SCORE: ${score}`;
                         }
                     }
                     if (enemy.hp <= 0) {
+                        // Spawn a burst of blood on death
+                        let numDeath = 10 + Math.floor(Math.random() * 6);
+                        for(let p = 0; p < numDeath; p++) {
+                            let angle = Math.random() * Math.PI * 2;
+                            let speed = 40 + Math.random() * 200;
+                            let size = 2 + Math.random() * 7;
+                            let dark = Math.floor(Math.random() * 40);
+                            activeSplatter.push({
+                                x: enemy.x + (Math.random()-0.5)*10,
+                                y: enemy.y + (Math.random()-0.5)*10,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                size, color: `rgb(${45+dark},0,0)`,
+                                friction: 0.65 + Math.random() * 0.12,
+                                scaleX: 1.0 + Math.random() * 0.8,
+                                angle
+                            });
+                        }
+                        // Add fallen body/puddle that persists for 5 seconds
+                        deadEnemies.push({
+                            x: enemy.x, y: enemy.y,
+                            facingAngle: enemy.facingAngle,
+                            legs: enemy.legs,
+                            life: 5.0, maxLife: 5.0,
+                            puddleRadius: 4,
+                            maxPuddleRadius: 28 + Math.random() * 18,
+                            drips: [] // small satellite drip offsets
+                        });
                         enemies.splice(i, 1);
                         enemiesKilledThisRoom++;
                         totalKills++;
+                        triggerShake(6, 0.15);
                         if (enemiesKilledThisRoom === totalEnemiesThisRoom) {
                             keys.push(new Key(enemy.x, enemy.y));
-                            keyDroppedTimer = 3.0; // Flash key text
+                            keyDroppedTimer = 3.0;
                         }
                     }
                 }
@@ -1815,9 +1931,9 @@ TOTAL SCORE: ${score}`;
                     p.vx *= drag;
                     p.vy *= drag;
 
-                    if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
-                        // Floor splatters now live for 15 seconds!
-                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color, life: 15.0, scaleX: p.scaleX, angle: p.angle});
+                    if (Math.abs(p.vx) < 8 && Math.abs(p.vy) < 8) {
+                        // Floor splatters fade over 5 seconds
+                        floorSplatters.push({x: p.x, y: p.y, size: p.size * 0.85, color: p.color, life: 5.0, scaleX: p.scaleX, angle: p.angle});
                         activeSplatter.splice(i, 1);
                     }
                 }
@@ -1828,6 +1944,16 @@ TOTAL SCORE: ${score}`;
                     if (floorSplatters[i].life <= 0) {
                         floorSplatters.splice(i, 1);
                     }
+                }
+
+                // Update dead enemy bodies/puddles
+                for (let i = deadEnemies.length - 1; i >= 0; i--) {
+                    let d = deadEnemies[i];
+                    d.life -= dt;
+                    // Puddle grows over first 1.2 seconds
+                    let growFrac = Math.min(1, (d.maxLife - d.life) / 1.2);
+                    d.puddleRadius = 4 + (d.maxPuddleRadius - 4) * growFrac;
+                    if (d.life <= 0) deadEnemies.splice(i, 1);
                 }
 
                 for (let i = damageTexts.length - 1; i >= 0; i--) {
@@ -1852,9 +1978,83 @@ TOTAL SCORE: ${score}`;
             drawRoom(ctx);
             drawExitDoor(ctx);
 
+            // Draw fallen enemy corpses & blood puddles
+            deadEnemies.forEach(d => {
+                const alpha = d.life > 2.5 ? 1.0 : d.life / 2.5;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+
+                // Blood puddle - organic ellipse with gradient
+                const pr = d.puddleRadius;
+                const puddleGrad = ctx.createRadialGradient(d.x, d.y, 0, d.x, d.y, pr);
+                puddleGrad.addColorStop(0, 'rgba(60,0,0,0.95)');
+                puddleGrad.addColorStop(0.45, 'rgba(38,0,0,0.85)');
+                puddleGrad.addColorStop(0.78, 'rgba(20,0,0,0.55)');
+                puddleGrad.addColorStop(1, 'rgba(8,0,0,0)');
+                ctx.fillStyle = puddleGrad;
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.facingAngle);
+                ctx.scale(1.4, 0.9);
+                ctx.beginPath();
+                ctx.arc(0, 0, pr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Tiny irregular drip blobs around puddle edge
+                let seed = d.x * 137 + d.y * 31; // deterministic fake-random
+                for (let k = 0; k < 6; k++) {
+                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+                    let blobAngle = (seed & 0xff) / 255 * Math.PI * 2;
+                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+                    let blobDist = pr * (0.6 + ((seed & 0xff) / 255) * 0.55);
+                    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+                    let blobSize = 2 + ((seed & 0xff) / 255) * 4;
+                    ctx.fillStyle = 'rgba(45,0,0,0.7)';
+                    ctx.beginPath();
+                    ctx.arc(d.x + Math.cos(blobAngle) * blobDist, d.y + Math.sin(blobAngle) * blobDist, blobSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Flattened/crumpled body on the ground
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.facingAngle);
+                ctx.scale(1, 0.28); // squash flat
+                ctx.fillStyle = '#060606';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 24, 11, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Legs splayed out flat
+                if (d.legs) {
+                    ctx.restore();
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(5,5,5,0.7)';
+                    ctx.lineWidth = 3;
+                    ctx.lineCap = 'round';
+                    d.legs.forEach((leg, idx) => {
+                        ctx.beginPath();
+                        let attachX = d.x + Math.cos(d.facingAngle) * (leg.offsetX * 0.5) - Math.sin(d.facingAngle) * (leg.offsetY * 0.5);
+                        let attachY = d.y + Math.sin(d.facingAngle) * (leg.offsetX * 0.5) + Math.cos(d.facingAngle) * (leg.offsetY * 0.5);
+                        // Droop legs to a static spread position
+                        let deadAngle = d.facingAngle + (leg.offsetY < 0 ? -1.2 : 1.2) + (leg.offsetX < 0 ? 0.4 : -0.4);
+                        let legEndX = d.x + Math.cos(deadAngle) * 28;
+                        let legEndY = d.y + Math.sin(deadAngle) * 28;
+                        ctx.moveTo(attachX, attachY);
+                        ctx.quadraticCurveTo((attachX + legEndX)/2 + Math.cos(deadAngle + Math.PI/2)*8, (attachY + legEndY)/2 + Math.sin(deadAngle + Math.PI/2)*8, legEndX, legEndY);
+                        ctx.stroke();
+                    });
+                } else {
+                    ctx.restore();
+                    ctx.save();
+                }
+                ctx.restore();
+                ctx.restore();
+            });
+            // Floor blood splatters (landed droplets)
             floorSplatters.forEach(s => {
-                // Fade out visually over the last 2 seconds of life
-                ctx.globalAlpha = Math.min(1, s.life / 2.0); 
+                // Fade out visually over the last 3 seconds of life
+                ctx.globalAlpha = Math.min(1, s.life / 3.0) * 0.82;
                 ctx.fillStyle = s.color;
                 ctx.save();
                 ctx.translate(s.x, s.y);
@@ -1900,11 +2100,11 @@ TOTAL SCORE: ${score}`;
                 let alpha = Math.max(0, d.life / 0.6);
                 ctx.globalAlpha = alpha;
                 
-                ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 9px "Courier New", Courier, monospace';
                 ctx.textAlign = 'center';
-                ctx.fillStyle = '#ffffff';
-                ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                ctx.shadowBlur = 3;
+                ctx.fillStyle = '#cc3333';
+                ctx.shadowColor = 'rgba(0,0,0,1)';
+                ctx.shadowBlur = 4;
                 ctx.shadowOffsetY = 1;
                 
                 ctx.fillText(d.text, d.x, d.y);
@@ -1930,13 +2130,13 @@ TOTAL SCORE: ${score}`;
                 let alpha = Math.min(1, roomTextTimer / 1.5);
                 ctx.save();
                 ctx.globalAlpha = alpha;
-                ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 40px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 36px "Courier New", Courier, monospace';
                 ctx.textAlign = 'center';
-                ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                ctx.shadowBlur = 10;
-                ctx.shadowOffsetY = 5;
-                ctx.fillText(`ROOM ${currentRoom}`, width/2, height/3);
+                ctx.fillStyle = 'rgba(200,180,160,0.9)';
+                ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                ctx.shadowBlur = 20;
+                ctx.shadowOffsetY = 3;
+                ctx.fillText(`— ROOM ${currentRoom} —`, width/2, height/3);
                 ctx.restore();
             }
 
@@ -1956,33 +2156,40 @@ TOTAL SCORE: ${score}`;
             if (gameState === 'playing') {
                 drawJoysticks(ctx);
             } else if (gameState === 'gameover') {
-                // Ambient rising death particles
-                if (Math.random() < 0.4) {
+                // Rising blood embers / ash particles
+                if (Math.random() < 0.6) {
                     deathParticles.push({
                         x: Math.random() * width,
-                        y: height + 20,
-                        size: Math.random() * 4 + 2,
-                        vx: (Math.random() - 0.5) * 20,
-                        vy: -20 - Math.random() * 50,
+                        y: height + 10,
+                        size: Math.random() * 3 + 0.5,
+                        vx: (Math.random() - 0.5) * 25,
+                        vy: -15 - Math.random() * 60,
                         life: 1.0,
-                        alpha: Math.random() * 0.5 + 0.5
+                        maxLife: 1.0,
+                        alpha: Math.random() * 0.6 + 0.2,
+                        hue: Math.random() < 0.7 ? 0 : 15 // red or dark orange
                     });
                 }
                 
                 ctx.save();
-                deathParticles.forEach((p, i) => {
+                for (let i = deathParticles.length - 1; i >= 0; i--) {
+                    let p = deathParticles[i];
                     p.x += p.vx * dt;
                     p.y += p.vy * dt;
+                    p.vy -= dt * 5; // slight upward acceleration
+                    p.vx += (Math.random() - 0.5) * 2; // drift
+                    p.life -= dt;
                     
-                    ctx.fillStyle = `rgba(255, 50, 50, ${p.alpha})`;
-                    ctx.shadowColor = '#ff0000';
-                    ctx.shadowBlur = 10;
+                    let a = Math.max(0, (p.life / p.maxLife)) * p.alpha;
+                    ctx.fillStyle = `hsla(${p.hue}, 90%, ${p.size > 1.5 ? 35 : 20}%, ${a})`;
+                    ctx.shadowColor = `hsla(${p.hue}, 100%, 40%, ${a * 0.6})`;
+                    ctx.shadowBlur = 6;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                     ctx.fill();
                     
-                    if (p.y < -20) deathParticles.splice(i, 1);
-                });
+                    if (p.y < -20 || p.life <= 0) deathParticles.splice(i, 1);
+                }
                 ctx.restore();
             }
 
