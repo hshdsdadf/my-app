@@ -70,25 +70,25 @@
         /* HUD: Health & XP Bars */
         #hud {
             position: absolute; top: 0; left: 0; width: 100%; padding: 15px 80px 15px 20px; 
-            box-sizing: border-box; display: flex; flex-direction: column; gap: 8px;
+            box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;
             pointer-events: none;
         }
         .bar-bg {
-            width: 100%; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.1);
-            border-radius: 12px; position: relative; overflow: hidden;
+            width: 100%; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; position: relative; overflow: hidden;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .bar-bg.vitals-bg { height: 24px; }
-        .bar-bg.growth-bg { height: 14px; border-color: rgba(255,255,255,0.05); }
+        .bar-bg.vitals-bg { height: 14px; }
+        .bar-bg.growth-bg { height: 8px; border-color: rgba(255,255,255,0.05); }
         .bar-fill { height: 100%; width: 100%; transition: width 0.2s ease-out; }
         .vitals-fill { background: linear-gradient(90deg, #9d0208, #d00000); box-shadow: 0 0 10px #d00000; }
         .growth-fill { background: linear-gradient(90deg, #0077b6, #00b4d8); box-shadow: 0 0 10px #00b4d8; }
         .bar-label {
-            position: absolute; top: 0; left: 12px; font-weight: 800; color: white;
-            text-shadow: 1px 1px 3px black; letter-spacing: 2px;
+            position: absolute; top: 0; left: 8px; font-weight: 800; color: white;
+            text-shadow: 1px 1px 3px black; letter-spacing: 1.5px;
         }
-        .vitals-label { font-size: 14px; line-height: 24px; }
-        .growth-label { font-size: 10px; line-height: 14px; opacity: 0.8; }
+        .vitals-label { font-size: 10px; line-height: 14px; }
+        .growth-label { font-size: 6px; line-height: 8px; opacity: 0.8; }
 
         #pause-btn {
             position: absolute; top: 15px; right: 20px;
@@ -129,11 +129,15 @@
         .menu-overlay h2 { color: #e4e6d9; margin: 0 0 30px 0; font-size: 32px; letter-spacing: 3px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
 
         /* Game Over Specific */
-        .typewriter-text {
-            color: #ccc; font-family: monospace; font-size: 18px; line-height: 1.6;
-            margin-bottom: 30px; text-align: left; white-space: pre-wrap; width: 100%; min-height: 160px;
+        #gameover-menu .menu-box {
+            background: transparent; border: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
         }
-        .death-title { color: #d00000; font-size: 24px; font-weight: bold; margin-bottom: 15px; }
+        .typewriter-text {
+            color: #ffcccc; font-family: monospace; font-size: 22px; line-height: 1.8;
+            margin-bottom: 30px; text-align: center; white-space: pre-wrap; width: 100%; min-height: 160px;
+            text-shadow: 0 2px 10px rgba(255,0,0,0.8); font-weight: bold;
+        }
+        .death-title { color: #ff3333; font-size: 36px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 15px rgba(255,0,0,1); letter-spacing: 2px; }
 
         .menu-btn {
             background: transparent; border: 2px solid #555; color: #ccc;
@@ -284,6 +288,7 @@
         // Stats Tracking
         let totalKills = 0;
         let timeAlive = 0;
+        let deathParticles = [];
 
         const settings = {
             brightness: 0.55, 
@@ -371,7 +376,7 @@ TOTAL SCORE: ${score}`;
                     clearInterval(typewriterInterval);
                     document.getElementById('restart-btn').classList.remove('hidden');
                 }
-            }, 30); // Speed of typing
+            }, 80); // Speed of typing (Slowed down for drama)
         }
 
         function restartRun() {
@@ -382,6 +387,7 @@ TOTAL SCORE: ${score}`;
             timeAlive = 0;
             totalKills = 0;
             currentRoom = 0; // Will be incremented to 1 by startNextRoom
+            deathParticles = []; // Clear particles
             
             updateHUD();
             startNextRoom();
@@ -748,7 +754,7 @@ TOTAL SCORE: ${score}`;
                     } else {
                         // Biting player! 10 dmg/sec
                         player.hp -= 10 * dt;
-                        player.hurtTimer = 0.1;
+                        player.hurtTimer = 0.2; // Set hurt timer for flash effect
                         updateHUD();
 
                         if (this.attackCooldown <= 0) {
@@ -1392,17 +1398,10 @@ TOTAL SCORE: ${score}`;
                 ctx.translate(0, -bobbing);
                 ctx.scale(1, breathScale);
 
-                // Blend body gradient with red if taking damage
                 const eggGrad = ctx.createRadialGradient(-10, -15, 5, 0, 0, this.radius + 10);
-                if (this.hurtTimer > 0) {
-                    eggGrad.addColorStop(0, '#ff9999');    
-                    eggGrad.addColorStop(0.4, '#ff3333'); 
-                    eggGrad.addColorStop(1, '#990000'); 
-                } else {
-                    eggGrad.addColorStop(0, '#ffffff');    
-                    eggGrad.addColorStop(0.4, '#e4e6d9'); 
-                    eggGrad.addColorStop(1, '#8b8e83');   
-                }
+                eggGrad.addColorStop(0, '#ffffff');    
+                eggGrad.addColorStop(0.4, '#e4e6d9'); 
+                eggGrad.addColorStop(1, '#8b8e83');   
 
                 ctx.fillStyle = eggGrad;
                 ctx.beginPath();
@@ -1733,7 +1732,6 @@ TOTAL SCORE: ${score}`;
                     let dy = player.y - k.y;
                     if (dx*dx + dy*dy < 2500) { 
                         hasKey = true;
-                        keyDroppedTimer = 3.0; // Flash key text
                         keys.splice(i, 1);
                     }
                 }
@@ -1762,12 +1760,11 @@ TOTAL SCORE: ${score}`;
                             });
 
                             let hitAngle = Math.atan2(b.vy, b.vx);
-                            let numParticles = 6 + Math.floor(Math.random() * 5);
+                            let numParticles = 2 + Math.floor(Math.random() * 2); // 2 to 3 bigger puddles
                             for(let p = 0; p < numParticles; p++) {
                                 let spread = (Math.random() - 0.5) * 1.5; 
-                                let speed = 150 + Math.random() * 400; 
-                                // Much bigger, chunkier blood splatters
-                                let size = 3 + Math.random() * 6;
+                                let speed = 50 + Math.random() * 100; // Slower, heavier burst
+                                let size = 8 + Math.random() * 12; // Much bigger puddles
                                 let colors = ['#6a040f', '#370617', '#9d0208', '#03071e']; 
                                 let color = colors[Math.floor(Math.random() * colors.length)];
                                 
@@ -1778,7 +1775,9 @@ TOTAL SCORE: ${score}`;
                                     vy: Math.sin(hitAngle + spread) * speed,
                                     size: size,
                                     color: color,
-                                    friction: 0.80 + Math.random() * 0.1
+                                    friction: 0.80 + Math.random() * 0.1,
+                                    scaleX: 1.2 + Math.random() * 0.8, // Elliptical stretch
+                                    angle: hitAngle + spread
                                 });
                             }
 
@@ -1792,6 +1791,7 @@ TOTAL SCORE: ${score}`;
                         totalKills++;
                         if (enemiesKilledThisRoom === totalEnemiesThisRoom) {
                             keys.push(new Key(enemy.x, enemy.y));
+                            keyDroppedTimer = 3.0; // Flash key text
                         }
                     }
                 }
@@ -1817,7 +1817,7 @@ TOTAL SCORE: ${score}`;
 
                     if (Math.abs(p.vx) < 5 && Math.abs(p.vy) < 5) {
                         // Floor splatters now live for 15 seconds!
-                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color, life: 15.0});
+                        floorSplatters.push({x: p.x, y: p.y, size: p.size, color: p.color, life: 15.0, scaleX: p.scaleX, angle: p.angle});
                         activeSplatter.splice(i, 1);
                     }
                 }
@@ -1856,27 +1856,32 @@ TOTAL SCORE: ${score}`;
                 // Fade out visually over the last 2 seconds of life
                 ctx.globalAlpha = Math.min(1, s.life / 2.0); 
                 ctx.fillStyle = s.color;
+                ctx.save();
+                ctx.translate(s.x, s.y);
+                ctx.rotate(s.angle);
+                ctx.scale(s.scaleX, 1);
                 ctx.beginPath();
-                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.arc(0, 0, s.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.restore();
             });
             ctx.globalAlpha = 1.0;
 
             activeSplatter.forEach(p => {
                 ctx.fillStyle = p.color;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.scale(p.scaleX, 1);
                 ctx.beginPath();
                 let speed = Math.sqrt(p.vx*p.vx + p.vy*p.vy);
                 if (speed > 50) {
-                    ctx.save();
-                    ctx.translate(p.x, p.y);
-                    ctx.rotate(Math.atan2(p.vy, p.vx));
                     ctx.ellipse(0, 0, p.size + speed * 0.015, p.size, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
                 } else {
-                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.arc(0, 0, p.size, 0, Math.PI * 2);
                 }
+                ctx.fill();
+                ctx.restore();
             });
             
             trapdoor.draw(ctx);
@@ -1895,7 +1900,7 @@ TOTAL SCORE: ${score}`;
                 let alpha = Math.max(0, d.life / 0.6);
                 ctx.globalAlpha = alpha;
                 
-                ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -1908,6 +1913,18 @@ TOTAL SCORE: ${score}`;
             ctx.restore(); 
 
             drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
+
+            // Screen damage flash (Clean radial vignette instead of full block color)
+            if (player.hurtTimer > 0) {
+                ctx.save();
+                let alpha = (player.hurtTimer / 0.2) * 0.7; // Max opacity 0.7
+                let grad = ctx.createRadialGradient(width/2, height/2, height*0.3, width/2, height/2, height*0.8);
+                grad.addColorStop(0, 'rgba(180, 0, 0, 0)');
+                grad.addColorStop(1, `rgba(180, 0, 0, ${alpha})`);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+                ctx.restore();
+            }
 
             if (roomTextTimer > 0) {
                 let alpha = Math.min(1, roomTextTimer / 1.5);
@@ -1938,6 +1955,35 @@ TOTAL SCORE: ${score}`;
 
             if (gameState === 'playing') {
                 drawJoysticks(ctx);
+            } else if (gameState === 'gameover') {
+                // Ambient rising death particles
+                if (Math.random() < 0.4) {
+                    deathParticles.push({
+                        x: Math.random() * width,
+                        y: height + 20,
+                        size: Math.random() * 4 + 2,
+                        vx: (Math.random() - 0.5) * 20,
+                        vy: -20 - Math.random() * 50,
+                        life: 1.0,
+                        alpha: Math.random() * 0.5 + 0.5
+                    });
+                }
+                
+                ctx.save();
+                deathParticles.forEach((p, i) => {
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    
+                    ctx.fillStyle = `rgba(255, 50, 50, ${p.alpha})`;
+                    ctx.shadowColor = '#ff0000';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    if (p.y < -20) deathParticles.splice(i, 1);
+                });
+                ctx.restore();
             }
 
             requestAnimationFrame(gameLoop);
