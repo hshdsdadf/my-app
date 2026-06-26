@@ -171,17 +171,17 @@
             </div>
         </div>
 
-        <!-- Settings Menu -->
+        <!-- Settings Menu (Clamped Values) -->
         <div id="settings-menu" class="menu-overlay hidden">
             <div class="menu-box">
                 <h2>SETTINGS</h2>
                 <div class="slider-container">
                     <label>Brightness <span id="val-brightness">55%</span></label>
-                    <input type="range" id="set-brightness" min="10" max="100" value="55" oninput="updateSettingsUI()">
+                    <input type="range" id="set-brightness" min="10" max="75" value="55" oninput="updateSettingsUI()">
                 </div>
                 <div class="slider-container">
                     <label>Camera Zoom <span id="val-zoom">100%</span></label>
-                    <input type="range" id="set-zoom" min="50" max="150" value="100" oninput="updateSettingsUI()">
+                    <input type="range" id="set-zoom" min="80" max="150" value="100" oninput="updateSettingsUI()">
                 </div>
                 <div class="slider-container">
                     <label>Screen Shake <span id="val-shake">100%</span></label>
@@ -215,10 +215,16 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- GLOBAL STATE & SETTINGS ---
-        let gameState = 'playing'; // 'playing', 'paused', 'settings', 'countdown'
+        // --- GLOBAL STATE, PROGRESSION, & SETTINGS ---
+        let gameState = 'playing'; 
         let countdownValue = 0;
         let countdownTimer = 0;
+
+        let currentRoom = 1;
+        let totalEnemiesThisRoom = 4;
+        let enemiesKilledThisRoom = 0;
+        let hasKey = false;
+        let roomTextTimer = 4.0;
 
         const settings = {
             brightness: 0.55, 
@@ -248,7 +254,6 @@
             
             if (state === 'playing') {
                 document.getElementById('pause-btn').classList.remove('hidden');
-                // Clear input so we don't dash/shoot immediately when unpausing
                 input.left.active = false;
                 input.right.active = false;
             } else if (state === 'paused') {
@@ -261,7 +266,7 @@
         function startCountdown() {
             setGameState('countdown');
             countdownValue = 3;
-            countdownTimer = 0.5; // Sped up the countdown
+            countdownTimer = 0.5; 
             triggerCountdownAnim(countdownValue);
         }
 
@@ -269,8 +274,33 @@
             const el = document.getElementById('countdown-display');
             el.innerText = text;
             el.classList.remove('pop-anim');
-            void el.offsetWidth; // Force reflow
+            void el.offsetWidth; 
             el.classList.add('pop-anim');
+        }
+
+        function startNextRoom() {
+            currentRoom++;
+            // +1 enemy per room, capping the bonus at +9 (so max 13 enemies by room 10)
+            totalEnemiesThisRoom = 4 + Math.min(currentRoom - 1, 9);
+            enemiesKilledThisRoom = 0;
+            hasKey = false;
+            
+            player.x = 200; // Spawn near the left wall
+            player.y = ROOM_SIZE / 2;
+            
+            enemies.length = 0;
+            bullets.length = 0;
+            keys.length = 0;
+            activeSplatter.length = 0;
+            damageTexts.length = 0;
+            
+            trapdoor.state = 'waiting';
+            trapdoor.timer = 0;
+            trapdoor.enemiesToSpawn = totalEnemiesThisRoom;
+            trapdoor.delayTimer = 3.0; 
+            trapdoor.openAngle = 0;
+            
+            roomTextTimer = 4.0;
         }
 
         let shakeTime = 0;
@@ -294,16 +324,12 @@
         const JOYSTICK_MAX_RADIUS = 60;
 
         function handleTouch(e) {
-            // Allow UI buttons and sliders to receive touch events natively!
             if (e.target !== canvas) return;
-
-            // Only process input if game is active
             if (gameState !== 'playing') {
                 input.left.active = false;
                 input.right.active = false;
                 return;
             }
-
             e.preventDefault();
             const halfWidth = width / 2;
             let leftFound = false;
@@ -407,6 +433,41 @@
         const activeSplatter = [];
         const floorSplatters = [];
         const damageTexts = [];
+        const keys = [];
+
+        class Key {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.timeOffset = Math.random() * 100;
+            }
+            update(dt) { this.timeOffset += dt * 5; }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y + Math.sin(this.timeOffset) * 10);
+                
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ffea00';
+                
+                // Key head
+                ctx.beginPath();
+                ctx.arc(-10, 0, 6, 0, Math.PI*2);
+                ctx.fill();
+                ctx.fillStyle = '#050508'; // Hole in key head
+                ctx.beginPath();
+                ctx.arc(-10, 0, 2, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Key shaft and teeth
+                ctx.fillStyle = '#ffea00';
+                ctx.fillRect(-5, -2, 18, 4);
+                ctx.fillRect(7, 2, 3, 5);
+                ctx.fillRect(11, 2, 3, 7);
+                
+                ctx.restore();
+            }
+        }
 
         class Bullet {
             constructor(x, y, angle) {
@@ -416,7 +477,7 @@
                 this.vx = Math.cos(angle) * this.speed;
                 this.vy = Math.sin(angle) * this.speed;
                 this.life = 1.0; 
-                this.damage = 25; 
+                this.damage = 10; // Reduced starter damage
             }
             
             update(dt) {
@@ -689,7 +750,7 @@
                 this.height = 100;
                 this.state = 'waiting'; 
                 this.timer = 0;
-                this.enemiesToSpawn = 4; 
+                this.enemiesToSpawn = totalEnemiesThisRoom; 
                 this.delayTimer = 4.0; 
                 this.openAngle = 0; 
             }
@@ -975,12 +1036,12 @@
 
         class Player {
             constructor() {
-                this.x = ROOM_SIZE / 2;
-                this.y = ROOM_SIZE / 2 + 200; 
+                this.x = 200; 
+                this.y = ROOM_SIZE / 2; 
                 this.radius = 35;
                 this.speed = 400; 
                 this.animTime = 0;
-                this.facingAngle = -Math.PI / 2; 
+                this.facingAngle = 0; 
                 
                 this.fireRate = 0.12; 
                 this.fireTimer = 0;
@@ -1297,6 +1358,30 @@
             ctx.strokeRect(0, 0, ROOM_SIZE, ROOM_SIZE);
         }
 
+        function drawExitDoor(ctx) {
+            ctx.save();
+            ctx.translate(ROOM_SIZE, ROOM_SIZE / 2);
+            
+            ctx.fillStyle = '#111';
+            ctx.fillRect(-20, -60, 40, 120);
+            
+            ctx.fillStyle = hasKey ? '#1a2b1a' : '#2b1a1a'; 
+            ctx.fillRect(-15, -55, 30, 110);
+            
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-15, -55, 30, 110);
+            
+            ctx.fillStyle = hasKey ? '#00ff00' : '#ff0000';
+            ctx.shadowColor = ctx.fillStyle;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(-5, 0, 4, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.restore();
+        }
+
         // --- DYNAMIC LIGHTING ---
         function drawLighting(ctx, camX, camY, sx, sy) {
             lightCtx.globalCompositeOperation = 'source-over';
@@ -1333,6 +1418,24 @@
             lightCtx.beginPath();
             lightCtx.arc(player.x, player.y, pRadius, 0, Math.PI*2);
             lightCtx.fill();
+
+            const dGrad = lightCtx.createRadialGradient(ROOM_SIZE, ROOM_SIZE / 2, 5, ROOM_SIZE, ROOM_SIZE / 2, 100);
+            dGrad.addColorStop(0, hasKey ? 'rgba(0, 255, 0, 0.4)' : 'rgba(255, 0, 0, 0.4)');
+            dGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            lightCtx.fillStyle = dGrad;
+            lightCtx.beginPath();
+            lightCtx.arc(ROOM_SIZE, ROOM_SIZE / 2, 100, 0, Math.PI * 2);
+            lightCtx.fill();
+
+            keys.forEach(k => {
+                const kGrad = lightCtx.createRadialGradient(k.x, k.y, 5, k.x, k.y, 80);
+                kGrad.addColorStop(0, 'rgba(255, 200, 0, 0.5)');
+                kGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                lightCtx.fillStyle = kGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(k.x, k.y, 80, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
 
             enemies.forEach(enemy => {
                 const smileX = enemy.drawX + Math.cos(enemy.drawAngle) * 18;
@@ -1398,24 +1501,21 @@
         function gameLoop(currentTime) {
             let dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
-            if (dt > 0.1) dt = 0.1; // Cap dt to prevent huge jumps when unpausing
+            if (dt > 0.1) dt = 0.1; 
 
-            // Handle UI states
             if (gameState === 'countdown') {
                 countdownTimer -= dt;
                 if (countdownTimer <= 0) {
                     countdownValue--;
                     if (countdownValue > 0) {
-                        countdownTimer = 0.5; // Faster countdown
+                        countdownTimer = 0.5; 
                         triggerCountdownAnim(countdownValue);
                     } else {
-                        // Skip the "GO" message entirely
                         setGameState('playing');
                     }
                 }
             }
 
-            // Only update game mechanics if actively playing
             if (gameState === 'playing') {
                 if (shakeTime > 0) {
                     shakeTime -= dt;
@@ -1426,9 +1526,26 @@
                     currentShakeY = 0;
                 }
 
+                if (roomTextTimer > 0) roomTextTimer -= dt;
+
                 player.update(dt);
                 torches.forEach(t => t.update(dt));
                 trapdoor.update(dt);
+
+                for(let i = keys.length - 1; i >= 0; i--) {
+                    let k = keys[i];
+                    k.update(dt);
+                    let dx = player.x - k.x;
+                    let dy = player.y - k.y;
+                    if (dx*dx + dy*dy < 2500) { 
+                        hasKey = true;
+                        keys.splice(i, 1);
+                    }
+                }
+
+                if (hasKey && player.x > ROOM_SIZE - 100 && Math.abs(player.y - ROOM_SIZE / 2) < 100) {
+                    startNextRoom();
+                }
 
                 for (let i = enemies.length - 1; i >= 0; i--) {
                     let enemy = enemies[i];
@@ -1441,7 +1558,6 @@
                         if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
                             enemy.hp -= b.damage;
                             
-                            // Smaller, white crisp text with a tiny drop shadow outline
                             damageTexts.push({
                                 x: enemy.x + (Math.random() - 0.5) * 20,
                                 y: enemy.y - 20,
@@ -1456,7 +1572,6 @@
                                 let spread = (Math.random() - 0.5) * 1.5; 
                                 let speed = 150 + Math.random() * 400; 
                                 let size = 1.5 + Math.random() * 4;
-                                // Dark shadow essence splatters
                                 let colors = ['#2a2a30', '#111216', '#050508', '#000000']; 
                                 let color = colors[Math.floor(Math.random() * colors.length)];
                                 
@@ -1477,6 +1592,10 @@
                     }
                     if (enemy.hp <= 0) {
                         enemies.splice(i, 1);
+                        enemiesKilledThisRoom++;
+                        if (enemiesKilledThisRoom === totalEnemiesThisRoom) {
+                            keys.push(new Key(enemy.x, enemy.y));
+                        }
                     }
                 }
 
@@ -1517,20 +1636,19 @@
                 }
             }
 
-            // Fill empty void 
             ctx.fillStyle = '#050508';
             ctx.fillRect(0, 0, width, height);
 
             let camX = player.x;
             let camY = player.y;
 
-            // Render World Space (with global zoom and camera shake applied!)
             ctx.save();
             ctx.translate(width / 2, height / 2);
             ctx.scale(settings.zoom, settings.zoom);
             ctx.translate(-camX + currentShakeX, -camY + currentShakeY);
 
             drawRoom(ctx);
+            drawExitDoor(ctx);
 
             floorSplatters.forEach(s => {
                 ctx.fillStyle = s.color;
@@ -1557,6 +1675,7 @@
             });
             
             trapdoor.draw(ctx);
+            keys.forEach(k => k.draw(ctx));
             torches.forEach(t => t.draw(ctx));
             bullets.forEach(bullet => bullet.draw(ctx));
             
@@ -1571,8 +1690,7 @@
                 let alpha = Math.max(0, d.life / 0.8);
                 ctx.globalAlpha = alpha;
                 
-                // Smaller, cleaner white text with shadow
-                ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
+                ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#ffffff';
                 ctx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -1582,12 +1700,24 @@
                 ctx.fillText(d.text, d.x, d.y);
             });
 
-            ctx.restore(); // End World Space
+            ctx.restore(); 
 
-            // Render Dynamic Lighting Overlay (Screen Space)
             drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
 
-            // Render UI
+            if (roomTextTimer > 0) {
+                let alpha = Math.min(1, roomTextTimer);
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 70px system-ui, -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+                ctx.fillText(`ROOM ${currentRoom}`, width/2, height/3);
+                ctx.restore();
+            }
+
             drawJoysticks(ctx);
 
             requestAnimationFrame(gameLoop);
