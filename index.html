@@ -14,7 +14,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            background-color: #0f0f13;
+            background-color: #050508;
             overflow: hidden;
             touch-action: none; /* Prevents pull-to-refresh and scrolling */
             font-family: system-ui, -apple-system, sans-serif;
@@ -35,8 +35,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #0a0a0c;
-            color: #e4e6d9;
+            background-color: #050508;
+            color: #8b8e83;
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -49,11 +49,11 @@
         #orientation-warning h2 {
             margin-bottom: 10px;
             font-size: 24px;
+            color: #e4e6d9;
         }
 
         #orientation-warning p {
             font-size: 18px;
-            color: #8b8e83;
         }
 
         /* Show the warning only when the device is held vertically */
@@ -79,6 +79,10 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false }); 
 
+        // Dynamic Lighting Canvas (Offscreen for performance)
+        const lightCanvas = document.createElement('canvas');
+        const lightCtx = lightCanvas.getContext('2d');
+
         let width = window.innerWidth;
         let height = window.innerHeight;
 
@@ -87,6 +91,8 @@
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
+            lightCanvas.width = width;
+            lightCanvas.height = height;
         }
         window.addEventListener('resize', resize);
         resize();
@@ -102,13 +108,11 @@
         function handleTouch(e) {
             e.preventDefault();
             const halfWidth = width / 2;
-
             let leftFound = false;
             let rightFound = false;
 
             for (let i = 0; i < e.touches.length; i++) {
                 const touch = e.touches[i];
-                
                 if (touch.clientX < halfWidth) {
                     leftFound = true;
                     if (!input.left.active) {
@@ -185,9 +189,197 @@
             handleTouch({ preventDefault: ()=>{}, touches: [] });
         });
 
-
         // --- GAME OBJECTS ---
-        const ROOM_SIZE = 2000;
+        const ROOM_SIZE = 1200; // Smaller, more claustrophobic room
+
+        const bullets = [];
+
+        class Bullet {
+            constructor(x, y, angle) {
+                this.x = x;
+                this.y = y;
+                this.speed = 1200; 
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                this.life = 1.0; // Shorter life since room is smaller
+            }
+            
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt;
+            }
+            
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.atan2(this.vy, this.vx));
+
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 3;
+                ctx.shadowOffsetY = 5;
+                
+                const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
+                bulletGrad.addColorStop(0, '#666666'); 
+                bulletGrad.addColorStop(0.5, '#222222'); 
+                bulletGrad.addColorStop(1, '#000000'); 
+
+                ctx.fillStyle = bulletGrad;
+                
+                ctx.beginPath();
+                ctx.moveTo(8, 0);   
+                ctx.lineTo(2, -2.5); 
+                ctx.lineTo(-8, -2.5);
+                ctx.lineTo(-8, 2.5);  
+                ctx.lineTo(2, 2.5);   
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        class Torch {
+            constructor(x, y, angle) {
+                this.x = x;
+                this.y = y;
+                this.angle = angle; // What direction the wall is
+                this.timeOffset = Math.random() * 100;
+            }
+
+            update(dt) {
+                this.timeOffset += dt * 15;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // --- 1. Draw Angled Base and Arm ---
+                ctx.save();
+                ctx.rotate(this.angle);
+
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+
+                // Base Plate
+                ctx.fillStyle = '#1a1a1a';
+                ctx.beginPath();
+                ctx.roundRect(-10, -12, 12, 24, 3);
+                ctx.fill();
+
+                // Metal support arm
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(-5, -3, 15, 6);
+
+                // Wooden Torch Pole
+                const woodGrad = ctx.createLinearGradient(0, -6, 25, 6);
+                woodGrad.addColorStop(0, '#2d1606');
+                woodGrad.addColorStop(0.5, '#4a2511');
+                woodGrad.addColorStop(1, '#1a0d04');
+                ctx.fillStyle = woodGrad;
+                ctx.beginPath();
+                ctx.moveTo(5, -5);
+                ctx.lineTo(25, -7);
+                ctx.lineTo(25, 7);
+                ctx.lineTo(5, 5);
+                ctx.fill();
+                
+                ctx.restore(); // Pop back to main translation
+
+                // --- 2. Draw Upright Basket and Fire ---
+                ctx.save();
+                // Move to the end of the angled pole
+                const poleEndX = Math.cos(this.angle) * 25;
+                const poleEndY = Math.sin(this.angle) * 25;
+                ctx.translate(poleEndX, poleEndY);
+
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 10;
+                ctx.shadowOffsetY = 5;
+
+                // Iron Basket (Always upright for 2.5D perspective)
+                const ironGrad = ctx.createLinearGradient(-8, -10, 8, 10);
+                ironGrad.addColorStop(0, '#555');
+                ironGrad.addColorStop(0.5, '#222');
+                ironGrad.addColorStop(1, '#111');
+                ctx.fillStyle = ironGrad;
+                ctx.beginPath();
+                // Draw a nice cup shape for the basket
+                ctx.moveTo(-10, -12);
+                ctx.lineTo(10, -12);
+                ctx.lineTo(6, 10);
+                ctx.lineTo(-6, 10);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Embers inside basket
+                ctx.fillStyle = '#ff5500';
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                // Draw embers near the top lip of the basket
+                ctx.ellipse(0, -12, 8, 4, 0, 0, Math.PI*2);
+                ctx.fill();
+
+                // -- Fire Animation --
+                ctx.shadowColor = 'transparent'; 
+                
+                const f1 = Math.sin(this.timeOffset * 2.0);
+                const f2 = Math.cos(this.timeOffset * 1.5);
+                const f3 = Math.sin(this.timeOffset * 3.1);
+
+                // Helper to draw realistic morphing flames
+                function drawFlame(ctx, height, width, yOff, color, blurColor, blurAmt) {
+                    ctx.shadowColor = blurColor;
+                    ctx.shadowBlur = blurAmt;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(0, yOff);
+                    // Left edge
+                    ctx.bezierCurveTo(-width, yOff - height/3, -width/2 + f2*3, yOff - height + 5, f3*4, yOff - height - Math.abs(f1)*5);
+                    // Right edge
+                    ctx.bezierCurveTo(width/2 + f2*3, yOff - height + 5, width, yOff - height/3, 0, yOff);
+                    ctx.fill();
+                }
+
+                // Rising Sparks!
+                for(let i = 0; i < 3; i++) {
+                    const sparkY = -15 - ((this.timeOffset * 20 + i * 15) % 30);
+                    const sparkX = Math.sin(this.timeOffset * 5 + i) * 6;
+                    const alpha = Math.max(0, 1 - Math.abs(sparkY)/40); // Fade out as they rise
+                    
+                    ctx.shadowColor = '#ff9900';
+                    ctx.shadowBlur = 5;
+                    ctx.fillStyle = `rgba(255, 200, 0, ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(sparkX, sparkY - 12, 1.5, 0, Math.PI*2); // Start at embers
+                    ctx.fill();
+                }
+
+                // Draw multiple layers of heat centered perfectly over the basket
+                drawFlame(ctx, 40, 14, -10, 'rgba(220, 40, 0, 0.8)', '#ff2200', 15); // Outer Red
+                drawFlame(ctx, 28, 9, -12, 'rgba(255, 140, 0, 0.9)', '#ff8800', 10); // Mid Orange
+                drawFlame(ctx, 15, 4, -14, '#ffffff', 'transparent', 0);             // Inner White Hot Core
+
+                ctx.restore();
+                ctx.restore(); // Main translate restore
+            }
+
+            getLightRadius() {
+                const flicker = Math.sin(this.timeOffset * 0.8) * 10 + Math.random() * 5;
+                return 320 + flicker; 
+            }
+        }
+
+        // Initialize 4 torches in the corners, angled to point towards the center
+        const torches = [
+            new Torch(70, 70, Math.PI / 4),                  // Top-Left (Points Down-Right)
+            new Torch(ROOM_SIZE - 70, 70, 3 * Math.PI / 4),  // Top-Right (Points Down-Left)
+            new Torch(70, ROOM_SIZE - 70, -Math.PI / 4),     // Bottom-Left (Points Up-Right)
+            new Torch(ROOM_SIZE - 70, ROOM_SIZE - 70, -3 * Math.PI / 4) // Bottom-Right (Points Up-Left)
+        ];
 
         class Player {
             constructor() {
@@ -197,6 +389,18 @@
                 this.speed = 400; 
                 this.animTime = 0;
                 this.facingAngle = 0;
+                
+                this.fireRate = 0.12; 
+                this.fireTimer = 0;
+                this.leftGunNext = true; 
+                this.recoilL = 0;
+                this.recoilR = 0;
+                this.flashL = 0;
+                this.flashR = 0;
+                
+                // Coordinates to track muzzle flash locations for the lighting engine
+                this.muzzleX_L = 0; this.muzzleY_L = 0;
+                this.muzzleX_R = 0; this.muzzleY_R = 0;
             }
 
             update(dt) {
@@ -205,8 +409,10 @@
                     this.x += input.left.vectorX * this.speed * moveMag * dt;
                     this.y += input.left.vectorY * this.speed * moveMag * dt;
                     
-                    this.x = Math.max(this.radius, Math.min(ROOM_SIZE - this.radius, this.x));
-                    this.y = Math.max(this.radius, Math.min(ROOM_SIZE - this.radius, this.y));
+                    // Constrain player to room, considering walls
+                    const wallThickness = 20;
+                    this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
+                    this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
 
                     this.animTime += dt * (10 + moveMag * 15); 
                 } else {
@@ -218,12 +424,48 @@
                 } else if (input.left.active && moveMag > 0.1) {
                     this.facingAngle = Math.atan2(input.left.vectorY, input.left.vectorX);
                 }
+
+                this.recoilL = Math.max(0, this.recoilL - dt * 60);
+                this.recoilR = Math.max(0, this.recoilR - dt * 60);
+                this.flashL = Math.max(0, this.flashL - dt * 5);
+                this.flashR = Math.max(0, this.flashR - dt * 5);
+
+                this.fireTimer -= dt;
+                if (input.right.active && input.right.magnitude > 0.1 && this.fireTimer <= 0) {
+                    this.shoot();
+                    this.fireTimer = this.fireRate;
+                }
+            }
+
+            shoot() {
+                const gunOffsetX = this.leftGunNext ? -25 : 25;
+                const sway = (input.left.magnitude > 0.1) ? Math.sin(this.animTime + (this.leftGunNext ? 0 : Math.PI)) * 5 : 0;
+                const gunOffsetY = 12 + sway;
+                
+                const pivotX = this.x + gunOffsetX * Math.cos(this.facingAngle) - gunOffsetY * Math.sin(this.facingAngle);
+                const pivotY = this.y + gunOffsetX * Math.sin(this.facingAngle) + gunOffsetY * Math.cos(this.facingAngle);
+                
+                const barrelLength = 25;
+                const tipX = pivotX + Math.cos(this.facingAngle) * barrelLength;
+                const tipY = pivotY + Math.sin(this.facingAngle) * barrelLength;
+
+                bullets.push(new Bullet(tipX, tipY, this.facingAngle));
+
+                if (this.leftGunNext) {
+                    this.recoilL = 12; 
+                    this.flashL = 0.1; 
+                    this.muzzleX_L = tipX; this.muzzleY_L = tipY;
+                } else {
+                    this.recoilR = 12;
+                    this.flashR = 0.1;
+                    this.muzzleX_R = tipX; this.muzzleY_R = tipY;
+                }
+                this.leftGunNext = !this.leftGunNext; 
             }
 
             draw(ctx) {
                 const isMoving = input.left.magnitude > 0.1;
                 const runIntensity = input.left.magnitude; 
-                
                 const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); 
                 const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
                 const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
@@ -231,7 +473,6 @@
                 ctx.save();
                 ctx.translate(this.x, this.y);
                 
-                // Draw Shadow
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
                 ctx.beginPath();
                 ctx.ellipse(0, 35 - bobbing*0.5, 30 - bobbing, 15 - bobbing*0.5, 0, 0, Math.PI * 2);
@@ -241,26 +482,10 @@
                 ctx.translate(0, -bobbing);
                 ctx.scale(1, breathScale);
 
-                // --- LEGS ---
-                if (isMoving) {
-                    const legStride = 20 * runIntensity;
-                    const leftLegY = Math.sin(this.animTime) * legStride;
-                    const rightLegY = Math.sin(this.animTime + Math.PI) * legStride;
-                    
-                    ctx.fillStyle = '#111'; // Darker, creepy legs
-                    ctx.beginPath(); ctx.arc(-12, 25 + Math.max(0, -leftLegY*0.5), 6, 0, Math.PI * 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(12, 25 + Math.max(0, -rightLegY*0.5), 6, 0, Math.PI * 2); ctx.fill();
-                } else {
-                    ctx.fillStyle = '#111';
-                    ctx.beginPath(); ctx.arc(-10, 25, 6, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(10, 25, 6, 0, Math.PI*2); ctx.fill();
-                }
-
-                // --- BODY (Uncanny Pale Egg) ---
                 const eggGrad = ctx.createRadialGradient(-10, -15, 5, 0, 0, this.radius + 10);
                 eggGrad.addColorStop(0, '#ffffff');    
-                eggGrad.addColorStop(0.4, '#e4e6d9');  // Pale, slightly sickly grey-greenish white
-                eggGrad.addColorStop(1, '#8b8e83');    // Darker, bruised-looking shadow
+                eggGrad.addColorStop(0.4, '#e4e6d9'); 
+                eggGrad.addColorStop(1, '#8b8e83');   
 
                 ctx.fillStyle = eggGrad;
                 ctx.beginPath();
@@ -269,54 +494,43 @@
                 ctx.bezierCurveTo(-this.radius, this.radius, -this.radius, -this.radius * 1.2, 0, -this.radius * 1.2);
                 ctx.fill();
 
-                // --- FACE (Uncanny & Weird) ---
                 ctx.save();
                 const faceOffsetX = Math.cos(this.facingAngle) * 10;
                 const faceOffsetY = Math.sin(this.facingAngle) * 8;
                 ctx.translate(faceOffsetX, faceOffsetY);
                 
-                // Mismatched Staring Eyes
                 ctx.fillStyle = 'white';
-                // Left eye (larger, slightly lower)
                 ctx.beginPath(); ctx.arc(-12, -4, 9, 0, Math.PI*2); ctx.fill();
-                // Right eye (smaller, slightly higher)
                 ctx.beginPath(); ctx.arc(10, -6, 7, 0, Math.PI*2); ctx.fill();
                 
-                // Tiny Pinprick Pupils (Creates a disturbing stare)
                 ctx.fillStyle = '#000';
                 const pupilOffsetX = Math.cos(this.facingAngle) * 4;
                 const pupilOffsetY = Math.sin(this.facingAngle) * 4;
                 ctx.beginPath(); ctx.arc(-12 + pupilOffsetX, -4 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 ctx.beginPath(); ctx.arc(10 + pupilOffsetX, -6 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 
-                // Mouth removed entirely!
-                
                 ctx.restore();
 
-                // --- WEAPONS (Dual Pistols) ---
-                this.drawWeapon(ctx, -25, 12, this.facingAngle, true); 
-                this.drawWeapon(ctx, 25, 12, this.facingAngle, false); 
+                this.drawWeapon(ctx, -25, 12, this.facingAngle, true, this.recoilL, this.flashL); 
+                this.drawWeapon(ctx, 25, 12, this.facingAngle, false, this.recoilR, this.flashR); 
 
                 ctx.restore();
             }
 
-            drawWeapon(ctx, offsetX, offsetY, aimAngle, isLeft) {
+            drawWeapon(ctx, offsetX, offsetY, aimAngle, isLeft, recoil, flash) {
                 ctx.save();
                 
                 const sway = (input.left.magnitude > 0.1) ? Math.sin(this.animTime + (isLeft ? 0 : Math.PI)) * 5 : 0;
                 ctx.translate(offsetX, offsetY + sway);
                 ctx.rotate(aimAngle);
+                ctx.translate(-recoil, 0);
 
-                // --- FIX: Flip the gun if pointing left ---
-                // If the angle is pointing left (past 90 degrees up or down), flip the Y axis
                 const isAimingLeft = Math.abs(aimAngle) > Math.PI / 2;
-                if (isAimingLeft) {
-                    ctx.scale(1, -1);
-                }
+                if (isAimingLeft) ctx.scale(1, -1);
 
                 ctx.shadowColor = 'rgba(0,0,0,0.5)';
                 ctx.shadowBlur = 5;
-                ctx.shadowOffsetY = isAimingLeft ? -10 : 10; // Flip shadow offset if gun is flipped
+                ctx.shadowOffsetY = isAimingLeft ? -10 : 10; 
 
                 const gunGrad = ctx.createLinearGradient(0, -4, 0, 4);
                 gunGrad.addColorStop(0, '#5a5a6a');
@@ -335,64 +549,146 @@
                 ctx.fillStyle = '#888';
                 ctx.fillRect(8, -3, 8, 2); 
 
+                if (flash > 0) {
+                    if (isAimingLeft) ctx.scale(1, -1);
+                    
+                    ctx.shadowColor = '#ffff00';
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = '#ffffff';
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(23, 0);
+                    ctx.lineTo(32 + Math.random()*8, -4 - Math.random()*4);
+                    ctx.lineTo(30, 0);
+                    ctx.lineTo(32 + Math.random()*8, 4 + Math.random()*4);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(26, 0, 7 * (flash/0.1), 0, Math.PI*2);
+                    ctx.fill();
+                }
+
                 ctx.restore();
             }
         }
 
         // --- ENVIRONMENT ---
         function drawRoom(ctx, camX, camY) {
-            ctx.fillStyle = '#0a0a0c';
+            // Fill background void
+            ctx.fillStyle = '#050508';
             ctx.fillRect(0, 0, width, height);
 
             ctx.save();
             ctx.translate(-camX, -camY);
 
-            const tileSize = 100;
-            const startX = Math.floor(camX / tileSize) * tileSize;
-            const startY = Math.floor(camY / tileSize) * tileSize;
-            const endX = startX + width + tileSize;
-            const endY = startY + height + tileSize;
-
-            ctx.strokeStyle = 'rgba(40, 45, 60, 0.4)';
+            // Draw dark gritty floor
+            const tileSize = 60;
+            ctx.strokeStyle = 'rgba(10, 10, 12, 0.4)';
             ctx.lineWidth = 2;
 
-            for (let x = Math.max(0, startX); x <= Math.min(ROOM_SIZE, endX); x += tileSize) {
-                for (let y = Math.max(0, startY); y <= Math.min(ROOM_SIZE, endY); y += tileSize) {
+            for (let x = 0; x < ROOM_SIZE; x += tileSize) {
+                for (let y = 0; y < ROOM_SIZE; y += tileSize) {
+                    // Slight variation in tile color for grunge effect
                     if ((x/tileSize + y/tileSize) % 2 === 0) {
-                        ctx.fillStyle = '#16171d';
+                        ctx.fillStyle = '#161412';
                     } else {
-                        ctx.fillStyle = '#1a1c23';
+                        ctx.fillStyle = '#11100e';
                     }
                     ctx.fillRect(x, y, tileSize, tileSize);
                     ctx.strokeRect(x, y, tileSize, tileSize);
                 }
             }
 
-            ctx.strokeStyle = '#4a90e2'; 
-            ctx.lineWidth = 10;
-            ctx.shadowColor = '#4a90e2';
-            ctx.shadowBlur = 20;
+            // Draw thick dark stone walls
+            ctx.strokeStyle = '#0a0908'; 
+            ctx.lineWidth = 40;
             ctx.strokeRect(0, 0, ROOM_SIZE, ROOM_SIZE);
 
+            ctx.restore();
+        }
+
+        // --- DYNAMIC LIGHTING ---
+        function drawLighting(ctx, camX, camY) {
+            // Clear light canvas with pure darkness
+            lightCtx.globalCompositeOperation = 'source-over';
+            lightCtx.fillStyle = 'rgba(4, 4, 6, 0.96)'; // Almost pitch black
+            lightCtx.fillRect(0, 0, width, height);
+
+            // Switch to destination-out to "punch holes" in the darkness
+            lightCtx.globalCompositeOperation = 'destination-out';
+
+            // 1. Torch Lights
+            torches.forEach(t => {
+                const screenX = t.x - camX;
+                const screenY = t.y - camY;
+                const radius = t.getLightRadius();
+                
+                // Only render if on/near screen for performance
+                if (screenX > -radius && screenX < width + radius && screenY > -radius && screenY < height + radius) {
+                    const grad = lightCtx.createRadialGradient(screenX, screenY, 10, screenX, screenY, radius);
+                    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');      // Center is fully lit
+                    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.5)');  // Mid dropoff
+                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      // Edge fades to dark
+                    
+                    lightCtx.fillStyle = grad;
+                    lightCtx.beginPath();
+                    lightCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+                    lightCtx.fill();
+                }
+            });
+
+            // 2. Player Dim Personal Light (so they are never fully invisible)
+            const pScreenX = player.x - camX;
+            const pScreenY = player.y - camY;
+            const pRadius = 180;
+            const pGrad = lightCtx.createRadialGradient(pScreenX, pScreenY, 20, pScreenX, pScreenY, pRadius);
+            pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); // Dimmer center
+            pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            lightCtx.fillStyle = pGrad;
+            lightCtx.beginPath();
+            lightCtx.arc(pScreenX, pScreenY, pRadius, 0, Math.PI*2);
+            lightCtx.fill();
+
+            // 3. Muzzle Flash Lighting
+            if (player.flashL > 0) {
+                drawMuzzleLight(player.muzzleX_L - camX, player.muzzleY_L - camY, player.flashL);
+            }
+            if (player.flashR > 0) {
+                drawMuzzleLight(player.muzzleX_R - camX, player.muzzleY_R - camY, player.flashR);
+            }
+
+            function drawMuzzleLight(x, y, flashAmount) {
+                const fRadius = 250 * (flashAmount / 0.1); // Scaled based on flash life
+                const fGrad = lightCtx.createRadialGradient(x, y, 5, x, y, fRadius);
+                fGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+                fGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                lightCtx.fillStyle = fGrad;
+                lightCtx.beginPath();
+                lightCtx.arc(x, y, fRadius, 0, Math.PI*2);
+                lightCtx.fill();
+            }
+
+            // Draw the lighting layer over the main game
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(lightCanvas, 0, 0);
             ctx.restore();
         }
 
         // --- UI / JOYSTICKS ---
         function drawJoysticks(ctx) {
             ctx.lineWidth = 3;
-            
-            // Draw Left Joystick (Movement) ONLY
             if (input.left.active) {
                 ctx.beginPath();
                 ctx.arc(input.left.baseX, input.left.baseY, JOYSTICK_MAX_RADIUS, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.arc(input.left.currentX, input.left.currentY, 25, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.fill();
             }
         }
@@ -405,18 +701,38 @@
             const dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
 
+            // Updates
             player.update(dt);
+            torches.forEach(t => t.update(dt));
 
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update(dt);
+                if (bullets[i].life <= 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Camera Setup
             let camX = player.x - width / 2;
             let camY = player.y - height / 2;
             
+            // Render Background
             drawRoom(ctx, camX, camY);
 
+            // Render Entities (World Space)
             ctx.save();
             ctx.translate(-camX, -camY);
+            
+            torches.forEach(t => t.draw(ctx));
+            bullets.forEach(bullet => bullet.draw(ctx));
             player.draw(ctx);
+            
             ctx.restore();
 
+            // Render Dynamic Lighting Overlay (Screen Space)
+            drawLighting(ctx, camX, camY);
+
+            // Render UI
             drawJoysticks(ctx);
 
             requestAnimationFrame(gameLoop);
