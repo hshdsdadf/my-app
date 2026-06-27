@@ -24,7 +24,7 @@
         body, html {
             width: 100%;
             height: 100%;
-            background-color: #0a0a0a;
+            background-color: #050505;
             overflow: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
@@ -35,7 +35,7 @@
             width: 100%;
             height: 100%;
             opacity: 0;
-            transition: opacity 1s ease-in; /* Smooth fade in when rotating */
+            transition: opacity 1s ease-in; 
         }
 
         /* --- ORIENTATION LOCK UI --- */
@@ -123,136 +123,164 @@
     <script>
         // --- 3D ENGINE SETUP ---
         const canvas = document.getElementById('gameCanvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
         
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
-        scene.fog = new THREE.Fog(0x050505, 15, 40); // Fades into deep shadow
+        scene.background = new THREE.Color(0x020202);
+        scene.fog = new THREE.Fog(0x020202, 10, 50);
 
-        // Top-down / Side-view isometric-style camera
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const cameraBasePosition = new THREE.Vector3(0, 15, 18);
-        camera.position.copy(cameraBasePosition);
-        camera.lookAt(0, 0, 0);
+        // Dynamic Camera
+        const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let cameraOffset = new THREE.Vector3(0, 12, 16);
+        camera.position.copy(cameraOffset);
 
-        // Lighting to enhance realistic materials
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        // High-Quality Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
-        const spotLight = new THREE.SpotLight(0xcceeff, 1.5);
-        spotLight.position.set(5, 30, 10);
+        const spotLight = new THREE.SpotLight(0xaaccff, 2.5);
+        spotLight.position.set(5, 20, 10);
         spotLight.angle = Math.PI / 4;
-        spotLight.penumbra = 0.5;
+        spotLight.penumbra = 0.8;
         spotLight.castShadow = true;
-        spotLight.shadow.bias = -0.0001;
+        spotLight.shadow.mapSize.width = 1024;
+        spotLight.shadow.mapSize.height = 1024;
+        spotLight.shadow.bias = -0.001;
         scene.add(spotLight);
 
-        // --- ENVIRONMENT ---
-        const groundGeo = new THREE.PlaneGeometry(100, 100);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9, metalness: 0.1 });
+        // Ground with subtle grid texture for speed reference during fall
+        const gridHelper = new THREE.GridHelper(100, 50, 0x111111, 0x111111);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        const groundGeo = new THREE.PlaneGeometry(200, 200);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 1.0, metalness: 0.0 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
-        ground.position.y = -50; // Starts far below during the fall
         scene.add(ground);
 
-        // --- CHARACTER RIGGING (Procedural Tactical Operative) ---
-        // Materials matching the provided reference image (dark gear, armor plates, glossy visor)
-        const suitMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-        const armorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
-        const skinMat = new THREE.MeshStandardMaterial({ color: 0x151515 }); // Gloves/boots
-        const visorMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.9 });
+        // --- HIGH QUALITY CHARACTER RIGGING ---
+        const suitMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+        const armorMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.5, metalness: 0.3 });
+        const detailMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.7 });
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 1.0 });
 
         const charGroup = new THREE.Group();
         scene.add(charGroup);
         
-        const pivot = new THREE.Group(); // Master control for whole body
-        charGroup.add(pivot);
+        // Hips are the root bone. All math is calculated from here to prevent clipping.
+        const hips = new THREE.Group(); 
+        charGroup.add(hips);
 
-        // Helpers to build joints
-        function createBone(width, height, depth, mat, yOffset) {
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), mat);
-            mesh.position.y = yOffset;
+        // Utility function for smooth limbs
+        function createSmoothBone(topRad, botRad, len, mat, yPos) {
+            const geo = new THREE.CylinderGeometry(topRad, botRad, len, 16);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.y = yPos;
             mesh.castShadow = true;
             mesh.receiveShadow = true;
-            const group = new THREE.Group();
-            group.add(mesh);
-            return { mesh, group };
+            return mesh;
         }
 
-        // Torso & Vest
-        const torso = createBone(1.4, 2, 0.8, suitMat, 1);
-        const vest = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.8, 1), armorMat);
-        vest.position.y = 1;
-        torso.group.add(vest);
-        pivot.add(torso.group);
-        torso.group.position.y = 2.4; // Hip height
+        // Add spherical joints to hide gaps
+        function addJoint(parent, radius, mat, yOffset = 0) {
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 16), mat);
+            mesh.position.y = yOffset;
+            mesh.castShadow = true;
+            parent.add(mesh);
+            return mesh;
+        }
 
-        // Head & Helmet
+        // 1. Torso & Belt
+        const torsoGroup = new THREE.Group();
+        torsoGroup.position.y = 0; // Relative to hips
+        hips.add(torsoGroup);
+
+        const belt = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.1, 16, 32), detailMat);
+        belt.rotation.x = Math.PI / 2;
+        torsoGroup.add(belt);
+
+        const abdomen = createSmoothBone(0.45, 0.45, 0.8, suitMat, 0.4);
+        torsoGroup.add(abdomen);
+        const chest = createSmoothBone(0.6, 0.45, 0.8, armorMat, 1.2);
+        torsoGroup.add(chest);
+
+        // 2. Head & Helmet
         const headJoint = new THREE.Group();
-        headJoint.position.y = 2.2;
-        torso.group.add(headJoint);
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), armorMat);
-        head.position.y = 0.5;
-        head.castShadow = true;
-        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.4), visorMat);
-        visor.position.set(0, 0.55, 0.35);
-        head.add(visor);
-        headJoint.add(head);
+        headJoint.position.y = 1.8;
+        torsoGroup.add(headJoint);
+        addJoint(headJoint, 0.2, suitMat, -0.1); // Neck
 
-        // Limbs function
-        function createLimb(parent, x, y, z, upperSize, lowerSize) {
+        const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 32), armorMat);
+        helmet.position.y = 0.2;
+        helmet.castShadow = true;
+        headJoint.add(helmet);
+
+        // Curved Visor
+        const visorGeo = new THREE.CylinderGeometry(0.46, 0.46, 0.35, 32, 1, false, -Math.PI/2.5, Math.PI/1.25);
+        const visor = new THREE.Mesh(visorGeo, visorMat);
+        visor.position.set(0, 0.2, 0);
+        visor.rotation.y = -Math.PI / 1.35; // Align to front
+        headJoint.add(visor);
+
+        // 3. Limbs Function
+        function createLimb(parent, x, y, upperRad, lowerRad, len) {
             const upperJoint = new THREE.Group();
-            upperJoint.position.set(x, y, z);
+            upperJoint.position.set(x, y, 0);
             parent.add(upperJoint);
             
-            const upper = createBone(upperSize[0], upperSize[1], upperSize[2], suitMat, -upperSize[1]/2);
-            upperJoint.add(upper.group);
+            addJoint(upperJoint, upperRad, armorMat); // Shoulder/Hip socket
+            
+            const upper = createSmoothBone(upperRad, lowerRad, len, suitMat, -len/2);
+            upperJoint.add(upper);
             
             const lowerJoint = new THREE.Group();
-            lowerJoint.position.y = -upperSize[1];
-            upper.group.add(lowerJoint);
+            lowerJoint.position.y = -len;
+            upperJoint.add(lowerJoint);
             
-            const lower = createBone(lowerSize[0], lowerSize[1], lowerSize[2], skinMat, -lowerSize[1]/2);
-            lowerJoint.add(lower.group);
+            addJoint(lowerJoint, lowerRad*1.1, detailMat); // Knee/Elbow pad
+            
+            const lower = createSmoothBone(lowerRad, lowerRad*0.8, len, suitMat, -len/2);
+            lowerJoint.add(lower);
             
             return { upper: upperJoint, lower: lowerJoint };
         }
 
-        // Arms
-        const armL = createLimb(torso.group, -1, 1.8, 0, [0.4, 1.2, 0.4], [0.35, 1.2, 0.35]);
-        const armR = createLimb(torso.group, 1, 1.8, 0, [0.4, 1.2, 0.4], [0.35, 1.2, 0.35]);
-
-        // Legs
-        const legL = createLimb(pivot, -0.4, 2.4, 0, [0.5, 1.3, 0.5], [0.45, 1.3, 0.45]);
-        const legR = createLimb(pivot, 0.4, 2.4, 0, [0.5, 1.3, 0.5], [0.45, 1.3, 0.45]);
+        // Arms & Legs
+        const armL = createLimb(torsoGroup, -0.7, 1.4, 0.2, 0.15, 0.8);
+        const armR = createLimb(torsoGroup, 0.7, 1.4, 0.2, 0.15, 0.8);
+        
+        const legL = createLimb(hips, -0.25, -0.1, 0.25, 0.2, 0.9);
+        const legR = createLimb(hips, 0.25, -0.1, 0.25, 0.2, 0.9);
 
         // --- EFFECTS ---
-        // Wind speed lines for falling
-        const windGeo = new THREE.CylinderGeometry(0.02, 0.02, 4, 4);
-        const windMat = new THREE.MeshBasicMaterial({ color: 0x445566, transparent: true, opacity: 0.3 });
+        // Wind speed lines
+        const windGeo = new THREE.CylinderGeometry(0.01, 0.01, 6, 4);
+        const windMat = new THREE.MeshBasicMaterial({ color: 0x557799, transparent: true, opacity: 0.4 });
         const winds = [];
-        for(let i=0; i<30; i++) {
+        for(let i=0; i<40; i++) {
             const w = new THREE.Mesh(windGeo, windMat);
-            w.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*20, (Math.random()-0.5)*10);
             scene.add(w);
             winds.push(w);
         }
 
-        // Dust explosion on impact
-        const dustGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-        const dustMat = new THREE.MeshStandardMaterial({ color: 0x333333, transparent: true, opacity: 0.8 });
+        // High quality dust explosion
+        const dustGeo = new THREE.DodecahedronGeometry(0.3, 0);
+        const dustMat = new THREE.MeshStandardMaterial({ color: 0x444444, transparent: true, opacity: 0.8, roughness: 1 });
         const dustParticles = [];
-        for(let i=0; i<20; i++) {
+        for(let i=0; i<25; i++) {
             const d = new THREE.Mesh(dustGeo, dustMat);
             d.visible = false;
             scene.add(d);
             dustParticles.push({
                 mesh: d, 
-                vel: new THREE.Vector3((Math.random()-0.5)*15, Math.random()*5, (Math.random()-0.5)*15)
+                vel: new THREE.Vector3((Math.random()-0.5)*20, Math.random()*8, (Math.random()-0.5)*20),
+                spin: new THREE.Vector3(Math.random(), Math.random(), Math.random())
             });
         }
 
@@ -271,16 +299,16 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Easing function for smooth realistic movement
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutQuad(t) { return t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
-        // Linear interpolation helper
         function lerp(start, end, amt) { return (1-amt)*start+amt*end; }
 
-        // Core animation loop
+        // Start Character high in the air
+        let fallHeight = 80;
+        
         function animate() {
             requestAnimationFrame(animate);
             
-            // Check orientation to start sequence
             if (gameState === 'waiting' && window.innerWidth > window.innerHeight) {
                 gameState = 'falling';
                 animStartTime = clock.getElapsedTime();
@@ -288,57 +316,62 @@
 
             const time = clock.getElapsedTime();
             const elapsed = time - animStartTime;
-
-            // Camera shake variable
             let shake = new THREE.Vector3(0,0,0);
 
             if (gameState === 'falling') {
                 if (elapsed < 4.0) {
-                    // Falling Physics (0 to 4s)
                     const fallProgress = elapsed / 4.0;
                     
                     // Wind rushing up
-                    winds.forEach(w => {
-                        w.position.y += 0.5;
-                        if(w.position.y > 10) w.position.y = -10;
+                    winds.forEach((w, i) => {
+                        w.position.y += 1.0;
+                        if(w.position.y > hips.position.y + 10) {
+                            w.position.set(
+                                hips.position.x + (Math.random()-0.5)*15, 
+                                hips.position.y - 20 - Math.random()*10, 
+                                hips.position.z + (Math.random()-0.5)*15
+                            );
+                        }
                     });
 
-                    // Character poses (Flailing slightly)
-                    pivot.rotation.z = Math.sin(time * 15) * 0.05; // Turbulence wobble
-                    pivot.rotation.x = Math.PI / 4; // Tilted forward in air
-                    
-                    // Arms flailing up
-                    armL.upper.rotation.set(0, 0, 2.5 + Math.sin(time*10)*0.1);
-                    armL.lower.rotation.set(0, 0, 0);
-                    armR.upper.rotation.set(0, 0, -2.5 - Math.sin(time*12)*0.1);
-                    armR.lower.rotation.set(0, 0, 0);
-                    
-                    // Legs bent for aerodynamics
-                    legL.upper.rotation.set(-0.5, 0, 0);
-                    legL.lower.rotation.set(0.5, 0, 0);
-                    legR.upper.rotation.set(-0.6, 0, 0);
-                    legR.lower.rotation.set(0.4, 0, 0);
+                    // Fast drop calculation
+                    hips.position.y = lerp(fallHeight, 0.5, Math.pow(fallProgress, 2.5));
 
-                    // Ground rising dynamically right before impact
-                    if (elapsed > 3.5) {
-                        const approach = (elapsed - 3.5) / 0.5;
-                        ground.position.y = lerp(-50, 0, approach * approach);
-                    } else {
-                        ground.position.y = -50;
-                    }
+                    // Character poses (Terminal velocity air resistance)
+                    hips.rotation.x = Math.PI / 2.5; // Tilted forward
+                    hips.rotation.z = Math.sin(time * 20) * 0.03; // Hard turbulence
+                    
+                    torsoGroup.rotation.x = -0.2;
+                    headJoint.rotation.x = -0.5; // Looking down
+
+                    armL.upper.rotation.set(0.5, 0, 1.5 + Math.sin(time*15)*0.1);
+                    armL.lower.rotation.set(-0.5, 0, 0);
+                    armR.upper.rotation.set(0.5, 0, -1.5 - Math.sin(time*17)*0.1);
+                    armR.lower.rotation.set(-0.5, 0, 0);
+                    
+                    legL.upper.rotation.set(-0.3, 0, 0.2);
+                    legL.lower.rotation.set(0.6, 0, 0);
+                    legR.upper.rotation.set(-0.4, 0, -0.2);
+                    legR.lower.rotation.set(0.5, 0, 0);
+
                 } 
                 else if (elapsed >= 4.0 && elapsed < 4.1) {
                     // IMPACT!
                     gameState = 'impact';
-                    ground.position.y = 0;
                     
-                    // Hide wind
+                    // Precise clipping math: Chest thickness is ~0.6, so center must rest exactly at Y = 0.5 when flat
+                    hips.position.y = 0.5; 
+                    hips.rotation.x = Math.PI / 2; // Perfectly flat
+                    hips.rotation.z = 0;
+                    torsoGroup.rotation.x = 0;
+                    headJoint.rotation.x = 0.2; // Head snaps back slightly
+                    
                     winds.forEach(w => w.visible = false);
 
-                    // Trigger dust particles
                     dustParticles.forEach(d => {
                         d.mesh.visible = true;
-                        d.mesh.position.set(0, 0, 0);
+                        d.mesh.position.copy(hips.position);
+                        d.mesh.position.y = 0;
                         d.mesh.scale.set(1,1,1);
                     });
                 }
@@ -347,86 +380,78 @@
             else if (gameState === 'impact' || gameState === 'lying') {
                 gameState = 'lying';
                 
-                // Camera shake decay
-                const shakeIntensity = Math.max(0, 1 - (elapsed - 4.0) * 2);
+                const shakeIntensity = Math.max(0, 1.5 - (elapsed - 4.0) * 3);
                 shake.set((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity, 0);
 
-                // Update dust physics
                 dustParticles.forEach(d => {
                     if(d.mesh.visible) {
                         d.mesh.position.addScaledVector(d.vel, 0.016);
-                        d.mesh.scale.multiplyScalar(0.95); // shrink
-                        if(d.mesh.scale.x < 0.01) d.mesh.visible = false;
+                        d.mesh.rotation.x += d.spin.x * 0.1;
+                        d.mesh.rotation.y += d.spin.y * 0.1;
+                        d.mesh.scale.multiplyScalar(0.93);
+                        if(d.mesh.scale.x < 0.05) d.mesh.visible = false;
                     }
                 });
 
-                // Character is slammed flat on the ground
-                pivot.position.y = -2; // Adjust to floor level
-                pivot.rotation.set(Math.PI / 2, 0, 0); // Face down flat
-                
-                // Limbs relaxed
-                armL.upper.rotation.set(-1, 0, 1);
+                // Body completely limp on the ground
+                armL.upper.rotation.set(-0.2, 0, 2);
                 armL.lower.rotation.set(0, 0, 0);
-                armR.upper.rotation.set(-1, 0, -1);
+                armR.upper.rotation.set(0.5, 0, -1.8);
                 armR.lower.rotation.set(0, 0, 0);
-                legL.upper.rotation.set(0, 0, 0.2);
-                legL.lower.rotation.set(0, 0, 0);
-                legR.upper.rotation.set(0, 0, -0.2);
-                legR.lower.rotation.set(0, 0, 0);
+                legL.upper.rotation.set(0, 0, 0.1);
+                legL.lower.rotation.set(0.1, 0, 0);
+                legR.upper.rotation.set(0, 0, -0.1);
+                legR.lower.rotation.set(0.2, 0, 0);
 
                 if (elapsed > 6.0) gameState = 'getting_up';
             }
             
             else if (gameState === 'getting_up') {
-                // Procedural Stand Up (6.0s to 9.0s)
                 const getUpTime = elapsed - 6.0;
                 
                 if (getUpTime < 1.0) {
-                    // Phase 1: Push up with arms (6s - 7s)
+                    // Phase 1: Push up with arms
                     const t = easeInOutQuad(getUpTime);
-                    pivot.rotation.x = lerp(Math.PI / 2, Math.PI / 4, t); // Torso rises
+                    hips.rotation.x = lerp(Math.PI / 2, Math.PI / 3, t); // Shoulders rise
+                    hips.position.y = lerp(0.5, 0.8, t); // Body lifts off floor
                     
-                    armL.upper.rotation.x = lerp(-1, 1, t); // Arms swing down to floor
-                    armR.upper.rotation.x = lerp(-1, 1, t);
-                    armL.upper.rotation.z = lerp(1, 0.5, t);
-                    armR.upper.rotation.z = lerp(-1, -0.5, t);
-                    armL.lower.rotation.x = lerp(0, -1, t);
-                    armR.lower.rotation.x = lerp(0, -1, t);
+                    headJoint.rotation.x = lerp(0.2, -0.3, t); // Look forward
+                    
+                    armL.upper.rotation.set(lerp(-0.2, 1.2, t), 0, lerp(2, 0.5, t));
+                    armR.upper.rotation.set(lerp(0.5, 1.2, t), 0, lerp(-1.8, -0.5, t));
+                    armL.lower.rotation.x = lerp(0, -1.5, t); // Arms bend to push
+                    armR.lower.rotation.x = lerp(0, -1.5, t);
                 }
                 else if (getUpTime < 2.0) {
-                    // Phase 2: Kneel (7s - 8s)
+                    // Phase 2: Pull one knee up
                     const t = easeInOutQuad(getUpTime - 1.0);
-                    pivot.rotation.x = lerp(Math.PI / 4, 0.2, t);
-                    pivot.position.y = lerp(-2, -0.5, t);
+                    hips.rotation.x = lerp(Math.PI / 3, 0.1, t);
+                    hips.position.y = lerp(0.8, 1.5, t); // Hips rising
                     
-                    // Bring one knee up
-                    legL.upper.rotation.x = lerp(0, -1.5, t);
-                    legL.lower.rotation.x = lerp(0, 1.5, t);
-                    legR.upper.rotation.x = lerp(0, -0.5, t);
-                    legR.lower.rotation.x = lerp(0, 1.0, t);
+                    legL.upper.rotation.x = lerp(0, -1.2, t);
+                    legL.lower.rotation.x = lerp(0.1, 1.2, t); // Knee bent, foot on floor
+                    legR.upper.rotation.x = lerp(0, -0.2, t);
+                    legR.lower.rotation.x = lerp(0.2, 0.8, t); // Knee on floor
                     
-                    // Lift arms off floor
-                    armL.upper.rotation.x = lerp(1, 0, t);
-                    armR.upper.rotation.x = lerp(1, 0, t);
-                    armL.lower.rotation.x = lerp(-1, -0.5, t);
-                    armR.lower.rotation.x = lerp(-1, -0.5, t);
+                    armL.upper.rotation.x = lerp(1.2, 0.2, t);
+                    armR.upper.rotation.x = lerp(1.2, 0.2, t);
                 }
                 else if (getUpTime < 3.0) {
-                    // Phase 3: Stand tall (8s - 9s)
+                    // Phase 3: Stand tall
                     const t = easeInOutQuad(getUpTime - 2.0);
-                    pivot.rotation.x = lerp(0.2, 0, t);
-                    pivot.position.y = lerp(-0.5, 0, t);
+                    hips.rotation.x = lerp(0.1, 0, t);
+                    hips.position.y = lerp(1.5, 1.9, t); // Full standing height (legs + hips)
                     
-                    legL.upper.rotation.x = lerp(-1.5, 0, t);
-                    legL.lower.rotation.x = lerp(1.5, 0, t);
-                    legR.upper.rotation.x = lerp(-0.5, 0, t);
-                    legR.lower.rotation.x = lerp(1.0, 0, t);
+                    legL.upper.rotation.x = lerp(-1.2, 0, t);
+                    legL.lower.rotation.x = lerp(1.2, 0, t);
+                    legR.upper.rotation.x = lerp(-0.2, 0, t);
+                    legR.lower.rotation.x = lerp(0.8, 0, t);
                     
-                    // Arms to idle combat pose
-                    armL.upper.rotation.set(lerp(0, 0.2, t), 0, lerp(0.5, 0.3, t));
-                    armR.upper.rotation.set(lerp(0, 0.2, t), 0, lerp(-0.5, -0.3, t));
-                    armL.lower.rotation.x = lerp(-0.5, -0.2, t);
-                    armR.lower.rotation.x = lerp(-0.5, -0.2, t);
+                    // Arms to tactical idle
+                    armL.upper.rotation.set(lerp(0.2, 0.3, t), 0, lerp(0.5, 0.2, t));
+                    armR.upper.rotation.set(lerp(0.2, 0.3, t), 0, lerp(-0.5, -0.2, t));
+                    armL.lower.rotation.x = lerp(-1.5, -0.3, t);
+                    armR.lower.rotation.x = lerp(-1.5, -0.3, t);
                 }
                 else {
                     gameState = 'idle';
@@ -434,15 +459,21 @@
             }
             
             else if (gameState === 'idle') {
-                // Subtle breathing animation
-                const breath = Math.sin(time * 2) * 0.05;
-                torso.group.position.y = 2.4 + breath;
-                armL.upper.rotation.z = 0.3 + breath;
-                armR.upper.rotation.z = -0.3 - breath;
+                // Tactical Breathing
+                const breath = Math.sin(time * 2.5) * 0.03;
+                hips.position.y = 1.9 + breath;
+                chest.scale.set(1 + breath*0.5, 1, 1 + breath*0.5);
+                armL.upper.rotation.z = 0.2 + breath;
+                armR.upper.rotation.z = -0.2 - breath;
             }
 
-            // Apply camera shake if any, then render
-            camera.position.copy(cameraBasePosition).add(shake);
+            // Smooth Camera Follow: The camera dynamic tracks the hips as they fall and stand
+            let targetCamY = hips.position.y + 12;
+            camera.position.y += (targetCamY - camera.position.y) * 0.1; 
+            camera.position.x = shake.x;
+            camera.position.z = 16 + shake.y;
+            camera.lookAt(0, hips.position.y - 2, 0);
+
             renderer.render(scene, camera);
         }
 
