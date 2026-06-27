@@ -1,16 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Hollow</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Reall Egg Shooter</title>
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#111; overflow:hidden; }
+    body { font-family:-apple-system, BlinkMacSystemFont, system-ui, sans-serif; color:#fff; }
+    #stage { position:fixed; inset:0; background:#444; overflow:hidden; }
+    #canvas { display:block; width:100%; height:100%; background:#666; touch-action:none; }
+    #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.82); z-index:10; pointer-events:none; opacity:0; transition:opacity .2s ease; }
+    #overlay.visible { opacity:1; pointer-events:auto; }
+    #overlay .card { width:86%; max-width:320px; padding:22px; border-radius:24px; background:rgba(24,24,24,.97); text-align:center; box-shadow:0 20px 40px rgba(0,0,0,.45); }
+    #overlay .arrow { width:72px; height:72px; margin:0 auto 16px; border:10px solid rgba(255,255,255,.88); border-top-color:transparent; border-radius:50%; animation:spin 1.2s linear infinite; }
+    #overlay p { margin:0; line-height:1.5; font-size:1rem; color:#f1f1f1; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #hint { position:absolute; left:16px; top:16px; color:#ddd; font-size:.92rem; text-shadow:0 1px 3px rgba(0,0,0,.8); }
+  </style>
 </head>
 <body>
-  <canvas id="gameCanvas" aria-label="Hollow game canvas"></canvas>
-  <div id="orientationMessage">Tilt to landscape to play Hollow.</div>
-  <script type="module" src="main.js"></script>
+  <div id="stage"><canvas id="canvas"></canvas></div>
+  <div id="overlay" class="visible">
+    <div class="card">
+      <div class="arrow"></div>
+      <p>Rotate your phone to landscape to play.</p>
+    </div>
+  </div>
+  <div id="hint">Touch left side to move</div>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const overlay = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    let width = 0, height = 0;
+    const state = {
+      touchId: null,
+      stickX: 0,
+      stickY: 0,
+      player: { x: 0, y: 0, vx: 0, vy: 0, dir: 1, anim: 0, speed: 0 }
+    };
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+    function isPortrait() { return height > width; }
+    function updateOverlay() { overlay.classList.toggle('visible', isPortrait()); }
+    window.addEventListener('resize', () => { resize(); updateOverlay(); });
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function touchStart(e) {
+      for (const touch of Array.from(e.changedTouches)) {
+        if (state.touchId === null && touch.clientX < width * 0.4) {
+          state.touchId = touch.identifier;
+          state.stickX = touch.clientX;
+          state.stickY = touch.clientY;
+          state.player.anim = 0;
+        }
+      }
+    }
+    function touchMove(e) {
+      for (const touch of Array.from(e.changedTouches)) {
+        if (touch.identifier === state.touchId) {
+          const dx = touch.clientX - state.stickX;
+          const dy = touch.clientY - state.stickY;
+          const max = Math.max(1, width * 0.3);
+          const nx = clamp(dx / max, -1, 1);
+          const ny = clamp(dy / max, -1, 1);
+          state.player.vx = nx;
+          state.player.vy = ny;
+          state.player.speed = Math.hypot(nx, ny);
+          state.player.dir = nx >= 0 ? 1 : -1;
+          state.player.anim = state.player.speed < 0.12 ? 0 : state.player.speed < 0.55 ? 1 : 2;
+        }
+      }
+      e.preventDefault();
+    }
+    function touchEnd(e) {
+      for (const touch of Array.from(e.changedTouches)) {
+        if (touch.identifier === state.touchId) {
+          state.touchId = null;
+          state.player.vx = 0;
+          state.player.vy = 0;
+          state.player.speed = 0;
+          state.player.anim = 0;
+        }
+      }
+    }
+    canvas.addEventListener('touchstart', touchStart, { passive: false });
+    canvas.addEventListener('touchmove', touchMove, { passive: false });
+    canvas.addEventListener('touchend', touchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', touchEnd, { passive: false });
+    function drawEgg(x, y, r) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.sin(Date.now() * 0.006) * 0.02);
+      ctx.fillStyle = '#e9dfcd';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r, r * 1.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#332b25';
+      ctx.beginPath();
+      ctx.ellipse(-r * 0.32, -r * 0.05, r * 0.14, r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(r * 0.32, -r * 0.05, r * 0.14, r * 0.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    function drawGuns(x, y, dir) {
+      ctx.save();
+      ctx.strokeStyle = '#bbb';
+      ctx.fillStyle = '#444';
+      ctx.lineWidth = 6;
+      const ox = dir * 40;
+      const sy = -10;
+      ctx.translate(x + ox, y + sy);
+      ctx.rotate(dir * 0.15);
+      ctx.beginPath();
+      ctx.rect(-5, -5, 40, 14);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.rect(30, -2, 24, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.translate(x + ox, y + sy);
+      ctx.rotate(dir * 0.05);
+      ctx.beginPath();
+      ctx.rect(-5, -5, 40, 14);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.rect(30, -2, 24, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    function render() {
+      resize();
+      updateOverlay();
+      if (isPortrait()) {
+        ctx.clearRect(0, 0, width, height);
+        requestAnimationFrame(render);
+        return;
+      }
+      overlay.classList.remove('visible');
+      const speed = 3.2 + state.player.speed * 5;
+      state.player.x += state.player.vx * speed;
+      state.player.y += state.player.vy * speed;
+      state.player.x = clamp(state.player.x, -1200, 1200);
+      state.player.y = clamp(state.player.y, -1200, 1200);
+      const camX = state.player.x - width * 0.5;
+      const camY = state.player.y - height * 0.5;
+      ctx.fillStyle = '#5e5e5e';
+      ctx.fillRect(0, 0, width, height);
+      const tile = 96;
+      const startX = Math.floor(camX / tile) * tile - tile;
+      const startY = Math.floor(camY / tile) * tile - tile;
+      for (let x = startX; x < camX + width + tile; x += tile) {
+        for (let y = startY; y < camY + height + tile; y += tile) {
+          ctx.fillStyle = ((x / tile + y / tile) % 2 === 0) ? '#656565' : '#595959';
+          ctx.fillRect(x - camX, y - camY, tile - 2, tile - 2);
+        }
+      }
+      const px = width * 0.5;
+      const py = height * 0.55;
+      ctx.save();
+      const wobble = Math.sin(Date.now() * 0.008) * 0.8;
+      if (state.player.anim === 0) ctx.translate(px, py + wobble);
+      else if (state.player.anim === 1) ctx.translate(px, py + Math.sin(Date.now() * 0.02) * 6);
+      else ctx.translate(px, py + Math.sin(Date.now() * 0.03) * 10);
+      drawEgg(0, 0, 36);
+      drawGuns(0, 0, state.player.dir);
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(120, height - 140, 140, 140, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.beginPath();
+      ctx.ellipse(120, height - 140, 90, 90, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ddd';
+      ctx.font = '600 13px system-ui, sans-serif';
+      ctx.fillText('Move on left side', 40, height - 30);
+      requestAnimationFrame(render);
+    }
+    resize();
+    updateOverlay();
+    render();
+  </script>
 </body>
 </html>
