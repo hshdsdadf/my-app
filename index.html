@@ -2,21 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Critical meta tags for mobile game responsiveness and "Add to Home Screen" capabilities -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0a0a0a">
     <title>Mobile Game</title>
 
+    <!-- Import Three.js for high-quality procedural 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <style>
-        /* Base reset to ensure no scrollbars or margins get in the way of the canvas */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            -webkit-touch-callout: none; /* Disable iOS callout */
-            -webkit-user-select: none;   /* Disable text selection */
+            -webkit-touch-callout: none; 
+            -webkit-user-select: none;   
             user-select: none;
         }
 
@@ -24,7 +25,7 @@
             width: 100%;
             height: 100%;
             background-color: #0a0a0a;
-            overflow: hidden; /* Prevent any scrolling */
+            overflow: hidden; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -33,9 +34,8 @@
             display: block;
             width: 100%;
             height: 100%;
-            /* Hide by default, will be revealed in landscape */
             opacity: 0;
-            transition: opacity 0.5s ease-in;
+            transition: opacity 1s ease-in; /* Smooth fade in when rotating */
         }
 
         /* --- ORIENTATION LOCK UI --- */
@@ -72,20 +72,14 @@
             line-height: 1.5;
         }
 
-        /* SVG Animation Styles */
-        .device-icon {
-            width: 120px;
-            height: 120px;
-        }
+        .device-icon { width: 120px; height: 120px; }
 
-        /* The smooth tilt animation simulating the physical rotation of a phone */
         @keyframes tiltPhone {
             0%, 15% { transform: rotate(0deg); }
             45%, 55% { transform: rotate(-90deg); }
             85%, 100% { transform: rotate(0deg); }
         }
 
-        /* The glowing arrow pulsing to draw attention */
         @keyframes pulseArrow {
             0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 2px #38bdf8); }
             50% { opacity: 1; filter: drop-shadow(0 0 10px #38bdf8); }
@@ -100,92 +94,359 @@
             animation: pulseArrow 1.5s ease-in-out infinite;
         }
 
-        /* CSS Media Queries to handle device orientation instantly */
         @media screen and (orientation: landscape) {
-            #orientation-overlay {
-                display: none; /* Hide the lock screen */
-            }
-            #gameCanvas {
-                opacity: 1; /* Show the canvas */
-            }
+            #orientation-overlay { display: none; }
+            #gameCanvas { opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Portrait Mode Lock Screen -->
     <div id="orientation-overlay">
-        <!-- Custom SVG Graphic for "Rotate Device" -->
         <svg class="device-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <!-- Glowing arrow indicating the turn -->
             <g class="arrow-group">
                 <path d="M 20 60 A 35 35 0 0 1 80 60" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 6"/>
                 <polygon points="85,55 80,68 73,56" fill="#38bdf8" />
             </g>
-            
-            <!-- Phone Shape -->
             <g class="phone-group">
                 <rect x="32" y="20" width="36" height="60" rx="6" fill="#0f172a" stroke="#ffffff" stroke-width="3"/>
-                <!-- Speaker notch -->
                 <line x1="45" y1="26" x2="55" y2="26" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
-                <!-- Home button/Indicator -->
                 <circle cx="50" cy="73" r="2.5" fill="#cbd5e1"/>
             </g>
         </svg>
-
         <h1 class="title">Rotate Device</h1>
         <p class="subtitle">Please turn your device to landscape mode to play.</p>
     </div>
 
-    <!-- The Game Canvas (Our Blank Slate) -->
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        // Game Engine Setup
+        // --- 3D ENGINE SETUP ---
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.Fog(0x050505, 15, 40); // Fades into deep shadow
 
-        // Handles resizing the canvas so it's perfectly crisp on any device
-        function resizeCanvas() {
-            // Get the actual width and height of the window
-            const width = window.innerWidth;
-            const height = window.innerHeight;
+        // Top-down / Side-view isometric-style camera
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const cameraBasePosition = new THREE.Vector3(0, 15, 18);
+        camera.position.copy(cameraBasePosition);
+        camera.lookAt(0, 0, 0);
 
-            // Handle high-DPI displays (Retina screens on mobile)
+        // Lighting to enhance realistic materials
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const spotLight = new THREE.SpotLight(0xcceeff, 1.5);
+        spotLight.position.set(5, 30, 10);
+        spotLight.angle = Math.PI / 4;
+        spotLight.penumbra = 0.5;
+        spotLight.castShadow = true;
+        spotLight.shadow.bias = -0.0001;
+        scene.add(spotLight);
+
+        // --- ENVIRONMENT ---
+        const groundGeo = new THREE.PlaneGeometry(100, 100);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a, roughness: 0.9, metalness: 0.1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        ground.position.y = -50; // Starts far below during the fall
+        scene.add(ground);
+
+        // --- CHARACTER RIGGING (Procedural Tactical Operative) ---
+        // Materials matching the provided reference image (dark gear, armor plates, glossy visor)
+        const suitMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const armorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });
+        const skinMat = new THREE.MeshStandardMaterial({ color: 0x151515 }); // Gloves/boots
+        const visorMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.9 });
+
+        const charGroup = new THREE.Group();
+        scene.add(charGroup);
+        
+        const pivot = new THREE.Group(); // Master control for whole body
+        charGroup.add(pivot);
+
+        // Helpers to build joints
+        function createBone(width, height, depth, mat, yOffset) {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, depth), mat);
+            mesh.position.y = yOffset;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            const group = new THREE.Group();
+            group.add(mesh);
+            return { mesh, group };
+        }
+
+        // Torso & Vest
+        const torso = createBone(1.4, 2, 0.8, suitMat, 1);
+        const vest = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.8, 1), armorMat);
+        vest.position.y = 1;
+        torso.group.add(vest);
+        pivot.add(torso.group);
+        torso.group.position.y = 2.4; // Hip height
+
+        // Head & Helmet
+        const headJoint = new THREE.Group();
+        headJoint.position.y = 2.2;
+        torso.group.add(headJoint);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), armorMat);
+        head.position.y = 0.5;
+        head.castShadow = true;
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.35, 0.4), visorMat);
+        visor.position.set(0, 0.55, 0.35);
+        head.add(visor);
+        headJoint.add(head);
+
+        // Limbs function
+        function createLimb(parent, x, y, z, upperSize, lowerSize) {
+            const upperJoint = new THREE.Group();
+            upperJoint.position.set(x, y, z);
+            parent.add(upperJoint);
+            
+            const upper = createBone(upperSize[0], upperSize[1], upperSize[2], suitMat, -upperSize[1]/2);
+            upperJoint.add(upper.group);
+            
+            const lowerJoint = new THREE.Group();
+            lowerJoint.position.y = -upperSize[1];
+            upper.group.add(lowerJoint);
+            
+            const lower = createBone(lowerSize[0], lowerSize[1], lowerSize[2], skinMat, -lowerSize[1]/2);
+            lowerJoint.add(lower.group);
+            
+            return { upper: upperJoint, lower: lowerJoint };
+        }
+
+        // Arms
+        const armL = createLimb(torso.group, -1, 1.8, 0, [0.4, 1.2, 0.4], [0.35, 1.2, 0.35]);
+        const armR = createLimb(torso.group, 1, 1.8, 0, [0.4, 1.2, 0.4], [0.35, 1.2, 0.35]);
+
+        // Legs
+        const legL = createLimb(pivot, -0.4, 2.4, 0, [0.5, 1.3, 0.5], [0.45, 1.3, 0.45]);
+        const legR = createLimb(pivot, 0.4, 2.4, 0, [0.5, 1.3, 0.5], [0.45, 1.3, 0.45]);
+
+        // --- EFFECTS ---
+        // Wind speed lines for falling
+        const windGeo = new THREE.CylinderGeometry(0.02, 0.02, 4, 4);
+        const windMat = new THREE.MeshBasicMaterial({ color: 0x445566, transparent: true, opacity: 0.3 });
+        const winds = [];
+        for(let i=0; i<30; i++) {
+            const w = new THREE.Mesh(windGeo, windMat);
+            w.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*20, (Math.random()-0.5)*10);
+            scene.add(w);
+            winds.push(w);
+        }
+
+        // Dust explosion on impact
+        const dustGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+        const dustMat = new THREE.MeshStandardMaterial({ color: 0x333333, transparent: true, opacity: 0.8 });
+        const dustParticles = [];
+        for(let i=0; i<20; i++) {
+            const d = new THREE.Mesh(dustGeo, dustMat);
+            d.visible = false;
+            scene.add(d);
+            dustParticles.push({
+                mesh: d, 
+                vel: new THREE.Vector3((Math.random()-0.5)*15, Math.random()*5, (Math.random()-0.5)*15)
+            });
+        }
+
+        // --- ANIMATION STATE ---
+        const clock = new THREE.Clock();
+        let gameState = 'waiting';
+        let animStartTime = 0;
+
+        function resize() {
             const dpr = window.devicePixelRatio || 1;
-            
-            // Set the actual DOM element size
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            
-            // Set the CSS size
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
+            renderer.setPixelRatio(dpr);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-            // Scale the context to ensure our drawing coordinates match CSS pixels
-            ctx.scale(dpr, dpr);
+        // Easing function for smooth realistic movement
+        function easeInOutQuad(t) { return t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+        // Linear interpolation helper
+        function lerp(start, end, amt) { return (1-amt)*start+amt*end; }
 
-            drawBlankCanvas(width, height);
+        // Core animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Check orientation to start sequence
+            if (gameState === 'waiting' && window.innerWidth > window.innerHeight) {
+                gameState = 'falling';
+                animStartTime = clock.getElapsedTime();
+            }
+
+            const time = clock.getElapsedTime();
+            const elapsed = time - animStartTime;
+
+            // Camera shake variable
+            let shake = new THREE.Vector3(0,0,0);
+
+            if (gameState === 'falling') {
+                if (elapsed < 4.0) {
+                    // Falling Physics (0 to 4s)
+                    const fallProgress = elapsed / 4.0;
+                    
+                    // Wind rushing up
+                    winds.forEach(w => {
+                        w.position.y += 0.5;
+                        if(w.position.y > 10) w.position.y = -10;
+                    });
+
+                    // Character poses (Flailing slightly)
+                    pivot.rotation.z = Math.sin(time * 15) * 0.05; // Turbulence wobble
+                    pivot.rotation.x = Math.PI / 4; // Tilted forward in air
+                    
+                    // Arms flailing up
+                    armL.upper.rotation.set(0, 0, 2.5 + Math.sin(time*10)*0.1);
+                    armL.lower.rotation.set(0, 0, 0);
+                    armR.upper.rotation.set(0, 0, -2.5 - Math.sin(time*12)*0.1);
+                    armR.lower.rotation.set(0, 0, 0);
+                    
+                    // Legs bent for aerodynamics
+                    legL.upper.rotation.set(-0.5, 0, 0);
+                    legL.lower.rotation.set(0.5, 0, 0);
+                    legR.upper.rotation.set(-0.6, 0, 0);
+                    legR.lower.rotation.set(0.4, 0, 0);
+
+                    // Ground rising dynamically right before impact
+                    if (elapsed > 3.5) {
+                        const approach = (elapsed - 3.5) / 0.5;
+                        ground.position.y = lerp(-50, 0, approach * approach);
+                    } else {
+                        ground.position.y = -50;
+                    }
+                } 
+                else if (elapsed >= 4.0 && elapsed < 4.1) {
+                    // IMPACT!
+                    gameState = 'impact';
+                    ground.position.y = 0;
+                    
+                    // Hide wind
+                    winds.forEach(w => w.visible = false);
+
+                    // Trigger dust particles
+                    dustParticles.forEach(d => {
+                        d.mesh.visible = true;
+                        d.mesh.position.set(0, 0, 0);
+                        d.mesh.scale.set(1,1,1);
+                    });
+                }
+            }
+            
+            else if (gameState === 'impact' || gameState === 'lying') {
+                gameState = 'lying';
+                
+                // Camera shake decay
+                const shakeIntensity = Math.max(0, 1 - (elapsed - 4.0) * 2);
+                shake.set((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity, 0);
+
+                // Update dust physics
+                dustParticles.forEach(d => {
+                    if(d.mesh.visible) {
+                        d.mesh.position.addScaledVector(d.vel, 0.016);
+                        d.mesh.scale.multiplyScalar(0.95); // shrink
+                        if(d.mesh.scale.x < 0.01) d.mesh.visible = false;
+                    }
+                });
+
+                // Character is slammed flat on the ground
+                pivot.position.y = -2; // Adjust to floor level
+                pivot.rotation.set(Math.PI / 2, 0, 0); // Face down flat
+                
+                // Limbs relaxed
+                armL.upper.rotation.set(-1, 0, 1);
+                armL.lower.rotation.set(0, 0, 0);
+                armR.upper.rotation.set(-1, 0, -1);
+                armR.lower.rotation.set(0, 0, 0);
+                legL.upper.rotation.set(0, 0, 0.2);
+                legL.lower.rotation.set(0, 0, 0);
+                legR.upper.rotation.set(0, 0, -0.2);
+                legR.lower.rotation.set(0, 0, 0);
+
+                if (elapsed > 6.0) gameState = 'getting_up';
+            }
+            
+            else if (gameState === 'getting_up') {
+                // Procedural Stand Up (6.0s to 9.0s)
+                const getUpTime = elapsed - 6.0;
+                
+                if (getUpTime < 1.0) {
+                    // Phase 1: Push up with arms (6s - 7s)
+                    const t = easeInOutQuad(getUpTime);
+                    pivot.rotation.x = lerp(Math.PI / 2, Math.PI / 4, t); // Torso rises
+                    
+                    armL.upper.rotation.x = lerp(-1, 1, t); // Arms swing down to floor
+                    armR.upper.rotation.x = lerp(-1, 1, t);
+                    armL.upper.rotation.z = lerp(1, 0.5, t);
+                    armR.upper.rotation.z = lerp(-1, -0.5, t);
+                    armL.lower.rotation.x = lerp(0, -1, t);
+                    armR.lower.rotation.x = lerp(0, -1, t);
+                }
+                else if (getUpTime < 2.0) {
+                    // Phase 2: Kneel (7s - 8s)
+                    const t = easeInOutQuad(getUpTime - 1.0);
+                    pivot.rotation.x = lerp(Math.PI / 4, 0.2, t);
+                    pivot.position.y = lerp(-2, -0.5, t);
+                    
+                    // Bring one knee up
+                    legL.upper.rotation.x = lerp(0, -1.5, t);
+                    legL.lower.rotation.x = lerp(0, 1.5, t);
+                    legR.upper.rotation.x = lerp(0, -0.5, t);
+                    legR.lower.rotation.x = lerp(0, 1.0, t);
+                    
+                    // Lift arms off floor
+                    armL.upper.rotation.x = lerp(1, 0, t);
+                    armR.upper.rotation.x = lerp(1, 0, t);
+                    armL.lower.rotation.x = lerp(-1, -0.5, t);
+                    armR.lower.rotation.x = lerp(-1, -0.5, t);
+                }
+                else if (getUpTime < 3.0) {
+                    // Phase 3: Stand tall (8s - 9s)
+                    const t = easeInOutQuad(getUpTime - 2.0);
+                    pivot.rotation.x = lerp(0.2, 0, t);
+                    pivot.position.y = lerp(-0.5, 0, t);
+                    
+                    legL.upper.rotation.x = lerp(-1.5, 0, t);
+                    legL.lower.rotation.x = lerp(1.5, 0, t);
+                    legR.upper.rotation.x = lerp(-0.5, 0, t);
+                    legR.lower.rotation.x = lerp(1.0, 0, t);
+                    
+                    // Arms to idle combat pose
+                    armL.upper.rotation.set(lerp(0, 0.2, t), 0, lerp(0.5, 0.3, t));
+                    armR.upper.rotation.set(lerp(0, 0.2, t), 0, lerp(-0.5, -0.3, t));
+                    armL.lower.rotation.x = lerp(-0.5, -0.2, t);
+                    armR.lower.rotation.x = lerp(-0.5, -0.2, t);
+                }
+                else {
+                    gameState = 'idle';
+                }
+            }
+            
+            else if (gameState === 'idle') {
+                // Subtle breathing animation
+                const breath = Math.sin(time * 2) * 0.05;
+                torso.group.position.y = 2.4 + breath;
+                armL.upper.rotation.z = 0.3 + breath;
+                armR.upper.rotation.z = -0.3 - breath;
+            }
+
+            // Apply camera shake if any, then render
+            camera.position.copy(cameraBasePosition).add(shake);
+            renderer.render(scene, camera);
         }
 
-        // Fills the screen with our background color
-        function drawBlankCanvas(width, height) {
-            ctx.fillStyle = '#0a0a0a'; // A nice, deep "gaming" black
-            ctx.fillRect(0, 0, width, height);
-            
-            // For testing: Draw a subtle grid or center mark if desired later
-            // Currently left perfectly blank as requested.
-        }
-
-        // Event Listeners for resizing and orientation changes
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('orientationchange', () => {
-            // Slight delay ensures the browser has updated window dimensions
-            setTimeout(resizeCanvas, 100); 
-        });
-
-        // Initialize on load
-        resizeCanvas();
+        animate();
     </script>
 </body>
 </html>
