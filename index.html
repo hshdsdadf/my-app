@@ -155,6 +155,33 @@
             box-shadow: 0 10px 30px rgba(100, 120, 200, 0.2), inset 0 0 30px rgba(180, 200, 255, 0.15);
         }
 
+        .card-uncommon {
+            background: radial-gradient(circle at top, #1a3020 0%, #080f0a 100%);
+            border-color: rgba(60, 200, 100, 0.7);
+            box-shadow: 0 10px 35px rgba(30, 160, 70, 0.35), inset 0 0 30px rgba(40, 180, 80, 0.12),
+                        0 0 0 1px rgba(60, 200, 100, 0.15);
+        }
+        .card-uncommon::before {
+            background-image: repeating-linear-gradient(45deg, rgba(60,200,100,0.04) 0px, rgba(60,200,100,0.04) 2px, transparent 2px, transparent 6px);
+        }
+        .card-uncommon::after {
+            background: linear-gradient(to right, rgba(60,200,100,0) 0%, rgba(60,200,100,0.35) 50%, rgba(60,200,100,0) 100%);
+        }
+        .card-uncommon:hover {
+            border-color: rgba(100, 255, 140, 0.95);
+            box-shadow: 0 15px 45px rgba(40, 200, 80, 0.45), inset 0 0 45px rgba(60, 220, 100, 0.2),
+                        0 0 60px rgba(40, 180, 80, 0.2);
+        }
+        .card-uncommon .rarity { color: #3ddc6a; }
+        .card-uncommon h3 { color: #b8f5cc; text-shadow: 0 0 12px rgba(60,220,100,0.5); }
+        .card-uncommon .card-icon-container {
+            border-color: rgba(60,200,100,0.4);
+            box-shadow: inset 0 0 20px rgba(40,180,80,0.2), 0 5px 15px rgba(0,0,0,0.8), 0 0 15px rgba(40,180,80,0.2);
+            background: radial-gradient(circle, #0d1f12 0%, #030a05 100%);
+        }
+        .card-uncommon .menu-btn { border-color: rgba(60,200,100,0.5); color: #b8f5cc; background: rgba(20,80,40,0.3); }
+        .card-uncommon .menu-btn:hover { background: rgba(30,140,60,0.45); border-color: rgba(80,240,120,0.8); color: #fff; box-shadow: 0 0 20px rgba(40,200,80,0.3); }
+
         .card-content { z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
         
         .card-icon-container {
@@ -369,7 +396,18 @@
             'bone': { name: 'Bone Fragment', rarity: 'common', chance: '60%', desc: 'Violently bounces between foes.\nDamage: 3', scale: 0.8, power: 9 },
             'bottle': { name: 'Cracked Bottle', rarity: 'common', chance: '61%', desc: 'Shatters into glass shrapnel.\nDamage: 4', scale: 1.0, power: 11 },
             'chain': { name: 'Iron Chain', rarity: 'common', chance: '59%', desc: 'Whips in a wide arc.\nDamage: 6', scale: 1.4, power: 13 },
-            'feather': { name: 'Crow Feather', rarity: 'common', chance: '63%', desc: 'Piercing dark feathers.\nDamage: 4', scale: 0.7, power: 10 }
+            'feather': { name: 'Crow Feather', rarity: 'common', chance: '63%', desc: 'Piercing dark feathers.\nDamage: 4', scale: 0.7, power: 10 },
+            // --- UNCOMMON WEAPONS ---
+            'coffin_nail': { name: 'Coffin Nail', rarity: 'uncommon', chance: '50%', desc: 'Heavy piercing shot.\nDamage: 14', scale: 1.2, power: 18 },
+            'church_bell': { name: 'Church Bell', rarity: 'uncommon', chance: '45%', desc: 'Rings out a deadly shockwave.\nDamage: 12', scale: 1.3, power: 20 },
+            'skull_staff': { name: 'Skull Staff', rarity: 'uncommon', chance: '52%', desc: 'Shoots homing skulls.\nDamage: 9', scale: 1.1, power: 16 },
+            'cursed_book': { name: 'Cursed Book', rarity: 'uncommon', chance: '48%', desc: 'Fires random magic bolts.\nDamage: 6', scale: 1.0, power: 14 },
+            'rib_cage': { name: 'Rib Cage', rarity: 'uncommon', chance: '55%', desc: 'Spins close, shredding enemies.\nDamage: 5', scale: 1.2, power: 15 },
+            'blood_syringe': { name: 'Blood Syringe', rarity: 'uncommon', chance: '42%', desc: 'Injects enemies, causing explosions.\nDamage: 5+20', scale: 1.1, power: 19 },
+            'black_candle': { name: 'Black Candle', rarity: 'uncommon', chance: '53%', desc: 'Summons seeking ghost flames.\nDamage: 8', scale: 1.0, power: 15 },
+            'bone_saw': { name: 'Bone Saw', rarity: 'uncommon', chance: '58%', desc: 'Whirling blade tears through foes.\nDamage: 12', scale: 1.2, power: 17 },
+            'funeral_cross': { name: 'Funeral Cross', rarity: 'uncommon', chance: '47%', desc: 'Hurls spinning holy projectiles.\nDamage: 10', scale: 1.1, power: 16 },
+            'raven': { name: 'Raven', rarity: 'uncommon', chance: '43%', desc: 'A dark bird swoops at enemies.\nDamage: 15', scale: 1.3, power: 18 },
         };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
@@ -435,7 +473,139 @@
             } else if (id === 'feather') {
                 ctx.fillStyle = '#1a0d23'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.quadraticCurveTo(0, -6, -12, 0); ctx.quadraticCurveTo(0, 6, 12, 0); ctx.fill();
                 ctx.strokeStyle = '#4a2b63'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
-            }
+            } else if (id === 'coffin_nail') {
+                // Large dark coffin nail - flat head, long shaft, sharp point
+                ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
+                ctx.fillStyle = '#111'; ctx.fillRect(-14, -4, 8, 8); // flat nail head
+                ctx.fillStyle = '#1e1e1e'; ctx.fillRect(-6, -2, 18, 4); // shaft
+                ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(17, 0); ctx.lineTo(12, 2); ctx.fill(); // point
+                ctx.strokeStyle = '#444'; ctx.lineWidth = 0.5;
+                ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
+            } else if (id === 'church_bell') {
+                // Ornate golden bell
+                ctx.shadowColor = '#d4af37'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#b8860b';
+                ctx.beginPath(); ctx.moveTo(-10, 8); ctx.bezierCurveTo(-12, 0, -10, -8, 0, -10); ctx.bezierCurveTo(10, -8, 12, 0, 10, 8); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#daa520';
+                ctx.beginPath(); ctx.moveTo(-7, 6); ctx.bezierCurveTo(-9, 0, -7, -5, 0, -7); ctx.bezierCurveTo(7, -5, 9, 0, 7, 6); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#8b6914'; ctx.fillRect(-10, 8, 20, 3);
+                ctx.fillStyle = '#c9a227'; ctx.beginPath(); ctx.arc(0, 12, 3, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#8b6914'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(-8, 2); ctx.lineTo(8, 2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-9, 5); ctx.lineTo(9, 5); ctx.stroke();
+            } else if (id === 'skull_staff') {
+                // Dark staff with glowing skull
+                ctx.fillStyle = '#2a1a08'; ctx.fillRect(-14, -2.5, 20, 5);
+                ctx.fillStyle = '#4a3010'; ctx.fillRect(-14, -1, 20, 2);
+                ctx.shadowColor = '#22ff55'; ctx.shadowBlur = 10;
+                ctx.fillStyle = '#d4d8be'; ctx.beginPath(); ctx.arc(10, 0, 7, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#0a1108'; ctx.beginPath(); ctx.ellipse(8, -1, 2.2, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(12, -1, 2.2, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#1a1a0a'; ctx.beginPath(); ctx.arc(10, 3.5, 1.8, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#22ff55'; ctx.lineWidth = 0.5; ctx.globalAlpha = 0.5;
+                ctx.beginPath(); ctx.arc(10, 0, 7, 0, Math.PI*2); ctx.stroke(); ctx.globalAlpha = 1;
+            } else if (id === 'cursed_book') {
+                // Ancient dark tome with glowing runes
+                ctx.fillStyle = '#0f0616'; ctx.fillRect(-11, -9, 22, 18);
+                ctx.fillStyle = '#1a0a2a'; ctx.fillRect(-9, -7, 18, 14);
+                ctx.strokeStyle = '#6a0dad'; ctx.lineWidth = 1.5; ctx.strokeRect(-11, -9, 22, 18);
+                ctx.fillStyle = '#2a003a'; ctx.fillRect(-11, -1, 22, 2);
+                ctx.fillStyle = '#0f0616'; ctx.fillRect(-1, -9, 2, 18);
+                ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 8;
+                ctx.strokeStyle = '#9933ff'; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(-7, -6); ctx.lineTo(-5, 6); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(-2, 4); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(3, -6); ctx.lineTo(5, 6); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(6, -4); ctx.lineTo(8, 4); ctx.stroke();
+                ctx.fillStyle = 'rgba(170,68,255,0.6)';
+                ctx.beginPath(); ctx.arc(-6, -2, 1.2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(4, 2, 1.2, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'rib_cage') {
+                // Ribcage - vertical spine with curving ribs
+                ctx.shadowColor = 'rgba(200,220,180,0.4)'; ctx.shadowBlur = 5;
+                ctx.strokeStyle = '#d4d8c0'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+                // Spine
+                ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(0, 11); ctx.stroke();
+                // Ribs left & right
+                const ribPairs = [[-9, -3], [-11, 0], [-9, 3]];
+                ribPairs.forEach(([rx, ry], ri) => {
+                    let y = -8 + ri * 8;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(-5, y-2, rx, ry-3, rx-2, ry+1); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.bezierCurveTo(5, y-2, -rx, ry-3, -rx+2, ry+1); ctx.stroke();
+                });
+            } else if (id === 'blood_syringe') {
+                // Medical syringe with blood
+                ctx.fillStyle = '#cccccc'; ctx.fillRect(-13, -2.5, 19, 5);
+                ctx.fillStyle = 'rgba(160,0,0,0.85)'; ctx.fillRect(-11, -1.5, 14, 3);
+                ctx.fillStyle = '#bbbbbb'; ctx.fillRect(6, -3.5, 4, 7);
+                ctx.fillStyle = '#999'; ctx.beginPath(); ctx.moveTo(10, -2); ctx.lineTo(14, 0); ctx.lineTo(10, 2); ctx.fill();
+                ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1;
+                for(let t=0; t<4; t++) { let tx = -9 + t*3; ctx.beginPath(); ctx.moveTo(tx, -2.5); ctx.lineTo(tx, 2.5); ctx.stroke(); }
+                ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(14, 0, 1.5, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'black_candle') {
+                // Tall black candle with purple ghost flame
+                ctx.fillStyle = '#080808'; ctx.fillRect(-4, -12, 8, 20);
+                ctx.fillStyle = '#111'; ctx.fillRect(-6, 6, 12, 4); // base
+                ctx.fillStyle = '#1a1a1a'; ctx.fillRect(-4, 2, 8, 6); // drip
+                ctx.shadowColor = '#8800ff'; ctx.shadowBlur = 12;
+                ctx.fillStyle = '#6600cc';
+                ctx.beginPath(); ctx.moveTo(0, -12); ctx.bezierCurveTo(-4, -15, -3, -22, 0, -24); ctx.bezierCurveTo(3, -22, 4, -15, 0, -12); ctx.fill();
+                ctx.fillStyle = '#cc66ff';
+                ctx.beginPath(); ctx.moveTo(0, -14); ctx.bezierCurveTo(-2, -16, -1, -20, 0, -21); ctx.bezierCurveTo(1, -20, 2, -16, 0, -14); ctx.fill();
+                ctx.fillStyle = 'rgba(220,180,255,0.9)'; ctx.beginPath(); ctx.arc(0, -14, 1.5, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'bone_saw') {
+                // Circular saw blade with jagged teeth
+                ctx.shadowColor = 'rgba(200,200,200,0.3)'; ctx.shadowBlur = 5;
+                ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ccc';
+                for(let t = 0; t < 9; t++) {
+                    let a = (t/9)*Math.PI*2;
+                    let a2 = ((t+0.55)/9)*Math.PI*2;
+                    let x1 = Math.cos(a)*9; let y1 = Math.sin(a)*9;
+                    let x2 = Math.cos(a)*14; let y2 = Math.sin(a)*14;
+                    let x3 = Math.cos(a2)*10; let y3 = Math.sin(a2)*10;
+                    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineTo(x3,y3); ctx.closePath(); ctx.fill();
+                }
+                ctx.fillStyle = '#666';
+                ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#999'; ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+                for(let s=0; s<4; s++) { let a=(s/4)*Math.PI*2; ctx.beginPath(); ctx.moveTo(Math.cos(a)*2, Math.sin(a)*2); ctx.lineTo(Math.cos(a)*7, Math.sin(a)*7); ctx.stroke(); }
+            } else if (id === 'funeral_cross') {
+                // Ornate glowing cross
+                ctx.shadowColor = '#e8d55a'; ctx.shadowBlur = 10;
+                ctx.fillStyle = '#c8b840'; ctx.fillRect(-2.5, -14, 5, 28);
+                ctx.fillRect(-9, -6, 18, 5);
+                ctx.fillStyle = '#e8d55a'; ctx.fillRect(-1.5, -13, 3, 26);
+                ctx.fillRect(-8, -5, 16, 3);
+                ctx.strokeStyle = '#fff8c0'; ctx.lineWidth = 0.5; ctx.globalAlpha = 0.6;
+                ctx.beginPath(); ctx.moveTo(0,-14); ctx.lineTo(0,14); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-9,-3); ctx.lineTo(9,-3); ctx.stroke();
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#fffde7'; ctx.beginPath(); ctx.arc(0, -3, 2, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'raven') {
+                // Raven bird with outstretched wings
+                ctx.shadowColor = 'rgba(50,0,80,0.6)'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#080808';
+                // Body
+                ctx.beginPath(); ctx.ellipse(0, 0, 9, 4.5, 0, 0, Math.PI*2); ctx.fill();
+                // Wings
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.moveTo(-2, -1); ctx.lineTo(-18, -9); ctx.lineTo(-16, -2); ctx.lineTo(-10, 0); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(2, -1); ctx.lineTo(18, -9); ctx.lineTo(16, -2); ctx.lineTo(10, 0); ctx.closePath(); ctx.fill();
+                // Wing feather details
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(-16, -6); ctx.lineTo(-8, -1); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(16, -6); ctx.lineTo(8, -1); ctx.stroke();
+                // Head
+                ctx.fillStyle = '#060606'; ctx.beginPath(); ctx.arc(9, -2, 4.5, 0, Math.PI*2); ctx.fill();
+                // Beak
+                ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.moveTo(12, -2); ctx.lineTo(17, -3.5); ctx.lineTo(17, -1); ctx.lineTo(12, -1); ctx.closePath(); ctx.fill();
+                // Eye
+                ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 6;
+                ctx.fillStyle = '#cc1100'; ctx.beginPath(); ctx.arc(10, -3, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#ff2200'; ctx.beginPath(); ctx.arc(10, -3, 0.7, 0, Math.PI*2); ctx.fill();
 
             if (flash > 0 && id !== 'knife' && id !== 'chain') {
                 ctx.shadowColor = '#ffea00'; ctx.shadowBlur = 10; ctx.fillStyle = '#ffffff';
@@ -448,8 +618,23 @@
             const container = document.getElementById('cards-container');
             container.innerHTML = '';
             
-            const available = Object.keys(WEAPONS).sort(() => 0.5 - Math.random());
-            const choices = available.slice(0, 3);
+            const commons = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'common');
+            const uncommons = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'uncommon');
+            const choices = [];
+            const used = new Set();
+
+            for (let i = 0; i < 3; i++) {
+                // 50% chance of an uncommon card each slot
+                let useUncommon = Math.random() < 0.5 && uncommons.length > 0;
+                let pool = useUncommon ? uncommons.filter(k => !used.has(k)) : commons.filter(k => !used.has(k));
+                // Fallback to other pool if empty
+                if (pool.length === 0) pool = (useUncommon ? commons : uncommons).filter(k => !used.has(k));
+                if (pool.length === 0) pool = Object.keys(WEAPONS).filter(k => !used.has(k));
+                if (pool.length === 0) break;
+                const pick = pool[Math.floor(Math.random() * pool.length)];
+                choices.push(pick);
+                used.add(pick);
+            }
             
             choices.forEach((key, index) => {
                 const w = WEAPONS[key];
@@ -492,6 +677,17 @@
             if (key === 'bottle') fireRate = 0.9;
             if (key === 'chain') fireRate = 0.8;
             if (key === 'feather') fireRate = 0.5;
+            // Uncommon weapons
+            if (key === 'coffin_nail') fireRate = 1.0;
+            if (key === 'church_bell') fireRate = 1.8;
+            if (key === 'skull_staff') fireRate = 0.9;
+            if (key === 'cursed_book') fireRate = 1.2;
+            if (key === 'rib_cage') fireRate = 0.08;
+            if (key === 'blood_syringe') fireRate = 2.2;
+            if (key === 'black_candle') fireRate = 1.0;
+            if (key === 'bone_saw') fireRate = 0.09;
+            if (key === 'funeral_cross') fireRate = 0.9;
+            if (key === 'raven') fireRate = 1.6;
 
             const newWeapon = { id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0, lungeTimer: 0, hasHit: false, lungeOffset: 0, sweepAngle: 0 };
 
@@ -546,6 +742,7 @@
             player.x = 200; player.y = ROOM_SIZE / 2;
             enemies.length = 0; bullets.length = 0; enemyBullets.length = 0; keys.length = 0; gems.length = 0;
             activeSplatter.length = 0; damageTexts.length = 0; floorSplatters.length = 0; deadEnemies.length = 0;
+            shockwaves.length = 0; explosionEffects.length = 0;
             
             trapdoor.state = 'waiting'; trapdoor.timer = 0; trapdoor.enemiesToSpawn = totalEnemiesThisRoom; trapdoor.delayTimer = 2.0; trapdoor.openAngle = 0;
             trapdoor.kneelersLeft = currentRoom >= 3 ? Math.min(5, 2 + (currentRoom - 3)) : 0;
@@ -600,6 +797,7 @@
         const ROOM_SIZE = 1200;
         const bullets = []; const enemyBullets = []; const enemies = []; const deadEnemies = [];
         const activeSplatter = []; const floorSplatters = []; const damageTexts = []; const keys = []; const gems = [];
+        const shockwaves = []; const explosionEffects = [];
 
         class Key {
             constructor(x, y) { this.x = x; this.y = y; this.timeOffset = Math.random() * 100; }
@@ -630,6 +828,13 @@
                 else if (type === 'bone') { this.speed = 800; this.damage = 3; this.bounceCount = 3; this.life = 2.0; }
                 else if (type === 'bottle') { this.speed = 600; this.damage = 4; }
                 else if (type === 'feather') { this.speed = 1600; this.damage = 4; this.pierceCount = 2; }
+                // Uncommon weapon bullets
+                else if (type === 'coffin_nail') { this.speed = 650; this.damage = 14; this.pierceCount = 2; this.life = 1.5; }
+                else if (type === 'skull_staff') { this.speed = 480; this.damage = 9; this.homing = true; this.homingStrength = 200; this.life = 2.5; }
+                else if (type === 'cursed_book') { this.speed = 750; this.damage = 6; this.life = 1.2; }
+                else if (type === 'black_candle') { this.speed = 180; this.damage = 8; this.homing = true; this.homingStrength = 90; this.life = 3.5; }
+                else if (type === 'funeral_cross') { this.speed = 520; this.damage = 10; this.rotationSpeed = 10; }
+                else if (type === 'blood_syringe') { this.speed = 950; this.damage = 5; this.isInjection = true; }
                 
                 this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
             }
@@ -637,10 +842,28 @@
                 if (this.type === 'candle') { this.vx += (Math.random() - 0.5) * 200 * dt; this.vy += (Math.random() - 0.5) * 200 * dt; }
                 if (this.type === 'bone') { this.rotation += dt * 15; }
                 if (this.type === 'bottle') { this.rotation += dt * 10; }
+                if (this.type === 'funeral_cross') { this.rotation += dt * this.rotationSpeed; }
+                // Homing for skull staff and black candle
+                if (this.homing && enemies.length > 0) {
+                    let closest = null; let minDist = Infinity;
+                    enemies.forEach(e => { let d = (e.x-this.x)**2+(e.y-this.y)**2; if(d<minDist){minDist=d;closest=e;} });
+                    if (closest) {
+                        let tAngle = Math.atan2(closest.y-this.y, closest.x-this.x);
+                        let cAngle = Math.atan2(this.vy, this.vx);
+                        let diff = tAngle - cAngle;
+                        while(diff > Math.PI) diff -= Math.PI*2; while(diff < -Math.PI) diff += Math.PI*2;
+                        cAngle += diff * Math.min(1, dt * this.homingStrength / this.speed);
+                        this.vx = Math.cos(cAngle) * this.speed;
+                        this.vy = Math.sin(cAngle) * this.speed;
+                    }
+                }
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
                 
                 this.trail.push({x: this.x, y: this.y});
-                if ((this.type === 'needle' || this.type === 'feather') && this.trail.length > 20) this.trail.shift();
+                const homingTypes = ['skull_staff','black_candle'];
+                const trailTypes = ['needle','feather'];
+                if (trailTypes.includes(this.type) && this.trail.length > 20) this.trail.shift();
+                else if (homingTypes.includes(this.type) && this.trail.length > 14) this.trail.shift();
                 else if (this.trail.length > 8) this.trail.shift();
             }
             draw(ctx) {
@@ -663,11 +886,31 @@
                     ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
                     ctx.strokeStyle = 'rgba(200,200,200,0.3)'; ctx.lineWidth = 4; ctx.stroke();
+                } else if (this.type === 'skull_staff' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(30,255,80,0.4)'; ctx.lineWidth = 2.5; ctx.shadowColor = '#00cc44'; ctx.shadowBlur = 6; ctx.stroke();
+                } else if (this.type === 'black_candle' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(140,0,255,0.5)'; ctx.lineWidth = 3; ctx.shadowColor = '#8800ff'; ctx.shadowBlur = 8; ctx.stroke();
+                } else if (this.type === 'funeral_cross' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(240,220,80,0.4)'; ctx.lineWidth = 2; ctx.stroke();
+                } else if (this.type === 'cursed_book' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(180,60,255,0.45)'; ctx.lineWidth = 2; ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 5; ctx.stroke();
+                } else if (this.type === 'coffin_nail' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(80,80,80,0.4)'; ctx.lineWidth = 3; ctx.stroke();
                 }
 
                 ctx.translate(this.x, this.y); 
                 
-                if (this.type === 'bone' || this.type === 'bottle') ctx.rotate(this.rotation);
+                if (this.type === 'bone' || this.type === 'bottle' || this.type === 'funeral_cross') ctx.rotate(this.rotation);
                 else ctx.rotate(Math.atan2(this.vy, this.vx));
 
                 // Scale for specific projectiles
@@ -702,6 +945,43 @@
                 } else if (this.type === 'feather') {
                     ctx.fillStyle = '#1a0d23'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.quadraticCurveTo(0, -6, -12, 0); ctx.quadraticCurveTo(0, 6, 12, 0); ctx.fill();
                     ctx.strokeStyle = '#4a2b63'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
+                } else if (this.type === 'coffin_nail') {
+                    ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 4;
+                    ctx.fillStyle = '#111'; ctx.fillRect(-12, -3, 6, 6);
+                    ctx.fillStyle = '#1c1c1c'; ctx.fillRect(-6, -2, 16, 4);
+                    ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.moveTo(10, -2); ctx.lineTo(16, 0); ctx.lineTo(10, 2); ctx.fill();
+                } else if (this.type === 'skull_staff') {
+                    ctx.shadowColor = '#22ff55'; ctx.shadowBlur = 10;
+                    ctx.fillStyle = '#c8cbb0'; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#080a04'; ctx.beginPath(); ctx.ellipse(-1.8, -1, 1.8, 2.2, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(1.8, -1, 1.8, 2.2, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#22ff55'; ctx.beginPath(); ctx.arc(-1.8, -1, 0.7, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(1.8, -1, 0.7, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#0a0a04'; ctx.beginPath(); ctx.arc(0, 2.5, 1.2, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'cursed_book') {
+                    ctx.shadowColor = '#aa44ff'; ctx.shadowBlur = 14;
+                    ctx.fillStyle = '#cc88ff';
+                    ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(0, -4); ctx.lineTo(-7, 0); ctx.lineTo(0, 4); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(180,100,255,0.5)'; ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-7, 0); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 4); ctx.stroke();
+                } else if (this.type === 'black_candle') {
+                    ctx.shadowColor = '#9900ff'; ctx.shadowBlur = 16;
+                    ctx.fillStyle = 'rgba(80,0,180,0.85)';
+                    ctx.beginPath(); ctx.moveTo(0, -6); ctx.bezierCurveTo(4, -3, 5, 2, 0, 5); ctx.bezierCurveTo(-5, 2, -4, -3, 0, -6); ctx.fill();
+                    ctx.fillStyle = 'rgba(210,130,255,0.9)'; ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 0.9, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'funeral_cross') {
+                    ctx.shadowColor = '#ffe566'; ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#c8b440'; ctx.fillRect(-3, -10, 6, 20); ctx.fillRect(-8, -4, 16, 5);
+                    ctx.fillStyle = '#ffe566'; ctx.fillRect(-2, -9, 4, 18); ctx.fillRect(-7, -3, 14, 3);
+                    ctx.fillStyle = '#fffde0'; ctx.beginPath(); ctx.arc(0, -3, 2.2, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'blood_syringe') {
+                    ctx.shadowColor = '#aa0000'; ctx.shadowBlur = 6;
+                    ctx.fillStyle = '#cc0000'; ctx.fillRect(-7, -1.5, 10, 3);
+                    ctx.fillStyle = '#888'; ctx.fillRect(3, -2, 4, 4);
+                    ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(11, -1); ctx.lineTo(11, 1); ctx.fill();
                 } else {
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 5;
                     const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
@@ -1065,8 +1345,18 @@
                     if (w.fireTimer > 0) w.fireTimer -= dt;
                     if (w.sweepTimer > 0) w.sweepTimer -= dt;
                     
-                    let orbitRadius = (w.id === 'knife' || w.id === 'chain') ? 45 : 75;
-                    let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
+                    let orbitRadius = 75;
+                    if (w.id === 'knife' || w.id === 'chain') orbitRadius = 45;
+                    if (w.id === 'rib_cage' || w.id === 'bone_saw') orbitRadius = 50;
+                    if (w.id === 'church_bell' || w.id === 'raven') orbitRadius = 95;
+                    
+                    // Per-weapon speed factor for drawing & position
+                    let orbitSpeedFactor = 1.0;
+                    if (w.id === 'rib_cage') orbitSpeedFactor = 2.8;
+                    if (w.id === 'bone_saw') orbitSpeedFactor = 3.5;
+                    if (w.id === 'raven') orbitSpeedFactor = 0.75;
+                    
+                    let angle = this.orbitTime * orbitSpeedFactor + (i / this.orbitingWeapons.length) * Math.PI * 2;
                     let wx = this.x + Math.cos(angle) * orbitRadius;
                     let wy = this.y + Math.sin(angle) * orbitRadius;
                     
@@ -1123,6 +1413,46 @@
                             // Reset hit flags on enemies when not sweeping
                             enemies.forEach(e => e.chainHit = false);
                         }
+                    } else if (w.id === 'rib_cage' || w.id === 'bone_saw') {
+                        // Proximity melee damage - checks enemy overlap with orbit position
+                        if (w.fireTimer <= 0 && enemies.length > 0) {
+                            let hitRadius = w.id === 'rib_cage' ? 44 : 32;
+                            enemies.forEach(e => {
+                                let dx = e.x - wx; let dy = e.y - wy;
+                                if (dx*dx + dy*dy < (e.radius + hitRadius)**2) {
+                                    e.hp -= WEAPONS[w.id].power; e.hitCount++;
+                                    damageTexts.push({ x: e.x, y: e.y - 20, text: '-' + WEAPONS[w.id].power, life: 0.5, vy: -35 });
+                                    for(let p=0; p<2; p++) {
+                                        activeSplatter.push({ x: e.x, y: e.y, vx: (Math.random()-0.5)*220, vy: (Math.random()-0.5)*220, size: Math.random()*3+1, color: e.type==='choir'?'#3d0b6e':'#6a040f', friction: 0.8, scaleX: 1, angle: 0 });
+                                    }
+                                    triggerShake(2, 0.06);
+                                }
+                            });
+                            w.fireTimer = w.rate;
+                        }
+                    } else if (w.id === 'raven') {
+                        // Swoop attack like knife but from larger radius
+                        if (w.lungeTimer > 0) {
+                            w.lungeTimer -= dt;
+                            let progress = 1 - (w.lungeTimer / 0.3);
+                            w.lungeOffset = Math.sin(progress * Math.PI) * 85;
+                            if (progress > 0.18 && progress < 0.82 && !w.hasHit) {
+                                let kx = this.x + Math.cos(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
+                                let ky = this.y + Math.sin(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
+                                enemies.forEach(e => {
+                                    if ((e.x - kx)**2 + (e.y - ky)**2 < (e.radius + 28)**2) {
+                                        e.hp -= WEAPONS[w.id].power; e.hitCount++; w.hasHit = true;
+                                        damageTexts.push({ x: e.x, y: e.y - 20, text: '-' + WEAPONS[w.id].power, life: 0.6, vy: -42 });
+                                        for(let p=0; p<3; p++) {
+                                            activeSplatter.push({ x: e.x, y: e.y, vx: (Math.random()-0.5)*200, vy: (Math.random()-0.5)*200, size: Math.random()*4+1, color: e.type==='choir'?'#3d0b6e':'#6a040f', friction: 0.78, scaleX: 1, angle: 0 });
+                                        }
+                                        triggerShake(3, 0.1);
+                                    }
+                                });
+                            }
+                        } else { w.lungeOffset = 0; }
+                    } else if (w.id === 'church_bell') {
+                        // Church bell just triggers shockwave in targeting section - no direct melee
                     }
 
                     // Targeting AI
@@ -1133,7 +1463,8 @@
                             if (dist < minDist) { minDist = dist; closest = e; }
                         });
                         
-                        let maxRange = (w.id === 'knife' || w.id === 'chain') ? 12000 : 400000; 
+                        let maxRange = (w.id === 'knife' || w.id === 'chain') ? 12000 : 400000;
+                        if (w.id === 'rib_cage' || w.id === 'bone_saw') maxRange = 0; // handled above
                         if (closest && minDist < maxRange) {
                             let aimAngle = Math.atan2(closest.y - wy, closest.x - wx);
                             w.lastAimAngle = aimAngle;
@@ -1143,15 +1474,29 @@
                                 w.lungeTimer = 0.2; w.hasHit = false;
                             } else if (w.id === 'chain') {
                                 w.sweepTimer = 0.3; w.sweepAngle = aimAngle - Math.PI/2;
+                            } else if (w.id === 'raven') {
+                                w.lungeTimer = 0.3; w.hasHit = false;
+                            } else if (w.id === 'church_bell') {
+                                // Shockwave centered on player
+                                shockwaves.push({ x: this.x, y: this.y, radius: 8, maxRadius: 145, life: 0.55, maxLife: 0.55, damage: WEAPONS[w.id].power, hitEnemies: new Set(), color: '#d4af37' });
+                                triggerShake(5, 0.14);
+                            } else if (w.id === 'cursed_book') {
+                                // Fire 3 bolts in random directions
+                                for (let b = 0; b < 3; b++) {
+                                    let rAngle = Math.random() * Math.PI * 2;
+                                    let tipX = wx + Math.cos(rAngle) * 15;
+                                    let tipY = wy + Math.sin(rAngle) * 15;
+                                    bullets.push(new Bullet(tipX, tipY, rAngle, 'cursed_book'));
+                                }
                             } else {
                                 let tipX = wx + Math.cos(aimAngle) * 15;
                                 let tipY = wy + Math.sin(aimAngle) * 15;
                                 bullets.push(new Bullet(tipX, tipY, aimAngle, w.id));
                             }
                         } else {
-                            if ((w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0)) w.lastAimAngle = this.facingAngle;
+                            if ((w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0) && (w.id !== 'raven' || w.lungeTimer <= 0)) w.lastAimAngle = this.facingAngle;
                         }
-                    } else if (w.fireTimer <= 0 && (w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0)) {
+                    } else if (w.fireTimer <= 0 && (w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0) && (w.id !== 'raven' || (w.lungeTimer || 0) <= 0)) {
                         w.lastAimAngle = this.facingAngle;
                     }
                 });
@@ -1186,8 +1531,17 @@
 
             drawOrbitingWeapons(ctx) {
                 this.orbitingWeapons.forEach((w, i) => {
-                    let orbitRadius = (w.id === 'knife' || w.id === 'chain') ? 45 : 75;
-                    let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
+                    let orbitRadius = 75;
+                    if (w.id === 'knife' || w.id === 'chain') orbitRadius = 45;
+                    if (w.id === 'rib_cage' || w.id === 'bone_saw') orbitRadius = 50;
+                    if (w.id === 'church_bell' || w.id === 'raven') orbitRadius = 95;
+
+                    let orbitSpeedFactor = 1.0;
+                    if (w.id === 'rib_cage') orbitSpeedFactor = 2.8;
+                    if (w.id === 'bone_saw') orbitSpeedFactor = 3.5;
+                    if (w.id === 'raven') orbitSpeedFactor = 0.75;
+
+                    let angle = this.orbitTime * orbitSpeedFactor + (i / this.orbitingWeapons.length) * Math.PI * 2;
                     
                     let wx = Math.cos(angle) * orbitRadius; 
                     let wy = Math.sin(angle) * orbitRadius; 
@@ -1207,19 +1561,34 @@
                             ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w.lungeOffset, -5); ctx.lineTo(-w.lungeOffset, 5);
                             ctx.fillStyle = `rgba(255,255,255,${w.lungeOffset/60})`; ctx.fill();
                         }
+                    } else if (w.id === 'raven') {
+                        ctx.translate(w.lungeOffset || 0, 0);
+                        if ((w.lungeOffset || 0) > 10) {
+                            // Raven swoop trail
+                            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-(w.lungeOffset)*0.6, -4); ctx.lineTo(-(w.lungeOffset)*0.6, 4);
+                            ctx.fillStyle = `rgba(30,0,50,${(w.lungeOffset||0)/120})`; ctx.fill();
+                        }
                     } else if (w.id === 'chain') {
                         if (w.sweepTimer > 0) {
                             ctx.beginPath(); ctx.arc(0, 0, 45, -0.2, 0.2); 
                             ctx.strokeStyle = `rgba(200,200,200,${w.sweepTimer/0.3})`; ctx.lineWidth=3; ctx.stroke();
                         }
+                    } else if (w.id === 'bone_saw') {
+                        // Bone saw has its own spin independent of aim angle
+                        ctx.rotate(this.orbitTime * 8); // extra spin
+                    } else if (w.id === 'church_bell') {
+                        // Bell has a small bob effect
+                        ctx.rotate(Math.sin(this.orbitTime * 3) * 0.3);
                     } else {
                         if (w.fireTimer > w.rate - 0.1) recoil = 8;
                         ctx.translate(-recoil, 0);
                     }
 
-                    if (Math.abs(aimAngle) > Math.PI/2) ctx.scale(1, -1); 
+                    if (w.id !== 'bone_saw' && w.id !== 'rib_cage' && w.id !== 'raven') {
+                        if (Math.abs(aimAngle) > Math.PI/2) ctx.scale(1, -1);
+                    }
                     
-                    // Apply visual scale!
+                    // Apply visual scale
                     if (WEAPONS[w.id]) ctx.scale(WEAPONS[w.id].scale, WEAPONS[w.id].scale);
 
                     drawWeaponEntity(ctx, w.id, w.fireTimer > w.rate - 0.05 ? 1 : 0);
@@ -1390,16 +1759,61 @@
             pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             lightCtx.fillStyle = pGrad; lightCtx.beginPath(); lightCtx.arc(player.x, player.y, pRadius, 0, Math.PI*2); lightCtx.fill();
 
-            // Candle Weapon Lights
+            // Candle Weapon Lights + Uncommon Weapon Lights
             player.orbitingWeapons.forEach((w, i) => {
+                let orbitRadius = 75;
+                if (w.id === 'knife' || w.id === 'chain') orbitRadius = 45;
+                if (w.id === 'rib_cage' || w.id === 'bone_saw') orbitRadius = 50;
+                if (w.id === 'church_bell' || w.id === 'raven') orbitRadius = 95;
+                let speedFactor = 1.0;
+                if (w.id === 'rib_cage') speedFactor = 2.8;
+                if (w.id === 'bone_saw') speedFactor = 3.5;
+                if (w.id === 'raven') speedFactor = 0.75;
+                let angle = player.orbitTime * speedFactor + (i / player.orbitingWeapons.length) * Math.PI * 2;
+                let wx = player.x + Math.cos(angle) * orbitRadius;
+                let wy = player.y + Math.sin(angle) * orbitRadius;
+
                 if (w.id === 'candle') {
-                    let angle = player.orbitTime + (i / player.orbitingWeapons.length) * Math.PI * 2;
-                    let wx = player.x + Math.cos(angle) * 75;
-                    let wy = player.y + Math.sin(angle) * 75;
                     const cGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 60);
                     cGrad.addColorStop(0, 'rgba(255, 150, 0, 0.6)'); cGrad.addColorStop(1, 'rgba(255, 150, 0, 0)');
                     lightCtx.fillStyle = cGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 60, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'black_candle') {
+                    const bcGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 55);
+                    bcGrad.addColorStop(0, 'rgba(120, 0, 255, 0.5)'); bcGrad.addColorStop(1, 'rgba(120, 0, 255, 0)');
+                    lightCtx.fillStyle = bcGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 55, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'skull_staff') {
+                    const ssGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 45);
+                    ssGrad.addColorStop(0, 'rgba(30, 255, 80, 0.35)'); ssGrad.addColorStop(1, 'rgba(30, 255, 80, 0)');
+                    lightCtx.fillStyle = ssGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 45, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'funeral_cross') {
+                    const fcGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 50);
+                    fcGrad.addColorStop(0, 'rgba(255, 240, 100, 0.4)'); fcGrad.addColorStop(1, 'rgba(255, 240, 100, 0)');
+                    lightCtx.fillStyle = fcGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 50, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'church_bell') {
+                    const bellGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 50);
+                    bellGrad.addColorStop(0, 'rgba(212, 175, 55, 0.35)'); bellGrad.addColorStop(1, 'rgba(212, 175, 55, 0)');
+                    lightCtx.fillStyle = bellGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 50, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'cursed_book') {
+                    const cbGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 40);
+                    cbGrad.addColorStop(0, 'rgba(150, 50, 255, 0.35)'); cbGrad.addColorStop(1, 'rgba(150, 50, 255, 0)');
+                    lightCtx.fillStyle = cbGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 40, 0, Math.PI*2); lightCtx.fill();
                 }
+            });
+
+            // Shockwave lights
+            shockwaves.forEach(sw => {
+                let a = sw.life / sw.maxLife;
+                const swGrad = lightCtx.createRadialGradient(sw.x, sw.y, sw.radius * 0.8, sw.x, sw.y, sw.radius + 30);
+                swGrad.addColorStop(0, `rgba(212,175,55,${a * 0.4})`); swGrad.addColorStop(1, 'rgba(212,175,55,0)');
+                lightCtx.fillStyle = swGrad; lightCtx.beginPath(); lightCtx.arc(sw.x, sw.y, sw.radius + 30, 0, Math.PI*2); lightCtx.fill();
+            });
+
+            // Explosion lights
+            explosionEffects.forEach(ef => {
+                let a = ef.life / ef.maxLife;
+                const efGrad = lightCtx.createRadialGradient(ef.x, ef.y, 0, ef.x, ef.y, ef.radius + 50);
+                efGrad.addColorStop(0, `rgba(255,180,40,${a * 0.8})`); efGrad.addColorStop(0.5, `rgba(255,60,0,${a * 0.4})`); efGrad.addColorStop(1, 'rgba(255,60,0,0)');
+                lightCtx.fillStyle = efGrad; lightCtx.beginPath(); lightCtx.arc(ef.x, ef.y, ef.radius + 50, 0, Math.PI*2); lightCtx.fill();
             });
 
             const dGrad = lightCtx.createRadialGradient(ROOM_SIZE, ROOM_SIZE / 2, 5, ROOM_SIZE, ROOM_SIZE / 2, 100 + (exitDoorProgress * 50));
@@ -1583,6 +1997,10 @@
                                 }
                                 triggerShake(3, 0.1);
                             }
+                            // Blood Syringe - inject the enemy for delayed explosion
+                            if (b.type === 'blood_syringe' && b.isInjection && !enemy.injected) {
+                                enemy.injected = 1.6; // Time until explosion
+                            }
 
                             if (enemy.hitCount % 3 === 0) {
                                 let hitAngle = Math.atan2(b.vy, b.vx); let numHit = 1 + Math.floor(Math.random() * 2);
@@ -1658,6 +2076,56 @@
                 }
 
                 for (let i = bullets.length - 1; i >= 0; i--) { bullets[i].update(dt); if (bullets[i].life <= 0) bullets.splice(i, 1); }
+
+                // Shockwave update (Church Bell)
+                for (let i = shockwaves.length - 1; i >= 0; i--) {
+                    let sw = shockwaves[i];
+                    let prevRadius = sw.radius;
+                    sw.life -= dt;
+                    let progress = 1 - (sw.life / sw.maxLife);
+                    sw.radius = sw.maxRadius * Math.sqrt(progress);
+                    enemies.forEach(e => {
+                        if (!sw.hitEnemies.has(e)) {
+                            let dist = Math.sqrt((e.x - sw.x)**2 + (e.y - sw.y)**2);
+                            if (dist <= sw.radius && dist >= prevRadius - 20) {
+                                sw.hitEnemies.add(e);
+                                e.hp -= sw.damage; e.hitCount++;
+                                damageTexts.push({ x: e.x, y: e.y - 20, text: '-' + sw.damage, life: 0.6, vy: -38 });
+                                for(let p=0; p<2; p++) activeSplatter.push({ x: e.x, y: e.y, vx: (Math.random()-0.5)*180, vy: (Math.random()-0.5)*180, size: Math.random()*3+1, color: e.type==='choir'?'#3d0b6e':'#6a040f', friction: 0.8, scaleX: 1, angle: 0 });
+                            }
+                        }
+                    });
+                    if (sw.life <= 0) shockwaves.splice(i, 1);
+                }
+
+                // Blood Syringe injection countdown & explosion
+                enemies.forEach(e => {
+                    if (e.injected > 0) {
+                        e.injected -= dt;
+                        if (e.injected <= 0) {
+                            e.injected = 0;
+                            let explodeDmg = 22;
+                            enemies.forEach(other => {
+                                let dx = other.x - e.x; let dy = other.y - e.y;
+                                if (dx*dx + dy*dy < 8100) {
+                                    other.hp -= explodeDmg; other.hitCount++;
+                                    damageTexts.push({ x: other.x + (Math.random()-0.5)*16, y: other.y - 20, text: '-' + explodeDmg, life: 0.7, vy: -42 });
+                                    for(let p=0; p<3; p++) activeSplatter.push({ x: other.x, y: other.y, vx: (Math.random()-0.5)*260, vy: (Math.random()-0.5)*260, size: Math.random()*4+2, color: other.type==='choir'?'#3d0b6e':'#8b0000', friction: 0.72, scaleX: 1, angle: 0 });
+                                }
+                            });
+                            explosionEffects.push({ x: e.x, y: e.y, radius: 0, maxRadius: 90, life: 0.45, maxLife: 0.45 });
+                            triggerShake(7, 0.18);
+                        }
+                    }
+                });
+
+                // Explosion effects update
+                for (let i = explosionEffects.length - 1; i >= 0; i--) {
+                    let ef = explosionEffects[i];
+                    ef.life -= dt;
+                    ef.radius = ef.maxRadius * Math.sqrt(1 - ef.life / ef.maxLife);
+                    if (ef.life <= 0) explosionEffects.splice(i, 1);
+                }
 
                 for (let i = activeSplatter.length - 1; i >= 0; i--) {
                     let p = activeSplatter[i]; p.x += p.vx * dt; p.y += p.vy * dt;
@@ -1779,12 +2247,63 @@
             keys.forEach(k => k.draw(ctx));
             gems.forEach(g => g.draw(ctx));
             torches.forEach(t => t.draw(ctx));
+
+            // Draw shockwaves (Church Bell)
+            shockwaves.forEach(sw => {
+                let alpha = (sw.life / sw.maxLife);
+                ctx.save();
+                ctx.globalAlpha = alpha * 0.75;
+                ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI*2);
+                ctx.strokeStyle = sw.color; ctx.lineWidth = 4;
+                ctx.shadowColor = sw.color; ctx.shadowBlur = 18;
+                ctx.stroke();
+                ctx.globalAlpha = alpha * 0.12;
+                ctx.fillStyle = sw.color; ctx.fill();
+                ctx.globalAlpha = alpha * 0.35;
+                ctx.beginPath(); ctx.arc(sw.x, sw.y, sw.radius * 0.7, 0, Math.PI*2);
+                ctx.strokeStyle = '#fffbe0'; ctx.lineWidth = 1.5; ctx.shadowBlur = 6;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Draw explosions (Blood Syringe)
+            explosionEffects.forEach(ef => {
+                let alpha = ef.life / ef.maxLife;
+                ctx.save();
+                let grad = ctx.createRadialGradient(ef.x, ef.y, 0, ef.x, ef.y, ef.radius);
+                grad.addColorStop(0, `rgba(255,220,60,${alpha * 0.9})`);
+                grad.addColorStop(0.3, `rgba(255,80,0,${alpha * 0.7})`);
+                grad.addColorStop(0.7, `rgba(160,0,0,${alpha * 0.35})`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = alpha * 0.6;
+                ctx.strokeStyle = '#ff6600'; ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 20;
+                ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+            });
+
             bullets.forEach(bullet => bullet.draw(ctx));
             enemyBullets.forEach(eb => eb.draw(ctx));
             
             enemies.forEach(enemy => {
                 enemy.drawBody(ctx);
                 enemy.drawSmile(ctx);
+                // Draw blood syringe injection indicator
+                if (enemy.injected > 0) {
+                    let pulse = 0.5 + Math.abs(Math.sin(Date.now() / 80)) * 0.5;
+                    ctx.save();
+                    ctx.translate(enemy.x, enemy.y);
+                    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 12 + pulse * 8;
+                    ctx.strokeStyle = `rgba(220,0,0,${0.5 + pulse * 0.5})`; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.arc(0, 0, (enemy.radius || 18) + 5, 0, Math.PI*2); ctx.stroke();
+                    // Syringe icon above enemy
+                    ctx.shadowBlur = 0; ctx.fillStyle = `rgba(255,80,80,${0.7 + pulse * 0.3})`;
+                    ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('💉', 0, -enemy.radius - 10);
+                    ctx.restore();
+                }
             }); 
             
             player.draw(ctx);
