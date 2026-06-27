@@ -108,7 +108,7 @@
             border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 24px; width: 100%;
         }
 
-        /* --- LEVEL UP CARDS --- */
+        /* --- LEVEL UP CARDS (Holographic & Textured) --- */
         #levelup-menu .menu-box {
             background: transparent; border: none; box-shadow: none; padding: 0; width: 100%; max-width: 800px;
         }
@@ -116,55 +116,69 @@
             font-size: 50px; color: #00b4d8; text-shadow: 0 0 30px rgba(0,180,216,0.6); 
             border: none; margin-bottom: 30px; letter-spacing: 8px;
         }
-        .cards-container { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; width: 100%; }
+        .cards-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
         
         .card {
-            width: 170px; height: 260px;
-            border-radius: 12px; padding: 20px 15px; box-sizing: border-box;
-            display: flex; flex-direction: column; align-items: center;
+            width: 200px; height: 320px;
+            border-radius: 18px; padding: 25px 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: linear-gradient(135deg, rgba(30,30,35,0.95) 0%, rgba(10,10,12,0.98) 100%);
+            background: radial-gradient(circle at top, #3a3a4a 0%, #15151e 100%);
             border: 2px solid #555;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(255,255,255,0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,255,255,0.1);
             position: relative; overflow: hidden;
         }
-        /* Holographic animated sheen inside the card */
+        
+        /* Grid Texture Overlay */
         .card::before {
-            content: ''; position: absolute; top: -100%; left: -100%; width: 300%; height: 300%;
-            background: linear-gradient(to bottom right, rgba(255,255,255,0) 40%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 60%);
-            transform: rotate(30deg) translate(-50%, -50%);
-            transition: transform 0.8s ease; pointer-events: none; z-index: 1;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 6px);
+            z-index: 0; pointer-events: none;
         }
+        /* Holographic Light Sweep */
+        .card::after {
+            content: ''; position: absolute; top: -100%; left: -100%; width: 50%; height: 300%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: rotate(35deg); animation: sweep 3.5s infinite linear;
+            z-index: 1; pointer-events: none; mix-blend-mode: overlay;
+        }
+        @keyframes sweep { 0% { left: -100%; } 20%, 100% { left: 200%; } }
+        
         .card:hover {
             transform: translateY(-12px) scale(1.05);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.95), inset 0 0 25px rgba(255,255,255,0.15);
-            border-color: #aaa;
+            border-color: rgba(220, 230, 255, 0.9);
+            box-shadow: 0 15px 40px rgba(120, 150, 255, 0.3), inset 0 0 40px rgba(220, 230, 255, 0.25);
         }
-        .card:hover::before { transform: rotate(30deg) translate(50%, 50%); }
 
         .card-common { 
-            border-color: rgba(200, 200, 220, 0.4); 
-            background: radial-gradient(circle at 50% 0%, #3a3a4a 0%, #15151e 70%);
-            box-shadow: 0 8px 25px rgba(180, 180, 200, 0.1), inset 0 0 20px rgba(200, 200, 220, 0.1);
-        }
-        .card-common:hover { 
-            border-color: rgba(220, 220, 255, 0.8); 
-            box-shadow: 0 12px 40px rgba(180, 180, 220, 0.25), inset 0 0 30px rgba(220, 220, 255, 0.2); 
+            border-color: rgba(180, 200, 255, 0.5); 
+            box-shadow: 0 10px 30px rgba(100, 120, 200, 0.2), inset 0 0 30px rgba(180, 200, 255, 0.15);
         }
 
+        .card-content { z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
+        
+        .card-icon-container {
+            width: 70px; height: 70px; background: rgba(0,0,0,0.6); border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 15px rgba(255,255,255,0.1);
+            display: flex; justify-content: center; align-items: center; font-size: 32px;
+            margin-bottom: 12px; position: relative; text-shadow: 0 0 10px rgba(255,255,255,0.8);
+        }
+        .card-common .card-icon-container { box-shadow: 0 0 20px rgba(180, 200, 255, 0.3), inset 0 0 15px rgba(180, 200, 255, 0.2); }
+
         .card h3 { 
-            color: white; margin: 0 0 5px 0; text-transform: uppercase; font-size: 20px; 
-            font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-align: center; z-index: 2;
+            color: white; margin: 0 0 5px 0; text-transform: uppercase; font-size: 22px; 
+            font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-align: center;
         }
         .card .rarity { 
-            font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; 
-            margin-bottom: 15px; font-weight: 800; z-index: 2;
+            font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; 
+            margin-bottom: 12px; font-weight: 800;
         }
         .card .desc { 
-            color: #ccc; font-size: 12px; text-align: center; line-height: 1.5; flex-grow: 1; z-index: 2; font-weight: 600;
+            color: #ccc; font-size: 13px; text-align: center; line-height: 1.4; flex-grow: 1; font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         .card .menu-btn {
-            width: 100%; margin: 0; padding: 10px; font-size: 13px; z-index: 2; position: relative;
+            width: 100%; margin: 0; padding: 10px; font-size: 13px; margin-top: auto;
         }
 
         /* --- GAME OVER MENU --- */
@@ -267,7 +281,7 @@
 
         <!-- Level Up Menu -->
         <div id="levelup-menu" class="menu-overlay hidden">
-            <h2>LEVEL UP!</h2>
+            <h2>NEW ARSENAL</h2>
             <div class="menu-box">
                 <div id="cards-container" class="cards-container">
                     <!-- Cards injected via JS -->
@@ -345,14 +359,14 @@
         let roomTextTimer = 2.0; let keyDroppedTimer = 0; let exitDoorProgress = 0; 
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
 
-        // Weapons Library
+        // Weapons Library (With Icons)
         const WEAPONS = {
-            'nailgun': { name: 'Rusty Nail Gun', rarity: 'common', desc: 'Rapidly fires short rusty spikes.\nDamage: 3' },
-            'candle': { name: 'Candle Holder', rarity: 'common', desc: 'Shoots small flickering flames.\nDamage: 2' },
-            'revolver': { name: 'Broken Revolver', rarity: 'common', desc: 'Fires slow, heavy slugs.\nDamage: 10' },
-            'knife': { name: 'Kitchen Knife', rarity: 'common', desc: 'Orbits close and stabs rapidly.\nDamage: 4' },
-            'needle': { name: 'Sewing Needle', rarity: 'common', desc: 'Fast shots that pierce 3 enemies.\nDamage: 5' },
-            'bone': { name: 'Bone Fragment', rarity: 'common', desc: 'Bounces violently between targets.\nDamage: 3' }
+            'nailgun': { name: 'Rusty Nail Gun', rarity: 'common', desc: 'Auto-fires short rusty spikes.\nDamage: 3', icon: '🔫' },
+            'candle': { name: 'Candle Holder', rarity: 'common', desc: 'Shoots small flickering flames.\nDamage: 2', icon: '🕯️' },
+            'revolver': { name: 'Broken Revolver', rarity: 'common', desc: 'Fires slow, heavy slugs.\nDamage: 10', icon: '💥' },
+            'knife': { name: 'Kitchen Knife', rarity: 'common', desc: 'Orbits close and stabs rapidly.\nDamage: 4', icon: '🔪' },
+            'needle': { name: 'Sewing Needle', rarity: 'common', desc: 'Fast shots that pierce 3 targets.\nDamage: 5', icon: '🪡' },
+            'bone': { name: 'Bone Fragment', rarity: 'common', desc: 'Violently bounces between foes.\nDamage: 3', icon: '🦴' }
         };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
@@ -394,10 +408,13 @@
                 const card = document.createElement('div');
                 card.className = `card card-${w.rarity}`;
                 card.innerHTML = `
-                    <h3>${w.name}</h3>
-                    <div class="rarity">${w.rarity}</div>
-                    <div class="desc">${w.desc.replace('\n', '<br>')}</div>
-                    <button class="menu-btn primary">Select</button>
+                    <div class="card-content">
+                        <div class="card-icon-container">${w.icon}</div>
+                        <h3>${w.name}</h3>
+                        <div class="rarity">${w.rarity}</div>
+                        <div class="desc">${w.desc.replace('\n', '<br>')}</div>
+                        <button class="menu-btn primary">Select</button>
+                    </div>
                 `;
                 card.onclick = (e) => { selectCard(key); };
                 container.appendChild(card);
@@ -406,14 +423,14 @@
 
         window.selectCard = function(key) {
             let fireRate = 0.5;
-            if (key === 'nailgun') fireRate = 0.18;
+            if (key === 'nailgun') fireRate = 0.15;
             if (key === 'candle') fireRate = 0.35;
             if (key === 'revolver') fireRate = 1.2;
-            if (key === 'knife') fireRate = 0.25;
+            if (key === 'knife') fireRate = 0.4;
             if (key === 'needle') fireRate = 0.6;
             if (key === 'bone') fireRate = 0.8;
 
-            player.orbitingWeapons.push({ id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0 });
+            player.orbitingWeapons.push({ id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0, lungeTimer: 0, hasHit: false, lungeOffset: 0 });
             player.weapons++;
             setGameState('playing');
         };
@@ -528,12 +545,13 @@
                 this.x = x; this.y = y; this.angle = angle; this.type = type;
                 this.life = 1.0; 
                 this.hitEnemies = new Set();
+                this.rotation = angle;
+                this.trail = [];
                 
                 if (type === 'default') { this.speed = 1200; this.damage = 10; } 
                 else if (type === 'nailgun') { this.speed = 1400; this.damage = 3; } 
-                else if (type === 'candle') { this.speed = 600; this.damage = 2; } 
+                else if (type === 'candle') { this.speed = 400; this.damage = 2; } 
                 else if (type === 'revolver') { this.speed = 500; this.damage = 10; }
-                else if (type === 'knife') { this.speed = 1200; this.damage = 4; this.life = 0.12; } // short lunge
                 else if (type === 'needle') { this.speed = 1800; this.damage = 5; this.pierceCount = 3; }
                 else if (type === 'bone') { this.speed = 800; this.damage = 3; this.bounceCount = 3; this.life = 2.0; }
                 
@@ -541,11 +559,43 @@
             }
             update(dt) {
                 if (this.type === 'candle') { this.vx += (Math.random() - 0.5) * 200 * dt; this.vy += (Math.random() - 0.5) * 200 * dt; }
-                if (this.type === 'bone') { this.vx *= Math.pow(0.99, dt * 60); this.vy *= Math.pow(0.99, dt * 60); }
+                if (this.type === 'bone') { this.rotation += dt * 15; }
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
+                
+                this.trail.push({x: this.x, y: this.y});
+                if (this.type === 'needle' && this.trail.length > 20) this.trail.shift();
+                else if (this.trail.length > 8) this.trail.shift();
             }
             draw(ctx) {
-                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(Math.atan2(this.vy, this.vx));
+                ctx.save();
+                
+                // Draw Trails first
+                if (this.type === 'needle' && this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5; ctx.stroke();
+                } else if (this.type === 'candle' && this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+                } else if (this.type === 'bone' && this.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(200,200,200,0.3)'; ctx.lineWidth = 4; ctx.stroke();
+                }
+
+                ctx.translate(this.x, this.y); 
+                
+                // Base rotation for drawing the projectile
+                if (this.type === 'bone') {
+                    ctx.rotate(this.rotation);
+                } else {
+                    ctx.rotate(Math.atan2(this.vy, this.vx));
+                }
+
                 if (this.type === 'nailgun') {
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 2;
                     ctx.fillStyle = '#8B4513'; ctx.fillRect(-6, -1, 12, 2);
@@ -557,10 +607,6 @@
                 } else if (this.type === 'revolver') {
                     ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
                     ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'knife') {
-                    ctx.shadowColor = 'rgba(255,255,255,0.4)'; ctx.shadowBlur = 5;
-                    ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, -4); ctx.lineTo(-4, 4); ctx.fill();
-                    ctx.fillStyle = '#3a2010'; ctx.fillRect(-12, -2, 8, 4);
                 } else if (this.type === 'needle') {
                     ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 4;
                     ctx.fillStyle = '#ccc'; ctx.fillRect(-12, -0.5, 24, 1);
@@ -931,33 +977,70 @@
                 this.orbitingWeapons.forEach((w, i) => {
                     if (w.fireTimer > 0) w.fireTimer -= dt;
                     
+                    let orbitRadius = w.id === 'knife' ? 45 : 75;
+                    let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
+                    let wx = this.x + Math.cos(angle) * orbitRadius;
+                    let wy = this.y + Math.sin(angle) * orbitRadius;
+                    
+                    // Specific logic for the Knife (it is a melee lunge, not a projectile)
+                    if (w.id === 'knife') {
+                        if (w.lungeTimer > 0) {
+                            w.lungeTimer -= dt;
+                            let progress = 1 - (w.lungeTimer / 0.2); 
+                            w.lungeOffset = Math.sin(progress * Math.PI) * 60; // Snaps forward and back
+                            
+                            // Check collision while lunging
+                            if (progress > 0.2 && progress < 0.8 && !w.hasHit) {
+                                let kx = this.x + Math.cos(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
+                                let ky = this.y + Math.sin(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
+                                enemies.forEach(e => {
+                                    if ((e.x - kx)**2 + (e.y - ky)**2 < (e.radius + 20)**2) {
+                                        e.hp -= 4; e.hitCount++; w.hasHit = true;
+                                        damageTexts.push({ x: e.x, y: e.y - 20, text: "-4", life: 0.6, vy: -40 });
+                                        
+                                        // Simple blood hit effect
+                                        if (e.hitCount % 2 === 0) {
+                                            for(let p = 0; p < 2; p++) {
+                                                activeSplatter.push({
+                                                    x: e.x, y: e.y, vx: (Math.random()-0.5)*150, vy: (Math.random()-0.5)*150,
+                                                    size: Math.random()*3+1, color: e.type==='choir'?'#3d0b6e':'#6a040f',
+                                                    friction: 0.8, scaleX: 1, angle: 0
+                                                });
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        } else {
+                            w.lungeOffset = 0;
+                        }
+                    }
+
+                    // Targeting AI
                     if (w.fireTimer <= 0 && enemies.length > 0 && !this.isDashing) {
-                        let orbitRadius = w.id === 'knife' ? 45 : 75;
-                        let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
-                        let wx = this.x + Math.cos(angle) * orbitRadius;
-                        let wy = this.y + Math.sin(angle) * orbitRadius;
-                        
-                        let closest = null;
-                        let minDist = Infinity;
+                        let closest = null; let minDist = Infinity;
                         enemies.forEach(e => {
                             let dist = (e.x - wx)**2 + (e.y - wy)**2;
                             if (dist < minDist) { minDist = dist; closest = e; }
                         });
                         
-                        // Fire if target in range (600px radius approx)
-                        if (closest && minDist < 360000) {
+                        let maxRange = w.id === 'knife' ? 12000 : 400000; // Knife attacks only when very close
+                        if (closest && minDist < maxRange) {
                             let aimAngle = Math.atan2(closest.y - wy, closest.x - wx);
-                            let tipX = wx + Math.cos(aimAngle) * 15;
-                            let tipY = wy + Math.sin(aimAngle) * 15;
-                            
-                            bullets.push(new Bullet(tipX, tipY, aimAngle, w.id));
-                            w.fireTimer = w.rate;
                             w.lastAimAngle = aimAngle;
+                            w.fireTimer = w.rate;
+                            
+                            if (w.id === 'knife') {
+                                w.lungeTimer = 0.2; w.hasHit = false;
+                            } else {
+                                let tipX = wx + Math.cos(aimAngle) * 15;
+                                let tipY = wy + Math.sin(aimAngle) * 15;
+                                bullets.push(new Bullet(tipX, tipY, aimAngle, w.id));
+                            }
                         } else {
-                            // Idly track player rotation
-                            w.lastAimAngle = this.facingAngle;
+                            if (w.id !== 'knife' || w.lungeTimer <= 0) w.lastAimAngle = this.facingAngle;
                         }
-                    } else if (w.fireTimer <= 0) {
+                    } else if (w.fireTimer <= 0 && (w.id !== 'knife' || w.lungeTimer <= 0)) {
                         w.lastAimAngle = this.facingAngle;
                     }
                 });
@@ -994,6 +1077,7 @@
                 this.orbitingWeapons.forEach((w, i) => {
                     let orbitRadius = w.id === 'knife' ? 45 : 75;
                     let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
+                    
                     let wx = Math.cos(angle) * orbitRadius; 
                     let wy = Math.sin(angle) * orbitRadius; 
                     
@@ -1004,9 +1088,17 @@
                     ctx.rotate(aimAngle);
                     
                     let recoil = 0;
-                    if (w.fireTimer > w.rate - 0.1) recoil = 8;
-                    if (w.id === 'knife' && w.fireTimer > w.rate - 0.1) recoil = -15; // Knife lunges forward
-                    ctx.translate(-recoil, 0);
+                    if (w.id === 'knife') {
+                        ctx.translate(w.lungeOffset, 0); // Slash forward
+                        // Draw slash swoosh
+                        if (w.lungeOffset > 10) {
+                            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w.lungeOffset, -5); ctx.lineTo(-w.lungeOffset, 5);
+                            ctx.fillStyle = `rgba(255,255,255,${w.lungeOffset/60})`; ctx.fill();
+                        }
+                    } else {
+                        if (w.fireTimer > w.rate - 0.1) recoil = 8;
+                        ctx.translate(-recoil, 0);
+                    }
 
                     if (Math.abs(aimAngle) > Math.PI/2) ctx.scale(1, -1); 
 
@@ -1037,8 +1129,7 @@
                     }
                     
                     if (w.fireTimer > w.rate - 0.05 && w.id !== 'knife') {
-                        ctx.shadowColor = '#ffea00'; ctx.shadowBlur = 10;
-                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = '#ffea00'; ctx.shadowBlur = 10; ctx.fillStyle = '#ffffff';
                         ctx.beginPath(); ctx.arc(16, 0, 4, 0, Math.PI*2); ctx.fill();
                     }
                     ctx.restore();
@@ -1421,6 +1512,7 @@
                                     if (nextTarget) {
                                         let angle = Math.atan2(nextTarget.y - b.y, nextTarget.x - b.x);
                                         b.vx = Math.cos(angle) * b.speed; b.vy = Math.sin(angle) * b.speed;
+                                        b.x += b.vx * 0.05; // tiny bump forward
                                     } else { bullets.splice(j, 1); }
                                 }
                             } else {
