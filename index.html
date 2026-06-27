@@ -455,6 +455,7 @@
             deathParticles = [];
             deadEnemies.length = 0;
             gems.length = 0;
+            enemyBullets.length = 0;
             
             updateHUD();
             startNextRoom();
@@ -478,7 +479,10 @@
 
         function startNextRoom() {
             currentRoom++;
-            totalEnemiesThisRoom = 4 + Math.min(currentRoom - 1, 9);
+            
+            trapdoor.choirsLeft = currentRoom >= 5 ? Math.floor(Math.random() * 2) + 1 : 0;
+            
+            totalEnemiesThisRoom = 4 + Math.min(currentRoom - 1, 9) + trapdoor.choirsLeft;
             enemiesKilledThisRoom = 0;
             hasKey = false;
             exitDoorProgress = 0;
@@ -488,6 +492,7 @@
             
             enemies.length = 0;
             bullets.length = 0;
+            enemyBullets.length = 0;
             keys.length = 0;
             gems.length = 0;
             activeSplatter.length = 0;
@@ -632,6 +637,7 @@
         const ROOM_SIZE = 1200;
 
         const bullets = [];
+        const enemyBullets = [];
         const enemies = [];
         const deadEnemies = [];
         const activeSplatter = [];
@@ -720,6 +726,28 @@
             }
         }
 
+        class EnemyBullet {
+            constructor(x, y, angle) {
+                this.x = x; this.y = y;
+                this.speed = 350;
+                this.vx = Math.cos(angle) * this.speed;
+                this.vy = Math.sin(angle) * this.speed;
+                this.life = 4.0;
+                this.damage = 15;
+                this.radius = 8;
+            }
+            update(dt) { this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt; }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.shadowColor = '#d255ff'; ctx.shadowBlur = 10;
+                ctx.strokeStyle = '#f0aaff'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2); ctx.stroke();
+                ctx.fillStyle = 'rgba(210,85,255,0.4)'; ctx.fill();
+                ctx.restore();
+            }
+        }
+
         class CreepyLeg {
             constructor(offsetX, offsetY) {
                 this.offsetX = offsetX;
@@ -770,6 +798,132 @@
             }
         }
 
+        class Choir {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.radius = 25;
+                this.hp = 250;
+                this.type = 'choir';
+                this.hitCount = 0;
+                this.orbitAngle = Math.random() * Math.PI * 2;
+                this.orbitRadius = 350 + Math.random() * 150; 
+                this.orbitSpeed = 0.5 + Math.random() * 0.3; 
+                this.orbitDir = Math.random() > 0.5 ? 1 : -1;
+                
+                this.attackCooldown = 3.0 + Math.random() * 2.0;
+                this.isAttacking = false;
+                this.attackTime = 0;
+
+                this.timeOffset = Math.random() * 100;
+                this.heads = [
+                    { angleOffset: 0, dist: 18 },
+                    { angleOffset: Math.PI*2/3, dist: 18 },
+                    { angleOffset: Math.PI*4/3, dist: 18 }
+                ];
+                this.drawX = x; this.drawY = y;
+            }
+            update(dt, player, allEnemies) {
+                this.timeOffset += dt * 2;
+                
+                // Orbit the center of the room with a slight wobble
+                this.orbitAngle += this.orbitSpeed * this.orbitDir * dt;
+                let wobble = Math.sin(this.timeOffset * 0.5) * 50;
+                let targetX = ROOM_SIZE/2 + Math.cos(this.orbitAngle) * (this.orbitRadius + wobble);
+                let targetY = ROOM_SIZE/2 + Math.sin(this.orbitAngle) * (this.orbitRadius + wobble);
+
+                let dx = targetX - this.x;
+                let dy = targetY - this.y;
+                this.x += dx * 2 * dt;
+                this.y += dy * 2 * dt;
+
+                this.drawX = this.x; this.drawY = this.y;
+
+                if (this.attackCooldown > 0) this.attackCooldown -= dt;
+                if (this.attackCooldown <= 0 && !this.isAttacking) {
+                    this.isAttacking = true;
+                    this.attackTime = 1.0; 
+                }
+
+                if (this.isAttacking) {
+                    this.attackTime -= dt;
+                    if (this.attackTime <= 0) {
+                        this.isAttacking = false;
+                        this.attackCooldown = 4.0 + Math.random() * 2.0;
+                        
+                        let numBullets = 12;
+                        for(let i=0; i<numBullets; i++) {
+                            let angle = (i / numBullets) * Math.PI * 2;
+                            enemyBullets.push(new EnemyBullet(this.x, this.y, angle));
+                        }
+                        triggerShake(6, 0.2); // Shake when firing ring
+                    }
+                }
+            }
+            drawBody(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // Shadow / Central connection void
+                ctx.shadowColor = 'rgba(0,0,0,0.7)'; ctx.shadowBlur = 15;
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.beginPath(); ctx.ellipse(0, 30, 20, 8, 0, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+
+                this.heads.forEach(h => {
+                    let hx = Math.cos(h.angleOffset + this.timeOffset) * h.dist;
+                    let hy = Math.sin(h.angleOffset + this.timeOffset) * h.dist + Math.sin(this.timeOffset*2 + h.angleOffset)*5;
+                    
+                    ctx.save();
+                    ctx.translate(hx, hy);
+                    let grad = ctx.createRadialGradient(-3,-5,2, 0,0,15);
+                    grad.addColorStop(0, '#e0d8e6');
+                    grad.addColorStop(0.7, '#8b7a96');
+                    grad.addColorStop(1, '#4a3b52');
+                    ctx.fillStyle = grad;
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                });
+                ctx.restore();
+            }
+            drawSmile(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                let attackOpenness = 0;
+                if (this.isAttacking) {
+                    let p = this.attackTime / 1.0;
+                    attackOpenness = Math.sin(p * Math.PI) * 12; 
+                }
+
+                this.heads.forEach(h => {
+                    let hx = Math.cos(h.angleOffset + this.timeOffset) * h.dist;
+                    let hy = Math.sin(h.angleOffset + this.timeOffset) * h.dist + Math.sin(this.timeOffset*2 + h.angleOffset)*5;
+
+                    ctx.save();
+                    ctx.translate(hx, hy);
+                    
+                    ctx.shadowColor = '#d255ff'; ctx.shadowBlur = 8;
+                    ctx.fillStyle = '#110022';
+                    ctx.beginPath(); ctx.ellipse(-5, -3, 3, 4, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(5, -3, 3, 4, 0, 0, Math.PI*2); ctx.fill();
+                    
+                    ctx.fillStyle = '#d255ff'; ctx.shadowBlur = 12;
+                    ctx.beginPath(); ctx.arc(-5, -3, 1, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(5, -3, 1, 0, Math.PI*2); ctx.fill();
+
+                    ctx.fillStyle = '#0a0011';
+                    ctx.beginPath();
+                    let mHeight = 3 + attackOpenness;
+                    ctx.ellipse(0, 6 + attackOpenness/2, 4 + attackOpenness*0.2, mHeight, 0, 0, Math.PI*2);
+                    ctx.fill();
+
+                    ctx.restore();
+                });
+                ctx.restore();
+            }
+        }
+
         class Smiler {
             constructor(x, y) {
                 this.x = x;
@@ -779,12 +933,12 @@
                 this.speed = 130; 
                 this.facingAngle = 0;
                 this.distToPlayer = 1000;
+                this.type = 'smiler';
                 
                 this.isAttacking = false;
                 this.attackTime = 0;
                 this.attackCooldown = 0;
-                this.hitCount = 0; // blood shows every 3 hits
-                this.type = 'smiler';
+                this.hitCount = 0;
                 
                 this.legs = [
                     new CreepyLeg(12, -18),
@@ -826,22 +980,14 @@
                     if (this.distToPlayer > player.radius + 20) {
                         forwardSpeed = this.speed;
                     } else {
-                        // Biting player — 10 dmg/sec
                         player.hp -= 10 * dt;
+                        player.hurtTimer = 0.2; 
                         updateHUD();
 
                         if (this.attackCooldown <= 0) {
                             this.isAttacking = true;
-                            this.attackTime = 0.3;
-                            this.attackCooldown = 1.0;
-                            // Floating damage text above player's head
-                            damageTexts.push({
-                                x: player.x + (Math.random() - 0.5) * 16,
-                                y: player.y - 30,
-                                text: '-10',
-                                life: 0.7,
-                                vy: -55 - Math.random() * 20
-                            });
+                            this.attackTime = 0.3; 
+                            this.attackCooldown = 1.0; 
                         }
                     }
 
@@ -965,9 +1111,9 @@
         class Gem {
             constructor(x, y, type) {
                 this.x = x; this.y = y;
-                this.type = type; // 'blue' | 'orange'
+                this.type = type; // 'blue' | 'orange' | 'purple'
                 this.timeOffset = Math.random() * Math.PI * 2;
-                this.xpValue = type === 'blue' ? 15 : 28;
+                this.xpValue = type === 'purple' ? 50 : (type === 'blue' ? 15 : 28);
             }
             update(dt) { this.timeOffset += dt * 1.6; }
             draw(ctx) {
@@ -977,9 +1123,11 @@
                 const spin = this.timeOffset * 0.35;
                 ctx.rotate(spin);
 
-                const C = this.type === 'blue'
-                    ? { girdle:'#0c2d6e', crown1:'#1a5acc', crown2:'#0a3a99', table:'#72d8ff', spec:'#d0f4ff', glow:'#00aaff' }
-                    : { girdle:'#5a1800', crown1:'#cc4e00', crown2:'#8a2e00', table:'#ffaa44', spec:'#ffe8b8', glow:'#ff7700' };
+                const C = this.type === 'purple'
+                    ? { girdle:'#2a004a', crown1:'#5e179e', crown2:'#3d0b6e', table:'#b85cff', spec:'#eac7ff', glow:'#a82bff' }
+                    : (this.type === 'blue'
+                        ? { girdle:'#0c2d6e', crown1:'#1a5acc', crown2:'#0a3a99', table:'#72d8ff', spec:'#d0f4ff', glow:'#00aaff' }
+                        : { girdle:'#5a1800', crown1:'#cc4e00', crown2:'#8a2e00', table:'#ffaa44', spec:'#ffe8b8', glow:'#ff7700' });
 
                 const n = 6, r = 9, ri = 4.8;
                 // outer glow ring
@@ -993,7 +1141,7 @@
                 ctx.closePath(); ctx.fill();
                 ctx.shadowBlur = 0;
 
-                // crown facets (alternating bright/dark triangles)
+                // crown facets 
                 for (let i = 0; i < n; i++) {
                     const a1 = (i/n)*Math.PI*2 - Math.PI/n;
                     const a2 = ((i+1)/n)*Math.PI*2 - Math.PI/n;
@@ -1051,7 +1199,6 @@
                 this.facingAngle = 0;
                 this.distToPlayer = 1000;
 
-                // State machine: crawling → frozen → lunging → crawling
                 this.state = 'crawling';
                 this.crawlTimer = 4 + Math.random() * 5;
                 this.freezeTimer = 0;
@@ -1059,7 +1206,6 @@
                 this.lungeVx = 0; this.lungeVy = 0;
                 this.attackCooldown = 0;
 
-                // 4 limbs: front pair = feet (toward player), back pair = hands (away)
                 this.legs = [
                     new CreepyLeg(18, -16),
                     new CreepyLeg(18,  16),
@@ -1076,7 +1222,6 @@
                 this.distToPlayer = Math.sqrt(dx*dx + dy*dy);
                 const towardPlayer = Math.atan2(dy, dx);
 
-                // Body faces AWAY from player (crawls backward)
                 this.facingAngle = towardPlayer + Math.PI;
                 this.trembleX = 0; this.trembleY = 0;
 
@@ -1128,7 +1273,6 @@
                 this.x = Math.max(60, Math.min(ROOM_SIZE - 60, this.x));
                 this.y = Math.max(60, Math.min(ROOM_SIZE - 60, this.y));
 
-                // Separation
                 allEnemies.forEach(o => {
                     if (o === this) return;
                     const odx = this.x - o.x, ody = this.y - o.y;
@@ -1137,7 +1281,6 @@
                     if (od > 0 && od < minD) { const p = (minD - od) / od; this.x += odx*p*0.5; this.y += ody*p*0.5; }
                 });
 
-                // Legs track toward-player direction (its direction of travel)
                 this.legs.forEach(l => l.update(this.x + this.trembleX, this.y + this.trembleY, towardPlayer, dt));
                 this.drawX = this.x + this.trembleX;
                 this.drawY = this.y + this.trembleY;
@@ -1146,9 +1289,8 @@
 
             drawBody(ctx) {
                 ctx.save();
-                const legFacing = this.drawAngle + Math.PI; // legs face toward player
+                const legFacing = this.drawAngle + Math.PI; 
 
-                // Limbs
                 const isLunging = this.state === 'lunging';
                 ctx.strokeStyle = isLunging ? '#35c060' : '#1e7535';
                 ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -1169,7 +1311,6 @@
                 ctx.translate(this.drawX, this.drawY);
                 ctx.rotate(this.drawAngle);
 
-                // Body torso
                 let bodyCol = '#1e6b2e';
                 if (this.state === 'lunging') bodyCol = '#2daa48';
                 if (this.state === 'frozen') bodyCol = '#163f22';
@@ -1180,19 +1321,16 @@
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                // Head pressed to floor — at +x (facing away = head in that direction)
                 ctx.fillStyle = this.state === 'lunging' ? '#38c055' : '#246635';
                 ctx.beginPath();
                 ctx.arc(24, 0, 10, 0, Math.PI*2);
                 ctx.fill();
 
-                // Dark face-to-floor depression
                 ctx.fillStyle = '#0d2e15';
                 ctx.beginPath();
                 ctx.ellipse(25, 1, 5, 4, 0.3, 0, Math.PI*2);
                 ctx.fill();
 
-                // Spine
                 ctx.strokeStyle = '#112b18'; ctx.lineWidth = 2.5;
                 ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(16, 0); ctx.stroke();
 
@@ -1200,7 +1338,6 @@
             }
 
             drawSmile(ctx) {
-                // Frozen glow pulse from head
                 if (this.state === 'frozen') {
                     ctx.save();
                     const headX = this.drawX + Math.cos(this.drawAngle) * 24;
@@ -1226,6 +1363,7 @@
                 this.delayTimer = 4.0; 
                 this.openAngle = 0;
                 this.kneelersLeft = 0;
+                this.choirsLeft = 0;
             }
 
             update(dt) {
@@ -1248,6 +1386,9 @@
                         if (this.kneelersLeft > 0) {
                             enemies.push(new Kneeler(this.x, this.y));
                             this.kneelersLeft--;
+                        } else if (this.choirsLeft > 0) {
+                            enemies.push(new Choir(this.x, this.y));
+                            this.choirsLeft--;
                         } else {
                             enemies.push(new Smiler(this.x, this.y));
                         }
@@ -1655,7 +1796,6 @@
 
                 // Check death condition
                 if (this.hp <= 0 && gameState === 'playing') {
-                    lastDeathCause = 'a Smiler';
                     setGameState('gameover');
                 }
             }
@@ -1969,7 +2109,7 @@
             });
 
             gems.forEach(g => {
-                const glowColor = g.type === 'blue' ? [0, 160, 255] : [255, 120, 0];
+                const glowColor = g.type === 'purple' ? [168, 43, 255] : (g.type === 'blue' ? [0, 160, 255] : [255, 120, 0]);
                 const bob = Math.sin(g.timeOffset) * 3.5;
                 const gGrad = lightCtx.createRadialGradient(g.x, g.y + bob, 2, g.x, g.y + bob, 55);
                 gGrad.addColorStop(0, `rgba(${glowColor.join(',')},0.55)`);
@@ -1978,6 +2118,14 @@
                 lightCtx.beginPath();
                 lightCtx.arc(g.x, g.y + bob, 55, 0, Math.PI * 2);
                 lightCtx.fill();
+            });
+
+            enemyBullets.forEach(eb => {
+                const grad = lightCtx.createRadialGradient(eb.x, eb.y, 0, eb.x, eb.y, 40);
+                grad.addColorStop(0, 'rgba(210, 85, 255, 0.6)');
+                grad.addColorStop(1, 'rgba(210, 85, 255, 0)');
+                lightCtx.fillStyle = grad;
+                lightCtx.beginPath(); lightCtx.arc(eb.x, eb.y, 40, 0, Math.PI*2); lightCtx.fill();
             });
 
             enemies.forEach(enemy => {
@@ -1989,7 +2137,15 @@
                     lightCtx.beginPath();
                     lightCtx.arc(enemy.drawX, enemy.drawY, 40, 0, Math.PI*2);
                     lightCtx.fill();
-                } else if (enemy.type !== 'kneeler') {
+                } else if (enemy.type === 'choir') {
+                    const sGrad = lightCtx.createRadialGradient(enemy.drawX, enemy.drawY, 5, enemy.drawX, enemy.drawY, 60);
+                    sGrad.addColorStop(0, 'rgba(180, 80, 255, 0.5)');
+                    sGrad.addColorStop(1, 'rgba(180, 80, 255, 0)');
+                    lightCtx.fillStyle = sGrad;
+                    lightCtx.beginPath();
+                    lightCtx.arc(enemy.drawX, enemy.drawY, 60, 0, Math.PI*2);
+                    lightCtx.fill();
+                } else if (enemy.type === 'smiler') {
                     const smileX = enemy.drawX + Math.cos(enemy.drawAngle) * 18;
                     const smileY = enemy.drawY + Math.sin(enemy.drawAngle) * 18;
                     const sGrad = lightCtx.createRadialGradient(smileX, smileY, 2, smileX, smileY, 25);
@@ -2119,6 +2275,38 @@
                     startNextRoom();
                 }
 
+                // Update Enemy Bullets
+                for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                    let eb = enemyBullets[i];
+                    eb.update(dt);
+                    
+                    let dx = player.x - eb.x;
+                    let dy = player.y - eb.y;
+                    if (dx*dx + dy*dy < (player.radius + eb.radius) * (player.radius + eb.radius)) {
+                        player.hp -= eb.damage;
+                        player.hurtTimer = 0.2;
+                        updateHUD();
+                        
+                        damageTexts.push({
+                            x: player.x + (Math.random() - 0.5) * 16,
+                            y: player.y - 30,
+                            text: "-" + eb.damage,
+                            life: 0.7,
+                            vy: -55 - Math.random() * 20
+                        });
+                        
+                        triggerShake(4, 0.1);
+                        enemyBullets.splice(i, 1);
+                        
+                        if (player.hp <= 0 && gameState === 'playing') {
+                            lastDeathCause = 'the Choir';
+                            setGameState('gameover');
+                        }
+                        continue;
+                    }
+                    if (eb.life <= 0) enemyBullets.splice(i, 1);
+                }
+
                 for (let i = enemies.length - 1; i >= 0; i--) {
                     let enemy = enemies[i];
                     enemy.update(dt, player, enemies);
@@ -2147,12 +2335,15 @@
                                     let spread = (Math.random() - 0.5) * 0.6;
                                     let speed = 10 + Math.random() * 22;
                                     let size = 0.7 + Math.random() * 1.1;
+                                    let colors = ['#100000'];
+                                    if (enemy.type === 'choir') colors = ['#2a004a', '#110022'];
+                                    
                                     activeSplatter.push({
                                         x: enemy.x + (Math.random()-0.5)*3,
                                         y: enemy.y + (Math.random()-0.5)*3,
                                         vx: Math.cos(hitAngle + spread) * speed,
                                         vy: Math.sin(hitAngle + spread) * speed,
-                                        size, color: '#100000',
+                                        size, color: colors[0],
                                         friction: 0.50,
                                         scaleX: 1.0 + Math.random() * 0.3,
                                         angle: hitAngle + spread
@@ -2167,6 +2358,9 @@
                     if (enemy.hp <= 0) {
                         // Death blood burst — dark, heavy, stays near body
                         let numDeath = 7 + Math.floor(Math.random() * 5);
+                        let colors = ['#6a040f', '#370617', '#9d0208', '#03071e'];
+                        if (enemy.type === 'choir') colors = ['#3d0b6e', '#5e179e', '#2a004a', '#110022'];
+
                         for(let p = 0; p < numDeath; p++) {
                             let angle = Math.random() * Math.PI * 2;
                             let speed = 15 + Math.random() * 65;
@@ -2176,7 +2370,7 @@
                                 y: enemy.y + (Math.random()-0.5)*5,
                                 vx: Math.cos(angle) * speed,
                                 vy: Math.sin(angle) * speed,
-                                size, color: '#4a0101',
+                                size, color: colors[Math.floor(Math.random() * colors.length)],
                                 friction: 0.55 + Math.random() * 0.1,
                                 scaleX: 1.0 + Math.random() * 0.4,
                                 angle
@@ -2193,19 +2387,30 @@
                                 oy: (Math.random()-0.5) * 0.2
                             });
                         }
+                        
+                        let bodyCol = '#0e0a0a';
+                        if (enemy.type === 'kneeler') bodyCol = '#142e1c';
+                        if (enemy.type === 'choir') bodyCol = '#2a1a36';
+
                         deadEnemies.push({
                             x: enemy.x, y: enemy.y,
-                            facingAngle: enemy.facingAngle,
+                            facingAngle: enemy.facingAngle || 0,
                             legs: enemy.legs,
                             life: 5.0, maxLife: 5.0,
                             growDuration: 4.5,
                             puddleRadius: 2,
                             maxPuddleRadius: 20 + Math.random() * 10,
                             blobOffsets,
-                            bodyColor: enemy.type === 'kneeler' ? '#142e1c' : '#0e0a0a',
+                            bodyColor: bodyCol,
+                            type: enemy.type
                         });
-                        // Drop gem — blue for Smiler, orange for Kneeler
-                        gems.push(new Gem(enemy.x, enemy.y, enemy.type === 'kneeler' ? 'orange' : 'blue'));
+                        
+                        // Drop gem
+                        let gemType = 'blue';
+                        if (enemy.type === 'kneeler') gemType = 'orange';
+                        if (enemy.type === 'choir') gemType = 'purple';
+                        gems.push(new Gem(enemy.x, enemy.y, gemType));
+                        
                         enemies.splice(i, 1);
                         enemiesKilledThisRoom++;
                         totalKills++;
@@ -2304,8 +2509,13 @@
                     let by = Math.sin(b.a) * pr * b.distFrac * 0.7 + b.oy * pr;
                     let br = pr * b.rFrac;
                     let g = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-                    g.addColorStop(0,   'rgba(90,4,4,0.80)');
-                    g.addColorStop(0.55,'rgba(58,2,2,0.48)');
+                    if (d.type === 'choir') {
+                        g.addColorStop(0,   'rgba(61,11,110,0.80)');
+                        g.addColorStop(0.55,'rgba(42,0,74,0.48)');
+                    } else {
+                        g.addColorStop(0,   'rgba(90,4,4,0.80)');
+                        g.addColorStop(0.55,'rgba(58,2,2,0.48)');
+                    }
                     g.addColorStop(1,   'rgba(22,0,0,0)');
                     ctx.fillStyle = g;
                     ctx.beginPath();
@@ -2313,11 +2523,17 @@
                     ctx.fill();
                 });
 
-                // Layer 2: Main pool body — deep crimson center fading to near-black edge
+                // Layer 2: Main pool body — deep center fading to near-black edge
                 const mainG = ctx.createRadialGradient(pr*0.05, pr*0.04, 0, 0, 0, pr * 0.9);
-                mainG.addColorStop(0,    'rgba(72,3,3,0.98)');
-                mainG.addColorStop(0.28, 'rgba(55,2,2,0.95)');
-                mainG.addColorStop(0.55, 'rgba(40,1,1,0.84)');
+                if (d.type === 'choir') {
+                    mainG.addColorStop(0,    'rgba(42,26,54,0.98)');
+                    mainG.addColorStop(0.28, 'rgba(29,14,46,0.95)');
+                    mainG.addColorStop(0.55, 'rgba(17,0,34,0.84)');
+                } else {
+                    mainG.addColorStop(0,    'rgba(72,3,3,0.98)');
+                    mainG.addColorStop(0.28, 'rgba(55,2,2,0.95)');
+                    mainG.addColorStop(0.55, 'rgba(40,1,1,0.84)');
+                }
                 mainG.addColorStop(0.78, 'rgba(28,0,0,0.56)');
                 mainG.addColorStop(0.92, 'rgba(16,0,0,0.24)');
                 mainG.addColorStop(1,    'rgba(6,0,0,0)');
@@ -2330,7 +2546,11 @@
                 if (pr > 10) {
                     let sheenR = pr * 0.2;
                     let sheenG = ctx.createRadialGradient(-pr*0.12, -pr*0.1, 0, -pr*0.12, -pr*0.1, sheenR);
-                    sheenG.addColorStop(0, `rgba(140,18,18,${Math.min(0.28, pr/200)})`);
+                    if (d.type === 'choir') {
+                        sheenG.addColorStop(0, `rgba(94,23,158,${Math.min(0.28, pr/200)})`);
+                    } else {
+                        sheenG.addColorStop(0, `rgba(140,18,18,${Math.min(0.28, pr/200)})`);
+                    }
                     sheenG.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = sheenG;
                     ctx.beginPath();
@@ -2341,59 +2561,62 @@
                 ctx.restore();
 
                 // === FALLEN BODY ===
-                // Legs sprawled out, radiating away from body center
-                if (d.legs) {
+                if (d.type === 'choir') {
                     ctx.save();
-                    ctx.lineWidth = 4;
-                    ctx.lineCap = 'round';
+                    ctx.translate(d.x, d.y);
+                    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+                    ctx.fillStyle = d.bodyColor || '#2a1a36';
+                    ctx.beginPath(); ctx.arc(-8, -5, 14, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(8, 0, 14, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(-2, 10, 14, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                } else {
+                    if (d.legs) {
+                        ctx.save();
+                        ctx.lineWidth = 4;
+                        ctx.lineCap = 'round';
+                        ctx.globalAlpha = alpha;
+                        d.legs.forEach((leg, idx) => {
+                            let attachX = d.x + Math.cos(d.facingAngle)*(leg.offsetX*0.5) - Math.sin(d.facingAngle)*(leg.offsetY*0.5);
+                            let attachY = d.y + Math.sin(d.facingAngle)*(leg.offsetX*0.5) + Math.cos(d.facingAngle)*(leg.offsetY*0.5);
+                            let sideSign = leg.offsetY < 0 ? -1 : 1;
+                            let deadAng = d.facingAngle + sideSign * (Math.PI * 0.48) + (leg.offsetX < 0 ? Math.PI * 0.15 : -Math.PI * 0.05);
+                            let legLen = 28 + idx * 2;
+                            let legEndX = d.x + Math.cos(deadAng) * legLen;
+                            let legEndY = d.y + Math.sin(deadAng) * legLen;
+                            ctx.strokeStyle = '#1a1a1a';
+                            ctx.beginPath();
+                            ctx.moveTo(attachX, attachY);
+                            let kneeX = attachX + Math.cos(deadAng) * legLen * 0.45;
+                            let kneeY = attachY + Math.sin(deadAng) * legLen * 0.45;
+                            ctx.lineTo(kneeX, kneeY);
+                            ctx.stroke();
+                            ctx.strokeStyle = '#141414';
+                            ctx.beginPath();
+                            ctx.moveTo(kneeX, kneeY);
+                            ctx.lineTo(legEndX, legEndY);
+                            ctx.stroke();
+                        });
+                        ctx.restore();
+                    }
+                    ctx.save();
+                    ctx.translate(d.x, d.y);
+                    ctx.rotate(d.facingAngle);
                     ctx.globalAlpha = alpha;
-                    d.legs.forEach((leg, idx) => {
-                        // Attachment point on the body
-                        let attachX = d.x + Math.cos(d.facingAngle)*(leg.offsetX*0.5) - Math.sin(d.facingAngle)*(leg.offsetY*0.5);
-                        let attachY = d.y + Math.sin(d.facingAngle)*(leg.offsetX*0.5) + Math.cos(d.facingAngle)*(leg.offsetY*0.5);
-                        // Spread dead legs outward from body naturally
-                        let sideSign = leg.offsetY < 0 ? -1 : 1;
-                        let deadAng = d.facingAngle + sideSign * (Math.PI * 0.48) + (leg.offsetX < 0 ? Math.PI * 0.15 : -Math.PI * 0.05);
-                        let legLen = 28 + idx * 2;
-                        let legEndX = d.x + Math.cos(deadAng) * legLen;
-                        let legEndY = d.y + Math.sin(deadAng) * legLen;
-                        // Upper segment
-                        ctx.strokeStyle = '#1a1a1a';
-                        ctx.beginPath();
-                        ctx.moveTo(attachX, attachY);
-                        let kneeX = attachX + Math.cos(deadAng) * legLen * 0.45;
-                        let kneeY = attachY + Math.sin(deadAng) * legLen * 0.45;
-                        ctx.lineTo(kneeX, kneeY);
-                        ctx.stroke();
-                        // Lower segment — slight angle change for knee
-                        ctx.strokeStyle = '#141414';
-                        ctx.beginPath();
-                        ctx.moveTo(kneeX, kneeY);
-                        ctx.lineTo(legEndX, legEndY);
-                        ctx.stroke();
-                    });
+                    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetY = 3;
+                    ctx.fillStyle = d.bodyColor || '#0e0a0a';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowColor = 'transparent';
+                    ctx.fillStyle = d.bodyColor ? 'rgba(10,60,20,0.3)' : 'rgba(55,2,2,0.35)';
+                    ctx.beginPath();
+                    ctx.ellipse(-2, -2, 12, 6, -0.3, 0, Math.PI * 2);
+                    ctx.fill();
                     ctx.restore();
                 }
-                // Body — same size as living, just dark and still
-                ctx.save();
-                ctx.translate(d.x, d.y);
-                ctx.rotate(d.facingAngle);
-                ctx.globalAlpha = alpha;
-                // Shadow underneath
-                ctx.shadowColor = 'rgba(0,0,0,0.6)';
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetY = 3;
-                ctx.fillStyle = d.bodyColor || '#0e0a0a';
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowColor = 'transparent';
-                // Blood soaked / ichor highlight on body
-                ctx.fillStyle = d.bodyColor ? 'rgba(10,60,20,0.3)' : 'rgba(55,2,2,0.35)';
-                ctx.beginPath();
-                ctx.ellipse(-2, -2, 12, 6, -0.3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
 
                 ctx.restore(); // alpha
             });
@@ -2405,8 +2628,7 @@
                 ctx.rotate(s.angle);
                 ctx.scale(s.scaleX, 1);
                 const sg = ctx.createRadialGradient(0, 0, 0, 0, 0, s.size);
-                sg.addColorStop(0,   'rgba(88,4,4,0.90)');
-                sg.addColorStop(0.5, 'rgba(55,2,2,0.58)');
+                sg.addColorStop(0,   s.color);
                 sg.addColorStop(1,   'rgba(22,0,0,0)');
                 ctx.fillStyle = sg;
                 ctx.beginPath();
@@ -2425,8 +2647,7 @@
                 let rx = speed > 20 ? p.size + speed * 0.018 : p.size;
                 let ry = p.size * 0.75;
                 const ag = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry));
-                ag.addColorStop(0,   'rgba(100,5,5,0.95)');
-                ag.addColorStop(0.6, 'rgba(65,2,2,0.65)');
+                ag.addColorStop(0,   p.color);
                 ag.addColorStop(1,   'rgba(30,0,0,0)');
                 ctx.fillStyle = ag;
                 ctx.beginPath();
@@ -2440,6 +2661,7 @@
             gems.forEach(g => g.draw(ctx));
             torches.forEach(t => t.draw(ctx));
             bullets.forEach(bullet => bullet.draw(ctx));
+            enemyBullets.forEach(eb => eb.draw(ctx));
             
             enemies.forEach(enemy => {
                 enemy.drawBody(ctx);
@@ -2465,6 +2687,18 @@
             ctx.restore(); 
 
             drawLighting(ctx, camX, camY, currentShakeX, currentShakeY);
+
+            // Screen damage flash (Clean radial vignette instead of full block color)
+            if (player.hurtTimer > 0) {
+                ctx.save();
+                let alpha = (player.hurtTimer / 0.2) * 0.7; // Max opacity 0.7
+                let grad = ctx.createRadialGradient(width/2, height/2, height*0.3, width/2, height/2, height*0.8);
+                grad.addColorStop(0, 'rgba(180, 0, 0, 0)');
+                grad.addColorStop(1, `rgba(180, 0, 0, ${alpha})`);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+                ctx.restore();
+            }
 
             if (roomTextTimer > 0) {
                 let alpha = Math.min(1, roomTextTimer / 1.5);
