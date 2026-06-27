@@ -41,7 +41,7 @@
             pointer-events: none; z-index: 100;
         }
 
-        /* HUD: Health & XP Bars */
+        /* HUD: Health Bar Only */
         #hud {
             position: absolute; top: 0; left: 0; width: 100%; padding: 12px 80px 12px 16px; 
             box-sizing: border-box; display: flex; flex-direction: column; gap: 5px;
@@ -52,7 +52,7 @@
             border-radius: 3px; position: relative; overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        .bar-bg.vitals-bg { height: 12px; border-radius: 6px; }
+        .bar-bg.vitals-bg { height: 14px; border-radius: 6px; max-width: 400px; }
         .bar-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
         .vitals-fill {
             background: linear-gradient(90deg, #5a0000 0%, #9d0208 50%, #d00000 80%, #ff2222 100%);
@@ -63,7 +63,7 @@
             text-shadow: 1px 1px 2px black; letter-spacing: 2px;
             font-family: 'Barlow', Arial, sans-serif;
         }
-        .vitals-label { font-size: 8px; line-height: 12px; }
+        .vitals-label { font-size: 10px; line-height: 14px; }
 
         #pause-btn {
             position: absolute; top: 15px; right: 20px; width: 45px; height: 45px;
@@ -233,7 +233,6 @@
                 <div class="death-stats">
                     <div class="stat-row"><span>Kills</span><span id="ds-kills">—</span></div>
                     <div class="stat-row"><span>Time Alive</span><span id="ds-time">—</span></div>
-                    <div class="stat-row"><span>Rooms Cleared</span><span id="ds-rooms">—</span></div>
                     <div class="stat-row stat-score"><span>Score</span><span id="ds-score">—</span></div>
                 </div>
                 <button class="menu-btn primary" onclick="restartRun()">Restart Run</button>
@@ -259,11 +258,10 @@
         }
         window.addEventListener('resize', resize); resize();
 
-        // --- GLOBAL STATE, PROGRESSION, & SETTINGS ---
+        // --- GLOBAL STATE & SETTINGS ---
         let gameState = 'playing'; // playing, paused, settings, countdown, gameover
         let countdownValue = 0; let countdownTimer = 0;
 
-        // Stats Tracking
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
@@ -295,19 +293,17 @@
             document.getElementById('vitals-bar').style.width = `${hpPercent}%`;
         }
 
-        let lastDeathCause = 'a Smiler';
         function runGameOverSequence() {
             const score = Math.floor(timeAlive * 10) + (totalKills * 50);
-            document.getElementById('death-title').innerText = `Perished by ${lastDeathCause}`;
+            document.getElementById('death-title').innerText = `Perished by Lab Hazards`;
             document.getElementById('ds-kills').innerText = totalKills;
             document.getElementById('ds-time').innerText = Math.floor(timeAlive) + 's';
-            document.getElementById('ds-rooms').innerText = 0;
             document.getElementById('ds-score').innerText = score.toLocaleString();
         }
 
         function restartRun() {
             player.hp = player.maxHp = 100;
-            player.x = 200; player.y = ROOM_SIZE / 2;
+            player.x = ROOM_SIZE / 2; player.y = ROOM_SIZE / 2;
             timeAlive = 0; totalKills = 0;
             deathParticles = []; deadEnemies.length = 0; enemyBullets.length = 0;
             updateHUD(); 
@@ -322,6 +318,7 @@
         let shakeTime = 0; let shakeMag = 0; let currentShakeX = 0; let currentShakeY = 0;
         function triggerShake(magnitude, duration) { if (shakeMag < magnitude || shakeTime <= 0) { shakeMag = magnitude; shakeTime = duration; } }
 
+        // --- INPUT MANAGEMENT ---
         const input = { left: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 }, right: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0, lastTapTime: 0, doubleTapped: false } };
         const JOYSTICK_MAX_RADIUS = 60;
 
@@ -371,100 +368,27 @@
         const activeSplatter = []; const floorSplatters = []; const damageTexts = [];
 
         class Bullet {
-            constructor(x, y, angle, type = 'default') {
-                this.x = x; this.y = y; this.angle = angle; this.type = type;
+            constructor(x, y, angle) {
+                this.x = x; this.y = y; this.angle = angle;
                 this.life = 1.0; 
                 this.hitEnemies = new Set();
-                this.rotation = angle;
-                this.trail = [];
-                
-                if (type === 'default') { this.speed = 1200; this.damage = 10; } 
-                else if (type === 'nailgun') { this.speed = 1400; this.damage = 3; } 
-                else if (type === 'candle') { this.speed = 400; this.damage = 2; } 
-                else if (type === 'revolver') { this.speed = 500; this.damage = 10; }
-                else if (type === 'needle') { this.speed = 1800; this.damage = 5; this.pierceCount = 3; }
-                else if (type === 'bone') { this.speed = 800; this.damage = 3; this.bounceCount = 3; this.life = 2.0; }
-                else if (type === 'bottle') { this.speed = 600; this.damage = 4; }
-                else if (type === 'feather') { this.speed = 1600; this.damage = 4; this.pierceCount = 2; }
-                
+                this.speed = 1200; this.damage = 10;
                 this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
             }
             update(dt) {
-                if (this.type === 'candle') { this.vx += (Math.random() - 0.5) * 200 * dt; this.vy += (Math.random() - 0.5) * 200 * dt; }
-                if (this.type === 'bone') { this.rotation += dt * 15; }
-                if (this.type === 'bottle') { this.rotation += dt * 10; }
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
-                
-                this.trail.push({x: this.x, y: this.y});
-                if ((this.type === 'needle' || this.type === 'feather') && this.trail.length > 20) this.trail.shift();
-                else if (this.trail.length > 8) this.trail.shift();
             }
             draw(ctx) {
                 ctx.save();
-                
-                // Draw Trails
-                if (this.type === 'needle' && this.trail.length > 1) {
-                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
-                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
-                    ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5; ctx.stroke();
-                } else if (this.type === 'feather' && this.trail.length > 1) {
-                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
-                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
-                    ctx.strokeStyle = 'rgba(100,50,150,0.5)'; ctx.lineWidth = 2; ctx.stroke();
-                } else if (this.type === 'candle' && this.trail.length > 1) {
-                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
-                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
-                    ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = 2; ctx.stroke();
-                } else if (this.type === 'bone' && this.trail.length > 1) {
-                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
-                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
-                    ctx.strokeStyle = 'rgba(200,200,200,0.3)'; ctx.lineWidth = 4; ctx.stroke();
-                }
-
                 ctx.translate(this.x, this.y); 
+                ctx.rotate(Math.atan2(this.vy, this.vx));
+
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 5;
+                const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
+                bulletGrad.addColorStop(0, '#666666'); bulletGrad.addColorStop(0.5, '#222222'); bulletGrad.addColorStop(1, '#000000'); 
+                ctx.fillStyle = bulletGrad; 
+                ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(2, -2.5); ctx.lineTo(-8, -2.5); ctx.lineTo(-8, 2.5); ctx.lineTo(2, 2.5); ctx.closePath(); ctx.fill();
                 
-                if (this.type === 'bone' || this.type === 'bottle') ctx.rotate(this.rotation);
-                else ctx.rotate(Math.atan2(this.vy, this.vx));
-
-                // Scale for specific projectiles
-                if(WEAPONS[this.type]) ctx.scale(WEAPONS[this.type].scale, WEAPONS[this.type].scale);
-
-                // Projectile drawing logic
-                if (this.type === 'nailgun') {
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 2;
-                    ctx.fillStyle = '#8B4513'; ctx.fillRect(-4, -1, 8, 2); 
-                    ctx.fillStyle = '#a0a0a0'; ctx.beginPath(); ctx.moveTo(4, -1); ctx.lineTo(8, 0); ctx.lineTo(4, 1); ctx.fill(); 
-                    ctx.fillStyle = '#555'; ctx.fillRect(-5, -2, 2, 4); 
-                } else if (this.type === 'candle') {
-                    ctx.shadowColor = '#ff4500'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#ff8c00'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.arc(1, 0, 2, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'revolver') {
-                    ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
-                    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(2, 0, 2, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'needle') {
-                    ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 4;
-                    ctx.fillStyle = '#ccc'; ctx.fillRect(-8, -0.5, 16, 1);
-                } else if (this.type === 'bone') {
-                    ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 5;
-                    ctx.fillStyle = '#e4e6d9'; ctx.beginPath(); ctx.roundRect(-4, -1.5, 8, 3, 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(-4, -1.5, 2, 0, Math.PI*2); ctx.arc(-4, 1.5, 2, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(4, -1.5, 2, 0, Math.PI*2); ctx.arc(4, 1.5, 2, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'bottle') {
-                    ctx.fillStyle = 'rgba(46, 139, 87, 0.9)'; ctx.beginPath();
-                    ctx.moveTo(8, -3); ctx.lineTo(8, 3); ctx.lineTo(2, 3); ctx.lineTo(-2, 6); ctx.lineTo(-12, 6); ctx.lineTo(-12, -6); ctx.lineTo(-2, -6); ctx.lineTo(2, -3); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(-10, -4, 6, 2);
-                } else if (this.type === 'feather') {
-                    ctx.fillStyle = '#1a0d23'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.quadraticCurveTo(0, -6, -12, 0); ctx.quadraticCurveTo(0, 6, 12, 0); ctx.fill();
-                    ctx.strokeStyle = '#4a2b63'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
-                } else {
-                    // Default Dual Pistol Bullets
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 5;
-                    const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
-                    bulletGrad.addColorStop(0, '#666666'); bulletGrad.addColorStop(0.5, '#222222'); bulletGrad.addColorStop(1, '#000000'); 
-                    ctx.fillStyle = bulletGrad; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(2, -2.5); ctx.lineTo(-8, -2.5); ctx.lineTo(-8, 2.5); ctx.lineTo(2, 2.5); ctx.closePath(); ctx.fill();
-                }
                 ctx.restore();
             }
         }
@@ -548,32 +472,6 @@
                     ctx.fillStyle = '#d255ff'; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(-5, -3, 1, 0, Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(5, -3, 1, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#0a0011'; ctx.beginPath(); ctx.ellipse(0, 6 + attackOpenness/2, 4 + attackOpenness*0.2, 3 + attackOpenness, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 }); ctx.restore();
-            }
-        }
-
-        class Gem {
-            constructor(x, y, type) { this.x = x; this.y = y; this.type = type; this.timeOffset = Math.random() * Math.PI * 2; this.xpValue = type === 'purple' ? 50 : (type === 'blue' ? 15 : 28); }
-            update(dt) { this.timeOffset += dt * 1.6; }
-            draw(ctx) {
-                ctx.save(); const bob = Math.sin(this.timeOffset) * 3.5; ctx.translate(this.x, this.y + bob); const spin = this.timeOffset * 0.35; ctx.rotate(spin);
-                const C = this.type === 'purple' ? { girdle:'#2a004a', crown1:'#5e179e', crown2:'#3d0b6e', table:'#b85cff', spec:'#eac7ff', glow:'#a82bff' } : (this.type === 'blue' ? { girdle:'#0c2d6e', crown1:'#1a5acc', crown2:'#0a3a99', table:'#72d8ff', spec:'#d0f4ff', glow:'#00aaff' } : { girdle:'#5a1800', crown1:'#cc4e00', crown2:'#8a2e00', table:'#ffaa44', spec:'#ffe8b8', glow:'#ff7700' });
-                const n = 6, r = 9, ri = 4.8;
-                ctx.shadowColor = C.glow; ctx.shadowBlur = 20; ctx.fillStyle = C.girdle; ctx.beginPath();
-                for (let i = 0; i < n; i++) { const a = (i/n)*Math.PI*2 - Math.PI/n; i === 0 ? ctx.moveTo(Math.cos(a)*r, Math.sin(a)*r) : ctx.lineTo(Math.cos(a)*r, Math.sin(a)*r); }
-                ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
-                for (let i = 0; i < n; i++) {
-                    const a1 = (i/n)*Math.PI*2 - Math.PI/n; const a2 = ((i+1)/n)*Math.PI*2 - Math.PI/n; const ta = ((i+0.5)/n)*Math.PI*2 - Math.PI/n;
-                    ctx.fillStyle = i % 2 === 0 ? C.crown1 : C.crown2; ctx.beginPath(); ctx.moveTo(Math.cos(a1)*r, Math.sin(a1)*r); ctx.lineTo(Math.cos(a2)*r, Math.sin(a2)*r); ctx.lineTo(Math.cos(ta)*ri, Math.sin(ta)*ri); ctx.closePath(); ctx.fill();
-                }
-                ctx.fillStyle = C.table; ctx.beginPath();
-                for (let i = 0; i < n; i++) { const ta = ((i+0.5)/n)*Math.PI*2 - Math.PI/n; i === 0 ? ctx.moveTo(Math.cos(ta)*ri, Math.sin(ta)*ri) : ctx.lineTo(Math.cos(ta)*ri, Math.sin(ta)*ri); }
-                ctx.closePath(); ctx.fill();
-                ctx.globalAlpha = 0.75; ctx.fillStyle = C.spec; ctx.beginPath(); ctx.ellipse(-ri*0.3, -ri*0.38, ri*0.45, ri*0.28, -0.5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
-                ctx.strokeStyle = C.girdle; ctx.lineWidth = 0.8;
-                for (let i = 0; i < n; i++) {
-                    const ta = ((i+0.5)/n)*Math.PI*2 - Math.PI/n; const a1 = (i/n)*Math.PI*2 - Math.PI/n; const a2 = ((i+1)/n)*Math.PI*2 - Math.PI/n;
-                    ctx.beginPath(); ctx.moveTo(Math.cos(ta)*ri, Math.sin(ta)*ri); ctx.lineTo(Math.cos(a1)*r, Math.sin(a1)*r); ctx.moveTo(Math.cos(ta)*ri, Math.sin(ta)*ri); ctx.lineTo(Math.cos(a2)*r, Math.sin(a2)*r); ctx.stroke();
-                } ctx.restore();
             }
         }
 
@@ -675,7 +573,6 @@
         class Player {
             constructor() {
                 this.hp = 100; this.maxHp = 100;
-                
                 this.x = 200; this.y = ROOM_SIZE / 2; this.radius = 35; this.speed = 400; this.animTime = 0; this.facingAngle = 0; 
                 this.fireRate = 0.12; this.fireTimer = 0; this.leftGunNext = true; 
                 this.recoilL = 0; this.recoilR = 0; this.flashL = 0; this.flashR = 0; this.hurtTimer = 0;
@@ -779,50 +676,6 @@
                 this.leftGunNext = !this.leftGunNext; 
             }
 
-            drawOrbitingWeapons(ctx) {
-                this.orbitingWeapons.forEach((w, i) => {
-                    let orbitRadius = (w.id === 'knife' || w.id === 'chain') ? 45 : 75;
-                    let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
-                    
-                    let wx = Math.cos(angle) * orbitRadius; 
-                    let wy = Math.sin(angle) * orbitRadius; 
-                    
-                    ctx.save();
-                    ctx.translate(wx, wy);
-                    
-                    let aimAngle = w.lastAimAngle !== undefined ? w.lastAimAngle : angle + Math.PI/2;
-                    if (w.id === 'chain' && w.sweepTimer > 0) aimAngle = w.sweepAngle;
-
-                    ctx.rotate(aimAngle);
-                    
-                    let recoil = 0;
-                    if (w.id === 'knife') {
-                        ctx.translate(w.lungeOffset, 0); 
-                        if (w.lungeOffset > 10) {
-                            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w.lungeOffset, -5); ctx.lineTo(-w.lungeOffset, 5);
-                            ctx.fillStyle = `rgba(255,255,255,${w.lungeOffset/60})`; ctx.fill();
-                        }
-                    } else if (w.id === 'chain') {
-                        if (w.sweepTimer > 0) {
-                            ctx.beginPath(); ctx.arc(0, 0, 45, -0.2, 0.2); 
-                            ctx.strokeStyle = `rgba(200,200,200,${w.sweepTimer/0.3})`; ctx.lineWidth=3; ctx.stroke();
-                        }
-                    } else {
-                        if (w.fireTimer > w.rate - 0.1) recoil = 8;
-                        ctx.translate(-recoil, 0);
-                    }
-
-                    if (Math.abs(aimAngle) > Math.PI/2) ctx.scale(1, -1); 
-                    
-                    // Apply visual scale!
-                    if (WEAPONS[w.id]) ctx.scale(WEAPONS[w.id].scale, WEAPONS[w.id].scale);
-
-                    drawWeaponEntity(ctx, w.id, w.fireTimer > w.rate - 0.05 ? 1 : 0);
-                    
-                    ctx.restore();
-                });
-            }
-
             draw(ctx) {
                 const isMoving = input.left.magnitude > 0.1;
                 const runIntensity = input.left.magnitude; 
@@ -901,25 +754,133 @@
             }
         }
 
+        class CeilingLight {
+            constructor(x, y, w, h, angle) {
+                this.x = x; this.y = y; this.w = w; this.h = h; this.angle = angle;
+            }
+
+            draw(ctx, camX, camY) {
+                function getCorners(cx, cy, w, h, angle) {
+                    const cos = Math.cos(angle); const sin = Math.sin(angle);
+                    const pts = [ {x: -w/2, y: -h/2}, {x: w/2,  y: -h/2}, {x: w/2,  y: h/2}, {x: -w/2, y: h/2} ];
+                    return pts.map(p => ({ x: cx + p.x * cos - p.y * sin, y: cy + p.x * sin + p.y * cos }));
+                }
+                const baseCorners = getCorners(this.x, this.y, this.w, this.h, this.angle);
+
+                function applyParallax(worldPt, p) {
+                    const pFactor = p - 1; 
+                    return {
+                        x: worldPt.x + (worldPt.x - camX) * pFactor,
+                        y: worldPt.y + (worldPt.y - camY) * pFactor
+                    };
+                }
+
+                const bottomP = 1.12; 
+                const topP = 1.28;     
+                
+                const bottomScreen = baseCorners.map(pt => applyParallax(pt, bottomP));
+                const topScreen = baseCorners.map(pt => applyParallax(pt, topP));
+                
+                ctx.save();
+                ctx.lineJoin = 'round';
+                
+                ctx.fillStyle = '#dddddd';
+                ctx.beginPath();
+                ctx.moveTo(bottomScreen[0].x, bottomScreen[0].y);
+                for(let i=1; i<4; i++) ctx.lineTo(bottomScreen[i].x, bottomScreen[i].y);
+                ctx.closePath();
+                ctx.fill();
+                
+                for(let i=0; i<4; i++) {
+                    let j = (i+1)%4;
+                    ctx.beginPath();
+                    ctx.moveTo(bottomScreen[i].x, bottomScreen[i].y);
+                    ctx.lineTo(bottomScreen[j].x, bottomScreen[j].y);
+                    ctx.lineTo(topScreen[j].x, topScreen[j].y);
+                    ctx.lineTo(topScreen[i].x, topScreen[i].y);
+                    ctx.closePath();
+                    
+                    let dx = bottomScreen[j].x - bottomScreen[i].x;
+                    let dy = bottomScreen[j].y - bottomScreen[i].y;
+                    let nx = -dy; let ny = dx;
+                    let len = Math.sqrt(nx*nx + ny*ny);
+                    nx /= len; ny /= len;
+                    
+                    let dot = nx * -0.7 + ny * -0.7;
+                    let brightness = Math.max(0.2, Math.min(1, (dot + 1) / 2));
+                    
+                    ctx.fillStyle = `rgb(${180*brightness}, ${190*brightness}, ${200*brightness})`;
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                
+                ctx.fillStyle = '#aab';
+                ctx.beginPath();
+                ctx.moveTo(topScreen[0].x, topScreen[0].y);
+                for(let i=1; i<4; i++) ctx.lineTo(topScreen[i].x, topScreen[i].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                
+                const insetBottom = getCorners(this.x, this.y, this.w - 10, this.h - 15, this.angle).map(pt => applyParallax(pt, bottomP));
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 20;
+                ctx.beginPath();
+                ctx.moveTo(insetBottom[0].x, insetBottom[0].y);
+                for(let i=1; i<4; i++) ctx.lineTo(insetBottom[i].x, insetBottom[i].y);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        const ceilingLights = [
+            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.3, 240, 40, Math.PI / 4),
+            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.3, 240, 40, -Math.PI / 4),
+            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.7, 240, 40, -Math.PI / 4),
+            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.7, 240, 40, Math.PI / 4)
+        ];
+
         // --- ENVIRONMENT ---
         function drawRoom(ctx) {
-            const tileSize = 60;
-            ctx.strokeStyle = 'rgba(10, 10, 12, 0.4)';
+            ctx.fillStyle = '#1c1c22';
+            ctx.fillRect(0, 0, ROOM_SIZE, ROOM_SIZE);
+
+            const tileSize = 80;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.lineWidth = 2;
 
-            for (let x = 0; x < ROOM_SIZE; x += tileSize) {
-                for (let y = 0; y < ROOM_SIZE; y += tileSize) {
-                    if ((x/tileSize + y/tileSize) % 2 === 0) {
-                        ctx.fillStyle = '#161412';
-                    } else {
-                        ctx.fillStyle = '#11100e';
+            for (let x = 0; x <= ROOM_SIZE; x += tileSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, ROOM_SIZE); ctx.stroke();
+            }
+            for (let y = 0; y <= ROOM_SIZE; y += tileSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(ROOM_SIZE, y); ctx.stroke();
+            }
+
+            ctx.fillStyle = 'rgba(10, 15, 10, 0.2)';
+            for(let x = 0; x < ROOM_SIZE; x+= tileSize) {
+                for(let y = 0; y < ROOM_SIZE; y+= tileSize) {
+                    let seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+                    let r = (seed - Math.floor(seed)) * 100;
+                    
+                    if(r < 20) {
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/1.5, 0, Math.PI*2);
+                        ctx.fill();
                     }
-                    ctx.fillRect(x, y, tileSize, tileSize);
-                    ctx.strokeRect(x, y, tileSize, tileSize);
+                    if(r > 85) {
+                        ctx.fillStyle = 'rgba(50, 5, 5, 0.1)'; 
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                        ctx.fillStyle = 'rgba(10, 15, 10, 0.2)';
+                    }
                 }
             }
 
-            ctx.strokeStyle = '#0a0908'; 
+            ctx.strokeStyle = '#050608'; 
             ctx.lineWidth = 40;
             ctx.strokeRect(0, 0, ROOM_SIZE, ROOM_SIZE);
         }
@@ -938,6 +899,23 @@
             lightCtx.translate(width / 2, height / 2);
             lightCtx.scale(settings.zoom, settings.zoom);
             lightCtx.translate(-camX + sx, -camY + sy);
+
+            ceilingLights.forEach(l => {
+                const pFactor = 1.15 - 1; 
+                const pX = l.x + (l.x - camX) * pFactor;
+                const pY = l.y + (l.y - camY) * pFactor;
+                
+                const radius = 500;
+                const grad = lightCtx.createRadialGradient(pX, pY, 20, pX, pY, radius);
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)'); 
+                grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.3)');  
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
+                
+                lightCtx.fillStyle = grad;
+                lightCtx.beginPath();
+                lightCtx.ellipse(pX, pY, radius, radius * 0.5, l.angle, 0, Math.PI * 2);
+                lightCtx.fill();
+            });
 
             const pRadius = 180;
             const pGrad = lightCtx.createRadialGradient(player.x, player.y, 20, player.x, player.y, pRadius);
@@ -1163,11 +1141,6 @@
                 }
 
                 for (let i = damageTexts.length - 1; i >= 0; i--) { let d = damageTexts[i]; d.y += d.vy * dt; d.life -= dt; if (d.life <= 0) damageTexts.splice(i, 1); }
-                
-                if (player.pendingLevels > 0 && gameState === 'playing') {
-                    player.pendingLevels--;
-                    triggerLevelUp();
-                }
             }
 
             ctx.fillStyle = '#050508';
@@ -1181,6 +1154,8 @@
             ctx.translate(-camX + currentShakeX, -camY + currentShakeY);
 
             drawRoom(ctx);
+
+            ceilingLights.forEach(l => l.draw(ctx, camX, camY));
 
             deadEnemies.forEach(d => {
                 const fadeStart = 2.0; const alpha = d.life > fadeStart ? 1.0 : (d.life / fadeStart); const pr = d.puddleRadius;
