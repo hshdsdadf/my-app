@@ -182,6 +182,50 @@
         .card-uncommon .menu-btn { border-color: rgba(60,200,100,0.5); color: #b8f5cc; background: rgba(20,80,40,0.3); }
         .card-uncommon .menu-btn:hover { background: rgba(30,140,60,0.45); border-color: rgba(80,240,120,0.8); color: #fff; box-shadow: 0 0 20px rgba(40,200,80,0.3); }
 
+        /* RARE */
+        .card-rare {
+            background: radial-gradient(circle at top, #081428 0%, #030609 100%);
+            border-color: rgba(60, 140, 255, 0.75);
+            box-shadow: 0 10px 35px rgba(30,100,220,0.4), inset 0 0 30px rgba(60,130,255,0.1), 0 0 0 1px rgba(60,130,255,0.15);
+        }
+        .card-rare::before { background-image: repeating-linear-gradient(45deg, rgba(60,140,255,0.04) 0px, rgba(60,140,255,0.04) 2px, transparent 2px, transparent 6px); }
+        .card-rare::after { background: linear-gradient(to right, rgba(60,140,255,0) 0%, rgba(80,160,255,0.45) 50%, rgba(60,140,255,0) 100%); }
+        .card-rare:hover { border-color: rgba(120,190,255,0.95); box-shadow: 0 15px 45px rgba(60,140,255,0.5), inset 0 0 45px rgba(80,160,255,0.22), 0 0 70px rgba(40,120,255,0.2); }
+        .card-rare .rarity { color: #66aaff; }
+        .card-rare h3 { color: #aad4ff; text-shadow: 0 0 12px rgba(80,160,255,0.6); }
+        .card-rare .card-icon-container { border-color: rgba(60,140,255,0.4); box-shadow: inset 0 0 20px rgba(40,100,220,0.25), 0 5px 15px rgba(0,0,0,0.8), 0 0 16px rgba(40,120,255,0.25); background: radial-gradient(circle, #06101e 0%, #020406 100%); }
+        .card-rare .menu-btn { border-color: rgba(60,140,255,0.5); color: #aad4ff; background: rgba(15,40,110,0.3); }
+        .card-rare .menu-btn:hover { background: rgba(30,80,190,0.45); border-color: rgba(100,180,255,0.85); color: #fff; box-shadow: 0 0 20px rgba(50,130,255,0.35); }
+
+        /* EPIC */
+        .card-epic {
+            background: radial-gradient(circle at top, #160828 0%, #060210 100%);
+            border-color: rgba(160, 55, 255, 0.85);
+            box-shadow: 0 10px 38px rgba(120,35,220,0.5), inset 0 0 32px rgba(160,60,255,0.13), 0 0 0 1px rgba(150,55,255,0.22), 0 0 50px rgba(100,0,220,0.18);
+        }
+        .card-epic::before { background-image: repeating-linear-gradient(45deg, rgba(160,60,255,0.055) 0px, rgba(160,60,255,0.055) 2px, transparent 2px, transparent 6px); }
+        .card-epic::after { background: linear-gradient(to right, rgba(160,60,255,0) 0%, rgba(200,80,255,0.55) 50%, rgba(160,60,255,0) 100%); animation: sweep 2.4s infinite linear; }
+        .card-epic:hover { border-color: rgba(210,110,255,1); box-shadow: 0 15px 55px rgba(170,60,255,0.65), inset 0 0 55px rgba(190,80,255,0.28), 0 0 90px rgba(130,0,255,0.32); }
+        .card-epic .rarity { color: #cc66ff; font-weight: 900; }
+        .card-epic h3 { color: #e8aaff; text-shadow: 0 0 16px rgba(190,80,255,0.75); }
+        .card-epic .card-icon-container { border-color: rgba(160,55,255,0.5); box-shadow: inset 0 0 22px rgba(120,40,200,0.32), 0 5px 15px rgba(0,0,0,0.8), 0 0 22px rgba(150,50,255,0.35); background: radial-gradient(circle, #0e0418 0%, #030108 100%); }
+        .card-epic .menu-btn { border-color: rgba(160,55,255,0.55); color: #e8aaff; background: rgba(55,15,100,0.35); }
+        .card-epic .menu-btn:hover { background: rgba(100,25,180,0.5); border-color: rgba(210,110,255,0.92); color: #fff; box-shadow: 0 0 22px rgba(180,60,255,0.42); }
+
+        /* LEGENDARY */
+        @keyframes legendary-pulse { 0%,100% { box-shadow: 0 10px 42px rgba(200,140,0,0.55), inset 0 0 36px rgba(255,180,0,0.16), 0 0 0 1px rgba(220,160,0,0.32), 0 0 65px rgba(180,90,0,0.22); } 50% { box-shadow: 0 10px 70px rgba(255,180,0,0.75), inset 0 0 58px rgba(255,210,0,0.28), 0 0 0 2px rgba(255,190,0,0.55), 0 0 110px rgba(200,100,0,0.38); } }
+        @keyframes legendary-border { 0%,100% { border-color: rgba(220,155,0,0.88); } 33% { border-color: rgba(255,200,0,1); } 66% { border-color: rgba(255,140,0,0.92); } }
+        .card-legendary { background: radial-gradient(circle at 30% 20%, #221200 0%, #140a00 50%, #080400 100%); border-width: 2px; animation: legendary-pulse 2.2s infinite ease-in-out, legendary-border 3.5s infinite linear; }
+        .card-legendary::before { background-image: repeating-linear-gradient(45deg, rgba(220,155,0,0.07) 0px, rgba(220,155,0,0.07) 2px, transparent 2px, transparent 6px); }
+        .card-legendary::after { background: linear-gradient(to right, rgba(255,180,0,0) 0%, rgba(255,230,0,0.7) 50%, rgba(255,180,0,0) 100%); animation: sweep 1.8s infinite linear; }
+        .card-legendary:hover { transform: translateY(-14px) scale(1.06); border-color: rgba(255,225,0,1); box-shadow: 0 22px 80px rgba(255,180,0,0.85), inset 0 0 65px rgba(255,215,0,0.35), 0 0 0 2px rgba(255,215,0,0.65), 0 0 130px rgba(200,100,0,0.52); }
+        .card-legendary .rarity { color: #ffd700; font-weight: 900; text-shadow: 0 0 10px rgba(255,200,0,0.85); letter-spacing: 3px; }
+        .card-legendary h3 { color: #ffe866; text-shadow: 0 0 22px rgba(255,210,0,0.85); font-size: 20px; }
+        .card-legendary .desc { color: #eedd88; }
+        .card-legendary .card-icon-container { border-color: rgba(220,155,0,0.65); box-shadow: inset 0 0 28px rgba(180,110,0,0.38), 0 5px 15px rgba(0,0,0,0.8), 0 0 28px rgba(200,140,0,0.45); background: radial-gradient(circle, #1e1000 0%, #080500 100%); }
+        .card-legendary .menu-btn { border-color: rgba(220,155,0,0.65); color: #ffe866; background: rgba(80,48,0,0.38); }
+        .card-legendary .menu-btn:hover { background: rgba(150,90,0,0.55); border-color: rgba(255,210,0,0.95); color: #fff; box-shadow: 0 0 28px rgba(200,140,0,0.48); }
+
         .card-content { z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
         
         .card-icon-container {
@@ -408,6 +452,25 @@
             'bone_saw': { name: 'Bone Saw', rarity: 'uncommon', chance: '58%', desc: 'Whirling blade tears through foes.\nDamage: 12', scale: 1.2, power: 17 },
             'funeral_cross': { name: 'Funeral Cross', rarity: 'uncommon', chance: '47%', desc: 'Hurls spinning holy projectiles.\nDamage: 10', scale: 1.1, power: 16 },
             'raven': { name: 'Raven', rarity: 'uncommon', chance: '43%', desc: 'A dark bird swoops at enemies.\nDamage: 15', scale: 1.3, power: 18 },
+            // --- RARE WEAPONS ---
+            'living_eye': { name: 'Living Eye', rarity: 'rare', chance: '22%', desc: 'Fires a piercing laser beam.\nDamage: 16', scale: 1.0, power: 22 },
+            'possessed_doll': { name: 'Possessed Doll', rarity: 'rare', chance: '25%', desc: 'Runs around stabbing enemies.\nDamage: 12', scale: 1.1, power: 20 },
+            'jaw_trap': { name: 'Jaw Trap', rarity: 'rare', chance: '28%', desc: 'Snaps shut on nearby enemies.\nDamage: 20', scale: 1.2, power: 21 },
+            'organ_pipe': { name: 'Organ Pipe', rarity: 'rare', chance: '24%', desc: 'Blasts fans of sound waves.\nDamage: 10', scale: 1.0, power: 19 },
+            'flesh_whip': { name: 'Flesh Whip', rarity: 'rare', chance: '26%', desc: 'Wide sweeping long-range attack.\nDamage: 11', scale: 1.1, power: 21 },
+            'broken_halo': { name: 'Broken Halo', rarity: 'rare', chance: '23%', desc: 'Spinning blades orbit close.\nDamage: 6', scale: 1.2, power: 22 },
+            'spider_nest': { name: 'Spider Nest', rarity: 'rare', chance: '27%', desc: 'Spawns attacking spiders.\nDamage: 8', scale: 1.0, power: 20 },
+            'soul_lantern': { name: 'Soul Lantern', rarity: 'rare', chance: '21%', desc: 'Summons wandering spirits.\nDamage: 10', scale: 1.0, power: 21 },
+            // --- EPIC WEAPONS ---
+            'heart_of_ash': { name: 'Heart of Ash', rarity: 'epic', chance: '14%', desc: 'Exploding ember fireballs.\nDamage: 8+18', scale: 1.1, power: 28 },
+            'black_sun': { name: 'Black Sun', rarity: 'epic', chance: '12%', desc: 'Rotating void bolts.\nDamage: 14', scale: 1.2, power: 30 },
+            'choir_weapon': { name: 'The Choir', rarity: 'epic', chance: '16%', desc: 'Floating heads fire bullet rings.\nDamage: 10', scale: 1.1, power: 27 },
+            'guillotine_blade': { name: 'Guillotine Blade', rarity: 'epic', chance: '13%', desc: 'Massive spinning executioner blade.\nDamage: 18', scale: 1.3, power: 32 },
+            'vein_cannon': { name: 'Vein Cannon', rarity: 'epic', chance: '15%', desc: 'Fires a blood-red laser.\nDamage: 22', scale: 1.1, power: 29 },
+            // --- LEGENDARY WEAPONS ---
+            'door_key': { name: 'The Door Key', rarity: 'legendary', chance: '5%', desc: 'Doors open — monsters burst out.\nDamage: 14', scale: 1.2, power: 38 },
+            'crown_of_eyes': { name: 'Crown of Eyes', rarity: 'legendary', chance: '4%', desc: 'Four eyes fire simultaneous lasers.\nDamage: 12', scale: 1.2, power: 40 },
+            'angel_wing': { name: 'Angel Wing', rarity: 'legendary', chance: '6%', desc: 'Massive piercing holy feathers.\nDamage: 18', scale: 1.3, power: 42 },
         };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
@@ -606,6 +669,176 @@
                 ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 6;
                 ctx.fillStyle = '#cc1100'; ctx.beginPath(); ctx.arc(10, -3, 1.5, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#ff2200'; ctx.beginPath(); ctx.arc(10, -3, 0.7, 0, Math.PI*2); ctx.fill();
+            // ── RARE ──────────────────────────────────────────
+            } else if (id === 'living_eye') {
+                ctx.shadowColor = '#00aaff'; ctx.shadowBlur = 12;
+                ctx.fillStyle = '#dde8f4'; ctx.beginPath(); ctx.ellipse(0, 0, 13, 8, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#1a55cc'; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fill();
+                ctx.shadowColor = '#00eeff'; ctx.shadowBlur = 8;
+                ctx.fillStyle = 'rgba(0,220,255,0.7)'; ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'rgba(200,0,0,0.45)'; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(-11,2); ctx.quadraticCurveTo(-5,0,-2,3); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-9,-3); ctx.quadraticCurveTo(-4,-1,-1,-3); ctx.stroke();
+            } else if (id === 'possessed_doll') {
+                ctx.shadowColor = 'rgba(100,0,0,0.6)'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#c8b08a'; ctx.beginPath(); ctx.ellipse(0, 4, 4.5, 6.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#d4b896'; ctx.beginPath(); ctx.arc(0, -5, 5.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#1a0000';
+                ctx.beginPath(); ctx.arc(-2, -5, 1.3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(2, -5, 1.3, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#6a0000'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(-3,-2); ctx.lineTo(3,-2); ctx.stroke();
+                ctx.fillStyle = '#220030'; ctx.beginPath(); ctx.moveTo(-5,5); ctx.lineTo(-7,12); ctx.lineTo(7,12); ctx.lineTo(5,5); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = '#c8b08a'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(-5,-1); ctx.lineTo(-10,4); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(5,-1); ctx.lineTo(12,-5); ctx.stroke();
+                ctx.shadowColor = '#aaa'; ctx.shadowBlur = 3;
+                ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(10,-4); ctx.lineTo(16,-8); ctx.stroke();
+                ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(16,-8); ctx.lineTo(18,-10); ctx.lineTo(14,-7); ctx.fill();
+            } else if (id === 'jaw_trap') {
+                ctx.shadowColor = 'rgba(120,80,0,0.5)'; ctx.shadowBlur = 6;
+                ctx.fillStyle = '#444';
+                ctx.beginPath(); ctx.moveTo(-13,-1); ctx.lineTo(13,-1); ctx.lineTo(13,-6); ctx.lineTo(-13,-6); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-13,1); ctx.lineTo(13,1); ctx.lineTo(13,6); ctx.lineTo(-13,6); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ddd';
+                for(let t=0;t<6;t++){let tx=-11+t*4.5; ctx.beginPath(); ctx.moveTo(tx,0); ctx.lineTo(tx+1.8,-5); ctx.lineTo(tx+3.6,0); ctx.fill();}
+                for(let t=0;t<6;t++){let tx=-11+t*4.5; ctx.beginPath(); ctx.moveTo(tx,0); ctx.lineTo(tx+1.8,5); ctx.lineTo(tx+3.6,0); ctx.fill();}
+                ctx.strokeStyle = '#666'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(0,0,2,0,Math.PI*2); ctx.fill();
+            } else if (id === 'organ_pipe') {
+                ctx.shadowColor = 'rgba(120,90,220,0.45)'; ctx.shadowBlur = 7;
+                const pheights=[13,17,21,17,13]; const pw=4.5;
+                for(let p=0;p<5;p++){
+                    let px=-12+p*(pw+1.5); let ph=pheights[p];
+                    ctx.fillStyle='#7a6040'; ctx.fillRect(px,-ph/2,pw,ph);
+                    ctx.fillStyle='#5a4020'; ctx.fillRect(px,-ph/2,1,ph);
+                    ctx.fillStyle='#9a8060'; ctx.fillRect(px+pw-1,-ph/2,1,ph);
+                    ctx.fillStyle='#444'; ctx.fillRect(px,ph/2-3,pw,3);
+                }
+                ctx.strokeStyle='rgba(140,110,255,0.75)'; ctx.lineWidth=1.2;
+                for(let w=0;w<3;w++){ctx.beginPath(); ctx.arc(0,0,9+w*5,-0.5,0.5); ctx.stroke();}
+            } else if (id === 'flesh_whip') {
+                ctx.shadowColor='rgba(180,0,0,0.4)'; ctx.shadowBlur=5;
+                ctx.strokeStyle='#bb3333'; ctx.lineWidth=4.5; ctx.lineCap='round';
+                ctx.beginPath(); ctx.moveTo(-13,0); ctx.bezierCurveTo(-4,-9,4,9,15,-5); ctx.stroke();
+                ctx.strokeStyle='#dd5555'; ctx.lineWidth=2;
+                ctx.beginPath(); ctx.moveTo(-13,0); ctx.bezierCurveTo(-4,-7,4,7,15,-3); ctx.stroke();
+                ctx.fillStyle='#1e0e0e'; ctx.beginPath(); ctx.roundRect(-15,-3,6,6,2); ctx.fill();
+                ctx.shadowColor='#ff1100'; ctx.shadowBlur=10;
+                ctx.fillStyle='#ff1100'; ctx.beginPath(); ctx.arc(15,-5,2.5,0,Math.PI*2); ctx.fill();
+            } else if (id === 'broken_halo') {
+                ctx.shadowColor='#c8a030'; ctx.shadowBlur=12;
+                ctx.strokeStyle='#d4a84e'; ctx.lineWidth=4.5;
+                ctx.beginPath(); ctx.arc(0,0,12,0.35,Math.PI*2-0.35); ctx.stroke();
+                ctx.strokeStyle='rgba(60,30,0,0.8)'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.moveTo(-5,-10); ctx.lineTo(-2,-14); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(5,10); ctx.lineTo(3,14); ctx.stroke();
+                ctx.fillStyle='#ffe055';
+                for(let b=0;b<3;b++){let ba=b*(Math.PI*2/3); ctx.save(); ctx.rotate(ba); ctx.beginPath(); ctx.moveTo(10,-1.5); ctx.lineTo(15,0); ctx.lineTo(10,1.5); ctx.closePath(); ctx.fill(); ctx.restore();}
+                ctx.fillStyle='#6a4000'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+            } else if (id === 'spider_nest') {
+                ctx.shadowColor='rgba(60,30,0,0.5)'; ctx.shadowBlur=5;
+                ctx.strokeStyle='rgba(180,180,155,0.55)'; ctx.lineWidth=0.9;
+                for(let w=0;w<6;w++){let wa=w*Math.PI/3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(wa)*14,Math.sin(wa)*14); ctx.stroke();}
+                for(let r=4;r<=14;r+=4){ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.stroke();}
+                ctx.fillStyle='#9a6830'; ctx.beginPath(); ctx.ellipse(0,0,9,10,0,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ba8850'; ctx.beginPath(); ctx.ellipse(-2,-2,5,6,-0.3,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='#1a0e00'; ctx.lineWidth=1.2;
+                [[-8,-2,-14,-6],[-7,2,-12,6],[8,-2,14,-6],[7,2,12,6]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
+            } else if (id === 'soul_lantern') {
+                ctx.shadowColor='#0088ff'; ctx.shadowBlur=12;
+                ctx.fillStyle='#111'; ctx.beginPath(); ctx.roundRect(-8,-12,16,22,3); ctx.fill();
+                ctx.fillStyle='#0a0a0a'; ctx.beginPath(); ctx.roundRect(-6,-10,12,18,2); ctx.fill();
+                ctx.fillStyle='rgba(0,80,200,0.35)'; ctx.fillRect(-5,-9,4,16); ctx.fillRect(1,-9,4,16);
+                ctx.shadowColor='#00ccff'; ctx.shadowBlur=18;
+                ctx.fillStyle='rgba(0,140,255,0.85)';
+                ctx.beginPath(); ctx.moveTo(0,-10); ctx.bezierCurveTo(-4,-6,-4,4,0,7); ctx.bezierCurveTo(4,4,4,-6,0,-10); ctx.fill();
+                ctx.fillStyle='rgba(160,230,255,0.95)'; ctx.beginPath(); ctx.arc(0,-1,2.2,0,Math.PI*2); ctx.fill();
+                ctx.shadowColor='transparent'; ctx.fillStyle='#2a2a2a'; ctx.fillRect(-2,-16,4,6);
+                ctx.strokeStyle='#444'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,-16,3,Math.PI,0); ctx.stroke();
+            // ── EPIC ──────────────────────────────────────────
+            } else if (id === 'heart_of_ash') {
+                ctx.shadowColor='#ff4400'; ctx.shadowBlur=14;
+                ctx.fillStyle='#200808';
+                ctx.beginPath(); ctx.moveTo(0,9); ctx.bezierCurveTo(-13,2,-15,-11,-5,-13); ctx.bezierCurveTo(-1,-14,2,-10,0,-7); ctx.bezierCurveTo(-2,-10,1,-14,5,-13); ctx.bezierCurveTo(15,-11,13,2,0,9); ctx.fill();
+                ctx.strokeStyle='#ff5500'; ctx.lineWidth=1.5;
+                ctx.beginPath(); ctx.moveTo(-7,-4); ctx.lineTo(-2,1); ctx.lineTo(-4,6); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(5,-6); ctx.lineTo(7,-1); ctx.lineTo(3,5); ctx.stroke();
+                ctx.shadowColor='#ffaa00'; ctx.shadowBlur=7;
+                ctx.fillStyle='#ff5500'; ctx.beginPath(); ctx.arc(-3,1,2.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ff9900'; ctx.beginPath(); ctx.arc(5,-2,1.6,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#ffdd00'; ctx.beginPath(); ctx.arc(0,-3,1.1,0,Math.PI*2); ctx.fill();
+            } else if (id === 'black_sun') {
+                ctx.shadowColor='#5500cc'; ctx.shadowBlur=18;
+                ctx.fillStyle='#060010'; ctx.beginPath(); ctx.arc(0,0,11,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle='#1a0044'; ctx.lineWidth=3.5;
+                for(let r=0;r<8;r++){let ra=r*Math.PI/4; ctx.beginPath(); ctx.moveTo(Math.cos(ra)*11,Math.sin(ra)*11); ctx.lineTo(Math.cos(ra)*17,Math.sin(ra)*17); ctx.stroke();}
+                ctx.strokeStyle='#3300aa'; ctx.lineWidth=1.5;
+                for(let r=0;r<8;r++){let ra=r*Math.PI/4+Math.PI/8; ctx.beginPath(); ctx.moveTo(Math.cos(ra)*11,Math.sin(ra)*11); ctx.lineTo(Math.cos(ra)*14,Math.sin(ra)*14); ctx.stroke();}
+                ctx.fillStyle='#030009'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
+                ctx.shadowColor='#aa00ff'; ctx.shadowBlur=10;
+                ctx.fillStyle='rgba(100,0,220,0.7)'; ctx.beginPath(); ctx.arc(0,0,3.5,0,Math.PI*2); ctx.fill();
+            } else if (id === 'choir_weapon') {
+                ctx.shadowColor='#cc44ff'; ctx.shadowBlur=12;
+                [[-9,-6],[9,-6],[0,8]].forEach(([hx,hy])=>{
+                    ctx.fillStyle='#2a1a38'; ctx.beginPath(); ctx.arc(hx,hy,8,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#4a2a58'; ctx.beginPath(); ctx.arc(hx-1,hy-1,5,0,Math.PI*2); ctx.fill();
+                    ctx.shadowColor='#cc44ff'; ctx.shadowBlur=8;
+                    ctx.fillStyle='#cc44ff'; ctx.beginPath(); ctx.arc(hx-2,hy-2,1.6,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(hx+2,hy-2,1.6,0,Math.PI*2); ctx.fill();
+                });
+            } else if (id === 'guillotine_blade') {
+                ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=10;
+                const bg=ctx.createLinearGradient(-18,-14,18,14);
+                bg.addColorStop(0,'#777'); bg.addColorStop(0.35,'#eee'); bg.addColorStop(0.65,'#ccc'); bg.addColorStop(1,'#444');
+                ctx.fillStyle=bg; ctx.beginPath(); ctx.moveTo(-18,14); ctx.lineTo(-18,-5); ctx.lineTo(18,-14); ctx.lineTo(18,14); ctx.closePath(); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(15,14); ctx.lineTo(18,14); ctx.lineTo(18,-14); ctx.lineTo(15,-14); ctx.closePath(); ctx.fill();
+                ctx.fillStyle='#8b0000'; ctx.beginPath(); ctx.arc(-7,5,3.5,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(4,-1,2.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#3a3a3a'; ctx.fillRect(-20,-16,40,5); ctx.fillStyle='#666'; ctx.fillRect(-18,-15,36,3);
+            } else if (id === 'vein_cannon') {
+                ctx.shadowColor='#aa0000'; ctx.shadowBlur=10;
+                ctx.fillStyle='#5a0000';
+                ctx.beginPath(); ctx.moveTo(-13,-5); ctx.bezierCurveTo(-5,-6,5,-6,15,-4); ctx.lineTo(15,4); ctx.bezierCurveTo(5,6,-5,6,-13,5); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle='#cc0000'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.moveTo(-11,0); ctx.bezierCurveTo(-3,-3,3,3,11,0); ctx.stroke();
+                ctx.strokeStyle='#ff2200'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-8,2); ctx.bezierCurveTo(-2,-2,4,2,10,-1); ctx.stroke();
+                ctx.fillStyle='#880000'; ctx.beginPath(); ctx.ellipse(-4,0,5.5,4.5,0.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#aa1010'; ctx.beginPath(); ctx.ellipse(-4,-1,3,2.5,0.2,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#1e0000'; ctx.fillRect(11,-3.5,6,7); ctx.fillStyle='#3a0000'; ctx.beginPath(); ctx.arc(17,0,3.5,0,Math.PI*2); ctx.fill();
+            // ── LEGENDARY ─────────────────────────────────────
+            } else if (id === 'door_key') {
+                ctx.shadowColor='#ffd700'; ctx.shadowBlur=18;
+                ctx.fillStyle='#d4af37';
+                ctx.beginPath(); ctx.arc(-10,0,9,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#080600'; ctx.beginPath(); ctx.arc(-10,0,4.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#d4af37'; ctx.beginPath(); ctx.arc(-10,0,2,0,Math.PI*2); ctx.fill();
+                ctx.fillRect(-1,-2.5,18,5); ctx.fillRect(5,-7,3.5,4.5); ctx.fillRect(10,-7,3.5,4.5); ctx.fillRect(5,2.5,3.5,4.5);
+                ctx.strokeStyle='#fff8c0'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(-10,0,7,0.6,2.6); ctx.stroke();
+                ctx.strokeStyle='#8a6000'; ctx.lineWidth=0.9; ctx.beginPath(); ctx.moveTo(1,-1); ctx.lineTo(1,1); ctx.stroke();
+            } else if (id === 'crown_of_eyes') {
+                ctx.shadowColor='#bb22ff'; ctx.shadowBlur=18;
+                ctx.fillStyle='#8800cc';
+                ctx.beginPath(); ctx.moveTo(-15,9); ctx.lineTo(-15,-2); ctx.lineTo(-10,-11); ctx.lineTo(-5,-2); ctx.lineTo(0,-16); ctx.lineTo(5,-2); ctx.lineTo(10,-11); ctx.lineTo(15,-2); ctx.lineTo(15,9); ctx.closePath(); ctx.fill();
+                ctx.fillStyle='#aa44ff'; ctx.beginPath(); ctx.moveTo(-15,6); ctx.lineTo(-15,9); ctx.lineTo(15,9); ctx.lineTo(15,6); ctx.closePath(); ctx.fill();
+                [[-9,2],[0,2],[9,2]].forEach(([ex,ey])=>{
+                    ctx.fillStyle='#eee'; ctx.beginPath(); ctx.ellipse(ex,ey,4,2.8,0,0,Math.PI*2); ctx.fill();
+                    ctx.shadowColor='#ff00ff'; ctx.shadowBlur=8;
+                    ctx.fillStyle='#dd00ff'; ctx.beginPath(); ctx.arc(ex,ey,2,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(ex,ey,0.9,0,Math.PI*2); ctx.fill();
+                });
+                ctx.shadowColor='#ff44ff'; ctx.shadowBlur=10;
+                ctx.fillStyle='#ff44ff'; ctx.beginPath(); ctx.arc(-9,-7,2.2,0,Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(9,-7,2.2,0,Math.PI*2); ctx.fill();
+            } else if (id === 'angel_wing') {
+                ctx.shadowColor='rgba(255,255,210,0.9)'; ctx.shadowBlur=18;
+                const wg=ctx.createLinearGradient(-10,-16,18,16);
+                wg.addColorStop(0,'#ffffff'); wg.addColorStop(0.35,'#e8e0f4'); wg.addColorStop(0.7,'#d0c5ec'); wg.addColorStop(1,'#b0a8d8');
+                ctx.fillStyle=wg;
+                ctx.beginPath(); ctx.moveTo(-9,0); ctx.bezierCurveTo(-13,-9,-7,-19,0,-17); ctx.bezierCurveTo(7,-15,16,-11,20,0); ctx.bezierCurveTo(16,11,7,15,0,17); ctx.bezierCurveTo(-7,19,-13,9,-9,0); ctx.fill();
+                ctx.strokeStyle='rgba(200,190,230,0.55)'; ctx.lineWidth=0.8;
+                for(let f=0;f<7;f++){let ft=f/7; let fx=-9+ft*29; let fy=-Math.sin(ft*Math.PI)*17; ctx.beginPath(); ctx.moveTo(fx,fy); ctx.lineTo(fx-2,fy+9); ctx.stroke();}
+                ctx.shadowColor='#fffaaa'; ctx.shadowBlur=14;
+                ctx.fillStyle='#ffe055'; ctx.beginPath(); ctx.arc(20,0,3.5,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(20,0,1.5,0,Math.PI*2); ctx.fill();
             }
 
             if (flash > 0 && id !== 'knife' && id !== 'chain') {
@@ -621,15 +854,23 @@
             
             const commons = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'common');
             const uncommons = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'uncommon');
+            const rares = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'rare');
+            const epics = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'epic');
+            const legendaries = Object.keys(WEAPONS).filter(k => WEAPONS[k].rarity === 'legendary');
             const choices = [];
             const used = new Set();
 
+            function pickRarityPool() {
+                const r = Math.random();
+                if (r < 0.03 && legendaries.length) return legendaries;
+                if (r < 0.10 && epics.length) return epics;
+                if (r < 0.25 && rares.length) return rares;
+                if (r < 0.50 && uncommons.length) return uncommons;
+                return commons;
+            }
+
             for (let i = 0; i < 3; i++) {
-                // 50% chance of an uncommon card each slot
-                let useUncommon = Math.random() < 0.5 && uncommons.length > 0;
-                let pool = useUncommon ? uncommons.filter(k => !used.has(k)) : commons.filter(k => !used.has(k));
-                // Fallback to other pool if empty
-                if (pool.length === 0) pool = (useUncommon ? commons : uncommons).filter(k => !used.has(k));
+                let pool = pickRarityPool().filter(k => !used.has(k));
                 if (pool.length === 0) pool = Object.keys(WEAPONS).filter(k => !used.has(k));
                 if (pool.length === 0) break;
                 const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -689,6 +930,25 @@
             if (key === 'bone_saw') fireRate = 0.09;
             if (key === 'funeral_cross') fireRate = 0.9;
             if (key === 'raven') fireRate = 1.6;
+            // Rare weapons
+            if (key === 'living_eye') fireRate = 0.7;
+            if (key === 'possessed_doll') fireRate = 4.5;
+            if (key === 'jaw_trap') fireRate = 0.65;
+            if (key === 'organ_pipe') fireRate = 1.3;
+            if (key === 'flesh_whip') fireRate = 0.75;
+            if (key === 'broken_halo') fireRate = 0.07;
+            if (key === 'spider_nest') fireRate = 2.5;
+            if (key === 'soul_lantern') fireRate = 2.0;
+            // Epic weapons
+            if (key === 'heart_of_ash') fireRate = 1.4;
+            if (key === 'black_sun') fireRate = 2.5;
+            if (key === 'choir_weapon') fireRate = 2.0;
+            if (key === 'guillotine_blade') fireRate = 0.11;
+            if (key === 'vein_cannon') fireRate = 1.8;
+            // Legendary weapons
+            if (key === 'door_key') fireRate = 5.0;
+            if (key === 'crown_of_eyes') fireRate = 0.5;
+            if (key === 'angel_wing') fireRate = 0.85;
 
             const newWeapon = { id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0, lungeTimer: 0, hasHit: false, lungeOffset: 0, sweepAngle: 0 };
 
@@ -743,7 +1003,7 @@
             player.x = 200; player.y = ROOM_SIZE / 2;
             enemies.length = 0; bullets.length = 0; enemyBullets.length = 0; keys.length = 0; gems.length = 0;
             activeSplatter.length = 0; damageTexts.length = 0; floorSplatters.length = 0; deadEnemies.length = 0;
-            shockwaves.length = 0; explosionEffects.length = 0;
+            shockwaves.length = 0; explosionEffects.length = 0; minions.length = 0; laserEffects.length = 0;
             
             trapdoor.state = 'waiting'; trapdoor.timer = 0; trapdoor.enemiesToSpawn = totalEnemiesThisRoom; trapdoor.delayTimer = 2.0; trapdoor.openAngle = 0;
             trapdoor.kneelersLeft = currentRoom >= 3 ? Math.min(5, 2 + (currentRoom - 3)) : 0;
@@ -798,7 +1058,7 @@
         const ROOM_SIZE = 1200;
         const bullets = []; const enemyBullets = []; const enemies = []; const deadEnemies = [];
         const activeSplatter = []; const floorSplatters = []; const damageTexts = []; const keys = []; const gems = [];
-        const shockwaves = []; const explosionEffects = [];
+        const shockwaves = []; const explosionEffects = []; const minions = []; const laserEffects = [];
 
         class Key {
             constructor(x, y) { this.x = x; this.y = y; this.timeOffset = Math.random() * 100; }
@@ -836,6 +1096,15 @@
                 else if (type === 'black_candle') { this.speed = 180; this.damage = 8; this.homing = true; this.homingStrength = 90; this.life = 3.5; }
                 else if (type === 'funeral_cross') { this.speed = 520; this.damage = 10; this.rotationSpeed = 10; }
                 else if (type === 'blood_syringe') { this.speed = 950; this.damage = 5; this.isInjection = true; }
+                // Rare bullets
+                else if (type === 'living_eye') { this.speed = 900; this.damage = 16; this.pierceCount = 4; this.life = 1.2; }
+                else if (type === 'organ_pipe') { this.speed = 550; this.damage = 10; this.life = 1.0; }
+                else if (type === 'heart_of_ash') { this.speed = 380; this.damage = 8; this.isFireball = true; this.life = 2.0; }
+                else if (type === 'black_sun') { this.speed = 680; this.damage = 14; this.pierceCount = 2; this.life = 1.0; }
+                else if (type === 'choir_weapon') { this.speed = 480; this.damage = 10; this.life = 1.2; }
+                else if (type === 'vein_cannon') { this.speed = 820; this.damage = 22; this.pierceCount = 3; this.life = 1.2; }
+                else if (type === 'crown_of_eyes') { this.speed = 850; this.damage = 12; this.pierceCount = 2; this.life = 1.0; }
+                else if (type === 'angel_wing') { this.speed = 720; this.damage = 18; this.pierceCount = 8; this.life = 1.5; this.rotationSpeed = 4; }
                 
                 this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
             }
@@ -843,7 +1112,7 @@
                 if (this.type === 'candle') { this.vx += (Math.random() - 0.5) * 200 * dt; this.vy += (Math.random() - 0.5) * 200 * dt; }
                 if (this.type === 'bone') { this.rotation += dt * 15; }
                 if (this.type === 'bottle') { this.rotation += dt * 10; }
-                if (this.type === 'funeral_cross') { this.rotation += dt * this.rotationSpeed; }
+                if (this.type === 'funeral_cross' || this.type === 'angel_wing') { this.rotation += dt * this.rotationSpeed; }
                 // Homing for skull staff and black candle
                 if (this.homing && enemies.length > 0) {
                     let closest = null; let minDist = Infinity;
@@ -907,11 +1176,35 @@
                     ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
                     ctx.strokeStyle = 'rgba(80,80,80,0.4)'; ctx.lineWidth = 3; ctx.stroke();
+                } else if (this.type === 'living_eye' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(0,180,255,0.55)'; ctx.lineWidth = 3; ctx.shadowColor='#00ccff'; ctx.shadowBlur=8; ctx.stroke();
+                } else if (this.type === 'vein_cannon' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(200,0,0,0.55)'; ctx.lineWidth = 4; ctx.shadowColor='#ff0000'; ctx.shadowBlur=10; ctx.stroke();
+                } else if (this.type === 'crown_of_eyes' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(220,0,255,0.5)'; ctx.lineWidth = 2.5; ctx.shadowColor='#ee00ff'; ctx.shadowBlur=7; ctx.stroke();
+                } else if (this.type === 'black_sun' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(80,0,180,0.5)'; ctx.lineWidth = 3; ctx.shadowColor='#6600cc'; ctx.shadowBlur=8; ctx.stroke();
+                } else if (this.type === 'heart_of_ash' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(255,80,0,0.5)'; ctx.lineWidth = 5; ctx.stroke();
+                } else if (this.type === 'angel_wing' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(220,210,255,0.5)'; ctx.lineWidth = 4; ctx.shadowColor='#fffaaa'; ctx.shadowBlur=8; ctx.stroke();
                 }
 
                 ctx.translate(this.x, this.y); 
                 
-                if (this.type === 'bone' || this.type === 'bottle' || this.type === 'funeral_cross') ctx.rotate(this.rotation);
+                if (this.type === 'bone' || this.type === 'bottle' || this.type === 'funeral_cross' || this.type === 'angel_wing') ctx.rotate(this.rotation);
                 else ctx.rotate(Math.atan2(this.vy, this.vx));
 
                 // Scale for specific projectiles
@@ -983,6 +1276,54 @@
                     ctx.fillStyle = '#cc0000'; ctx.fillRect(-7, -1.5, 10, 3);
                     ctx.fillStyle = '#888'; ctx.fillRect(3, -2, 4, 4);
                     ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(11, -1); ctx.lineTo(11, 1); ctx.fill();
+                } else if (this.type === 'living_eye') {
+                    ctx.shadowColor = '#00ccff'; ctx.shadowBlur = 12;
+                    ctx.fillStyle = '#ddeeff'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 4, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#1a66cc'; ctx.beginPath(); ctx.arc(0, 0, 3.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, 1.8, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'rgba(0,220,255,0.8)'; ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'organ_pipe') {
+                    ctx.shadowColor = '#9966ff'; ctx.shadowBlur = 10;
+                    ctx.fillStyle = '#aa88dd'; ctx.beginPath(); ctx.ellipse(0, 0, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = 'rgba(180,150,255,0.6)'; ctx.lineWidth = 1;
+                    for(let r=1;r<=3;r++){ctx.beginPath(); ctx.ellipse(0, 0, 8+r*3, 5+r*2, 0, 0, Math.PI*2); ctx.stroke();}
+                } else if (this.type === 'heart_of_ash') {
+                    ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 18;
+                    ctx.fillStyle = '#ff5500'; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#ffaa00'; ctx.beginPath(); ctx.arc(-1, -1, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#ffee00'; ctx.beginPath(); ctx.arc(-1, -1, 1.2, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'black_sun') {
+                    ctx.shadowColor = '#7700ff'; ctx.shadowBlur = 14;
+                    ctx.fillStyle = '#0a0018'; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#4400aa'; ctx.lineWidth = 1.5;
+                    for(let r=0;r<4;r++){let ra=r*Math.PI/2; ctx.beginPath(); ctx.moveTo(Math.cos(ra)*5,Math.sin(ra)*5); ctx.lineTo(Math.cos(ra)*9,Math.sin(ra)*9); ctx.stroke();}
+                    ctx.fillStyle = 'rgba(100,0,220,0.7)'; ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'choir_weapon') {
+                    ctx.shadowColor = '#cc44ff'; ctx.shadowBlur = 10;
+                    ctx.strokeStyle = '#cc44ff'; ctx.lineWidth = 2.5;
+                    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = 'rgba(180,60,255,0.4)'; ctx.fill();
+                } else if (this.type === 'vein_cannon') {
+                    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 16;
+                    ctx.fillStyle = '#880000'; ctx.beginPath(); ctx.ellipse(0, 0, 9, 4, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.ellipse(-1, -1, 5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#ff2200'; ctx.beginPath(); ctx.arc(-1, -1, 1.5, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'crown_of_eyes') {
+                    ctx.shadowColor = '#ee00ff'; ctx.shadowBlur = 14;
+                    ctx.fillStyle = '#ddeeff'; ctx.beginPath(); ctx.ellipse(0, 0, 6, 3.5, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#cc00ff'; ctx.beginPath(); ctx.arc(0, 0, 2.8, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(0, 0, 1.2, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255,80,255,0.8)'; ctx.beginPath(); ctx.arc(0, 0, 0.6, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'angel_wing') {
+                    ctx.shadowColor = '#fffaaa'; ctx.shadowBlur = 16;
+                    const awg = ctx.createLinearGradient(-8, -5, 8, 5);
+                    awg.addColorStop(0, '#ffffff'); awg.addColorStop(0.5, '#e8e0f0'); awg.addColorStop(1, '#c0b8e0');
+                    ctx.fillStyle = awg;
+                    ctx.beginPath(); ctx.moveTo(-8, 0); ctx.bezierCurveTo(-6, -5, 0, -7, 8, -4); ctx.bezierCurveTo(8, 0, 8, 4, 3, 6); ctx.bezierCurveTo(-2, 7, -8, 5, -8, 0); ctx.fill();
+                    ctx.strokeStyle = 'rgba(200,190,240,0.6)'; ctx.lineWidth = 0.7;
+                    for(let f=0;f<4;f++){let ft=f/4; let fx=-7+ft*14; ctx.beginPath(); ctx.moveTo(fx,-ft*6+1); ctx.lineTo(fx-1,fx>0?5:3); ctx.stroke();}
+                    ctx.fillStyle = '#ffe055'; ctx.shadowColor = '#ffe055'; ctx.shadowBlur = 10;
+                    ctx.beginPath(); ctx.arc(8, -4, 2, 0, Math.PI*2); ctx.fill();
                 } else {
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 5;
                     const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
@@ -1350,12 +1691,27 @@
                     if (w.id === 'knife' || w.id === 'chain') orbitRadius = 45;
                     if (w.id === 'rib_cage' || w.id === 'bone_saw') orbitRadius = 50;
                     if (w.id === 'church_bell' || w.id === 'raven') orbitRadius = 95;
+                    if (w.id === 'jaw_trap' || w.id === 'flesh_whip') orbitRadius = 55;
+                    if (w.id === 'broken_halo') orbitRadius = 38;
+                    if (w.id === 'guillotine_blade') orbitRadius = 82;
+                    if (w.id === 'black_sun') orbitRadius = 0;
+                    if (w.id === 'choir_weapon') orbitRadius = 88;
+                    if (w.id === 'crown_of_eyes' || w.id === 'possessed_doll') orbitRadius = 70;
+                    if (w.id === 'heart_of_ash' || w.id === 'vein_cannon' || w.id === 'angel_wing' || w.id === 'door_key') orbitRadius = 85;
+                    if (w.id === 'living_eye' || w.id === 'soul_lantern' || w.id === 'spider_nest') orbitRadius = 80;
                     
                     // Per-weapon speed factor for drawing & position
                     let orbitSpeedFactor = 1.0;
                     if (w.id === 'rib_cage') orbitSpeedFactor = 2.8;
                     if (w.id === 'bone_saw') orbitSpeedFactor = 3.5;
                     if (w.id === 'raven') orbitSpeedFactor = 0.75;
+                    if (w.id === 'broken_halo') orbitSpeedFactor = 4.5;
+                    if (w.id === 'guillotine_blade') orbitSpeedFactor = 2.5;
+                    if (w.id === 'jaw_trap') orbitSpeedFactor = 1.2;
+                    if (w.id === 'flesh_whip') orbitSpeedFactor = 0.9;
+                    if (w.id === 'black_sun') orbitSpeedFactor = 0.4;
+                    if (w.id === 'crown_of_eyes') orbitSpeedFactor = 0.8;
+                    if (w.id === 'choir_weapon') orbitSpeedFactor = 0.7;
                     
                     let angle = this.orbitTime * orbitSpeedFactor + (i / this.orbitingWeapons.length) * Math.PI * 2;
                     let wx = this.x + Math.cos(angle) * orbitRadius;
@@ -1454,6 +1810,105 @@
                         } else { w.lungeOffset = 0; }
                     } else if (w.id === 'church_bell') {
                         // Church bell just triggers shockwave in targeting section - no direct melee
+                    } else if (w.id === 'jaw_trap') {
+                        // Snap on proximity
+                        if (!w.snapState) w.snapState = 'ready';
+                        if (w.snapState === 'ready' && enemies.length > 0) {
+                            for (let e of enemies) {
+                                let dx = e.x-wx, dy = e.y-wy;
+                                if (dx*dx+dy*dy < 70*70) {
+                                    e.hp -= WEAPONS[w.id].power; e.hitCount++;
+                                    damageTexts.push({x:e.x,y:e.y-20,text:'-'+WEAPONS[w.id].power,life:0.6,vy:-42});
+                                    for(let p=0;p<4;p++) activeSplatter.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*280,vy:(Math.random()-0.5)*280,size:Math.random()*4+2,color:e.type==='choir'?'#3d0b6e':'#6a040f',friction:0.76,scaleX:1,angle:0});
+                                    w.snapState='snapping'; w.snapTimer=0.18; triggerShake(5,0.12); break;
+                                }
+                            }
+                        } else if (w.snapState==='snapping') { w.snapTimer-=dt; if(w.snapTimer<=0){w.snapState='reset';w.snapTimer=w.rate;} }
+                        else if (w.snapState==='reset') { w.snapTimer-=dt; if(w.snapTimer<=0)w.snapState='ready'; }
+                        w.fireTimer=1;
+                    } else if (w.id === 'broken_halo') {
+                        // 3 blade positions at 120° apart
+                        if (w.fireTimer <= 0 && enemies.length > 0) {
+                            for(let blade=0; blade<3; blade++) {
+                                let bAngle = angle + (blade/3)*Math.PI*2;
+                                let bx = this.x + Math.cos(bAngle)*orbitRadius;
+                                let by = this.y + Math.sin(bAngle)*orbitRadius;
+                                enemies.forEach(e => {
+                                    let dx=e.x-bx,dy=e.y-by;
+                                    if(dx*dx+dy*dy<(e.radius+28)**2){
+                                        e.hp-=WEAPONS[w.id].power; e.hitCount++;
+                                        damageTexts.push({x:e.x,y:e.y-20,text:'-'+WEAPONS[w.id].power,life:0.4,vy:-30});
+                                        activeSplatter.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*200,vy:(Math.random()-0.5)*200,size:Math.random()*2.5+1,color:'#6a040f',friction:0.8,scaleX:1,angle:0});
+                                    }
+                                });
+                            }
+                            w.fireTimer=w.rate; triggerShake(1,0.04);
+                        }
+                    } else if (w.id === 'flesh_whip') {
+                        if (w.sweepTimer > 0) {
+                            let progress = 1-(w.sweepTimer/0.55);
+                            w.sweepAngle = (w.lastAimAngle - Math.PI*0.85) + (Math.PI*1.7*progress);
+                            let kx=this.x+Math.cos(w.sweepAngle)*115; let ky=this.y+Math.sin(w.sweepAngle)*115;
+                            enemies.forEach(e => {
+                                if((e.x-kx)**2+(e.y-ky)**2<(e.radius+32)**2 && !e.whipHit){
+                                    e.hp-=WEAPONS[w.id].power; e.hitCount++; e.whipHit=true;
+                                    damageTexts.push({x:e.x,y:e.y-20,text:'-'+WEAPONS[w.id].power,life:0.6,vy:-40});
+                                    for(let p=0;p<3;p++) activeSplatter.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*200,vy:(Math.random()-0.5)*200,size:Math.random()*3+1,color:'#6a040f',friction:0.8,scaleX:1,angle:0});
+                                    triggerShake(3,0.09);
+                                }
+                            });
+                        } else { enemies.forEach(e => e.whipHit=false); }
+                    } else if (w.id === 'guillotine_blade') {
+                        if (w.fireTimer <= 0 && enemies.length > 0) {
+                            enemies.forEach(e => {
+                                let dx=e.x-wx,dy=e.y-wy;
+                                if(dx*dx+dy*dy<(e.radius+55)**2){
+                                    e.hp-=WEAPONS[w.id].power; e.hitCount++;
+                                    damageTexts.push({x:e.x,y:e.y-20,text:'-'+WEAPONS[w.id].power,life:0.5,vy:-38});
+                                    for(let p=0;p<4;p++) activeSplatter.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*280,vy:(Math.random()-0.5)*280,size:Math.random()*5+2,color:'#6a040f',friction:0.74,scaleX:1,angle:0});
+                                    triggerShake(4,0.1);
+                                }
+                            });
+                            w.fireTimer=w.rate;
+                        }
+                    } else if (w.id === 'spider_nest') {
+                        if (w.fireTimer <= 0) {
+                            let activeSpiders = minions.filter(m=>m.type==='spider').length;
+                            if (activeSpiders < 5) {
+                                let sa=Math.random()*Math.PI*2, sd=70+Math.random()*80;
+                                minions.push({type:'spider',x:this.x+Math.cos(sa)*sd,y:this.y+Math.sin(sa)*sd,vx:0,vy:0,radius:6,hp:1,damage:WEAPONS[w.id].power,speed:125,life:9,maxLife:9,attackCooldown:0,facingAngle:0,animTime:0});
+                            }
+                            w.fireTimer=w.rate;
+                        }
+                    } else if (w.id === 'soul_lantern') {
+                        if (w.fireTimer <= 0) {
+                            let activeSpirits = minions.filter(m=>m.type==='spirit').length;
+                            if (activeSpirits < 4) {
+                                let sa=Math.random()*Math.PI*2, sd=60+Math.random()*60;
+                                minions.push({type:'spirit',x:this.x+Math.cos(sa)*sd,y:this.y+Math.sin(sa)*sd,radius:10,damage:WEAPONS[w.id].power,speed:55,life:7,maxLife:7,hitCooldown:0,animTime:0});
+                            }
+                            w.fireTimer=w.rate;
+                        }
+                    } else if (w.id === 'possessed_doll') {
+                        if (w.fireTimer <= 0) {
+                            let activeDolls = minions.filter(m=>m.type==='doll').length;
+                            if (activeDolls < 1) {
+                                let sa=Math.random()*Math.PI*2;
+                                minions.push({type:'doll',x:this.x+Math.cos(sa)*60,y:this.y+Math.sin(sa)*60,vx:0,vy:0,radius:10,hp:45,maxHp:45,damage:WEAPONS[w.id].power,speed:155,life:13,maxLife:13,attackCooldown:0,facingAngle:0,animTime:0});
+                            }
+                            w.fireTimer=w.rate;
+                        }
+                    } else if (w.id === 'door_key') {
+                        if (w.fireTimer <= 0) {
+                            let activeDoors = minions.filter(m=>m.type==='door_monster').length;
+                            if (activeDoors < 3) {
+                                let sa=Math.random()*Math.PI*2, sd=120+Math.random()*150;
+                                let dx=Math.min(ROOM_SIZE-80,Math.max(80,this.x+Math.cos(sa)*sd));
+                                let dy=Math.min(ROOM_SIZE-80,Math.max(80,this.y+Math.sin(sa)*sd));
+                                minions.push({type:'door',x:dx,y:dy,life:1.6,maxLife:1.6,openAngle:0,spawned:false,doorDmg:WEAPONS[w.id].power});
+                            }
+                            w.fireTimer=w.rate;
+                        }
                     }
 
                     // Targeting AI
@@ -1465,7 +1920,7 @@
                         });
                         
                         let maxRange = (w.id === 'knife' || w.id === 'chain') ? 12000 : 400000;
-                        if (w.id === 'rib_cage' || w.id === 'bone_saw') maxRange = 0; // handled above
+                        if (['rib_cage','bone_saw','jaw_trap','broken_halo','guillotine_blade','flesh_whip','spider_nest','soul_lantern','possessed_doll','door_key'].includes(w.id)) maxRange = 0; // handled above
                         if (closest && minDist < maxRange) {
                             let aimAngle = Math.atan2(closest.y - wy, closest.x - wx);
                             w.lastAimAngle = aimAngle;
@@ -1477,22 +1932,59 @@
                                 w.sweepTimer = 0.3; w.sweepAngle = aimAngle - Math.PI/2;
                             } else if (w.id === 'raven') {
                                 w.lungeTimer = 0.3; w.hasHit = false;
+                            } else if (w.id === 'flesh_whip') {
+                                w.sweepTimer = 0.55;
                             } else if (w.id === 'church_bell') {
-                                // Shockwave centered on player
                                 shockwaves.push({ x: this.x, y: this.y, radius: 8, maxRadius: 145, life: 0.55, maxLife: 0.55, damage: WEAPONS[w.id].power, hitEnemies: new Set(), color: '#d4af37' });
                                 triggerShake(5, 0.14);
                             } else if (w.id === 'cursed_book') {
-                                // Fire 3 bolts in random directions
                                 for (let b = 0; b < 3; b++) {
                                     let rAngle = Math.random() * Math.PI * 2;
-                                    let tipX = wx + Math.cos(rAngle) * 15;
-                                    let tipY = wy + Math.sin(rAngle) * 15;
-                                    bullets.push(new Bullet(tipX, tipY, rAngle, 'cursed_book'));
+                                    bullets.push(new Bullet(wx + Math.cos(rAngle)*15, wy + Math.sin(rAngle)*15, rAngle, 'cursed_book'));
+                                }
+                            } else if (w.id === 'organ_pipe') {
+                                // Fan of 3 sound-wave shots
+                                for (let b = -1; b <= 1; b++) {
+                                    let fa = aimAngle + b * 0.38;
+                                    bullets.push(new Bullet(wx + Math.cos(fa)*15, wy + Math.sin(fa)*15, fa, 'organ_pipe'));
+                                }
+                            } else if (w.id === 'black_sun') {
+                                // 8 rotating void bolts
+                                for (let b = 0; b < 8; b++) {
+                                    let ba = (b/8)*Math.PI*2 + this.orbitTime*0.9;
+                                    bullets.push(new Bullet(this.x + Math.cos(ba)*10, this.y + Math.sin(ba)*10, ba, 'black_sun'));
+                                }
+                                // Dark shockwave pulse
+                                shockwaves.push({x:this.x,y:this.y,radius:5,maxRadius:100,life:0.35,maxLife:0.35,damage:0,hitEnemies:new Set(),color:'#3300aa'});
+                                triggerShake(4, 0.12);
+                            } else if (w.id === 'choir_weapon') {
+                                // Ring of 12 bullets
+                                for (let b = 0; b < 12; b++) {
+                                    let ba = (b/12)*Math.PI*2;
+                                    bullets.push(new Bullet(wx + Math.cos(ba)*15, wy + Math.sin(ba)*15, ba, 'choir_weapon'));
+                                }
+                                triggerShake(3, 0.1);
+                            } else if (w.id === 'crown_of_eyes') {
+                                // 4 eyes each fire at different targets
+                                let sorted = [...enemies].sort((a,b)=>(a.x-this.x)**2+(a.y-this.y)**2-(b.x-this.x)**2-(b.y-this.y)**2);
+                                for (let eye = 0; eye < 4; eye++) {
+                                    let eyeAngle = this.orbitTime*0.8 + (eye/4)*Math.PI*2;
+                                    let ex = this.x + Math.cos(eyeAngle)*70, ey = this.y + Math.sin(eyeAngle)*70;
+                                    let target = sorted[eye % sorted.length];
+                                    if (target) {
+                                        let ea = Math.atan2(target.y-ey, target.x-ex);
+                                        bullets.push(new Bullet(ex + Math.cos(ea)*12, ey + Math.sin(ea)*12, ea, 'crown_of_eyes'));
+                                        laserEffects.push({x1:ex,y1:ey,x2:target.x,y2:target.y,color:'#ee00ff',width:2.5,life:0.12,maxLife:0.12});
+                                    }
                                 }
                             } else {
                                 let tipX = wx + Math.cos(aimAngle) * 15;
                                 let tipY = wy + Math.sin(aimAngle) * 15;
                                 bullets.push(new Bullet(tipX, tipY, aimAngle, w.id));
+                                // Laser flash for long-range weapons
+                                if (w.id === 'living_eye') laserEffects.push({x1:wx,y1:wy,x2:wx+Math.cos(aimAngle)*900,y2:wy+Math.sin(aimAngle)*900,color:'#00aaff',width:2,life:0.08,maxLife:0.08});
+                                if (w.id === 'vein_cannon') laserEffects.push({x1:wx,y1:wy,x2:wx+Math.cos(aimAngle)*900,y2:wy+Math.sin(aimAngle)*900,color:'#cc0000',width:3.5,life:0.1,maxLife:0.1});
+                                if (w.id === 'heart_of_ash') triggerShake(2, 0.08);
                             }
                         } else {
                             if ((w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0) && (w.id !== 'raven' || w.lungeTimer <= 0)) w.lastAimAngle = this.facingAngle;
@@ -1798,7 +2290,63 @@
                     const cbGrad = lightCtx.createRadialGradient(wx, wy, 2, wx, wy, 40);
                     cbGrad.addColorStop(0, 'rgba(150, 50, 255, 0.35)'); cbGrad.addColorStop(1, 'rgba(150, 50, 255, 0)');
                     lightCtx.fillStyle = cbGrad; lightCtx.beginPath(); lightCtx.arc(wx, wy, 40, 0, Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'living_eye') {
+                    const leGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,55);
+                    leGrad.addColorStop(0,'rgba(0,180,255,0.45)'); leGrad.addColorStop(1,'rgba(0,180,255,0)');
+                    lightCtx.fillStyle=leGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,55,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'soul_lantern') {
+                    const slGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,65);
+                    slGrad.addColorStop(0,'rgba(0,140,255,0.5)'); slGrad.addColorStop(1,'rgba(0,100,255,0)');
+                    lightCtx.fillStyle=slGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,65,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'heart_of_ash') {
+                    const haGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,60);
+                    haGrad.addColorStop(0,'rgba(255,80,0,0.5)'); haGrad.addColorStop(1,'rgba(255,40,0,0)');
+                    lightCtx.fillStyle=haGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,60,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'black_sun') {
+                    const bsGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,80);
+                    bsGrad.addColorStop(0,'rgba(80,0,200,0.4)'); bsGrad.addColorStop(1,'rgba(40,0,120,0)');
+                    lightCtx.fillStyle=bsGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,80,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'vein_cannon') {
+                    const vcGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,55);
+                    vcGrad.addColorStop(0,'rgba(200,0,0,0.45)'); vcGrad.addColorStop(1,'rgba(160,0,0,0)');
+                    lightCtx.fillStyle=vcGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,55,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'crown_of_eyes') {
+                    for(let eye=0;eye<4;eye++){
+                        let ea=player.orbitTime*0.8+(eye/4)*Math.PI*2;
+                        let ex=player.x+Math.cos(ea)*70, ey=player.y+Math.sin(ea)*70;
+                        const ceGrad=lightCtx.createRadialGradient(ex,ey,2,ex,ey,45);
+                        ceGrad.addColorStop(0,'rgba(220,0,255,0.4)'); ceGrad.addColorStop(1,'rgba(180,0,220,0)');
+                        lightCtx.fillStyle=ceGrad; lightCtx.beginPath(); lightCtx.arc(ex,ey,45,0,Math.PI*2); lightCtx.fill();
+                    }
+                } else if (w.id === 'angel_wing') {
+                    const awGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,70);
+                    awGrad.addColorStop(0,'rgba(255,250,180,0.4)'); awGrad.addColorStop(1,'rgba(220,210,140,0)');
+                    lightCtx.fillStyle=awGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,70,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'door_key') {
+                    const dkGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,55);
+                    dkGrad.addColorStop(0,'rgba(255,200,0,0.38)'); dkGrad.addColorStop(1,'rgba(220,160,0,0)');
+                    lightCtx.fillStyle=dkGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,55,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'guillotine_blade') {
+                    const gbGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,60);
+                    gbGrad.addColorStop(0,'rgba(180,180,180,0.3)'); gbGrad.addColorStop(1,'rgba(100,100,100,0)');
+                    lightCtx.fillStyle=gbGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,60,0,Math.PI*2); lightCtx.fill();
+                } else if (w.id === 'choir_weapon') {
+                    const cwGrad = lightCtx.createRadialGradient(wx,wy,2,wx,wy,65);
+                    cwGrad.addColorStop(0,'rgba(180,50,255,0.4)'); cwGrad.addColorStop(1,'rgba(140,30,200,0)');
+                    lightCtx.fillStyle=cwGrad; lightCtx.beginPath(); lightCtx.arc(wx,wy,65,0,Math.PI*2); lightCtx.fill();
                 }
+                // Spirit minion lights
+                minions.filter(m=>m.type==='spirit').forEach(sp=>{
+                    const spGrad=lightCtx.createRadialGradient(sp.x,sp.y,2,sp.x,sp.y,40);
+                    spGrad.addColorStop(0,'rgba(0,140,255,0.45)'); spGrad.addColorStop(1,'rgba(0,100,200,0)');
+                    lightCtx.fillStyle=spGrad; lightCtx.beginPath(); lightCtx.arc(sp.x,sp.y,40,0,Math.PI*2); lightCtx.fill();
+                });
+                // Door monster lights
+                minions.filter(m=>m.type==='door_monster').forEach(dm=>{
+                    const dmGrad=lightCtx.createRadialGradient(dm.x,dm.y,2,dm.x,dm.y,35);
+                    dmGrad.addColorStop(0,'rgba(0,255,60,0.35)'); dmGrad.addColorStop(1,'rgba(0,200,40,0)');
+                    lightCtx.fillStyle=dmGrad; lightCtx.beginPath(); lightCtx.arc(dm.x,dm.y,35,0,Math.PI*2); lightCtx.fill();
+                });
             });
 
             // Shockwave lights
@@ -2002,6 +2550,21 @@
                             if (b.type === 'blood_syringe' && b.isInjection && !enemy.injected) {
                                 enemy.injected = 1.6; // Time until explosion
                             }
+                            // Heart of Ash - immediate AoE explosion
+                            if (b.type === 'heart_of_ash' && b.isFireball) {
+                                b.isFireball = false; // only explode once
+                                let ashDmg = 18;
+                                enemies.forEach(other => {
+                                    let adx=other.x-enemy.x, ady=other.y-enemy.y;
+                                    if(adx*adx+ady*ady < 7000) {
+                                        other.hp-=ashDmg; other.hitCount++;
+                                        damageTexts.push({x:other.x+(Math.random()-0.5)*16,y:other.y-20,text:'-'+ashDmg,life:0.65,vy:-42});
+                                        for(let p=0;p<3;p++) activeSplatter.push({x:other.x,y:other.y,vx:(Math.random()-0.5)*280,vy:(Math.random()-0.5)*280,size:Math.random()*4+2,color:'#8b0000',friction:0.74,scaleX:1,angle:0});
+                                    }
+                                });
+                                explosionEffects.push({x:enemy.x,y:enemy.y,radius:0,maxRadius:85,life:0.42,maxLife:0.42,color:'fire'});
+                                triggerShake(7, 0.18);
+                            }
 
                             if (enemy.hitCount % 3 === 0) {
                                 let hitAngle = Math.atan2(b.vy, b.vx); let numHit = 1 + Math.floor(Math.random() * 2);
@@ -2126,6 +2689,81 @@
                     ef.life -= dt;
                     ef.radius = ef.maxRadius * Math.sqrt(1 - ef.life / ef.maxLife);
                     if (ef.life <= 0) explosionEffects.splice(i, 1);
+                }
+
+                // Minion update (spiders, spirits, dolls, doors, door_monsters)
+                for (let i = minions.length - 1; i >= 0; i--) {
+                    let m = minions[i];
+                    m.life -= dt;
+                    m.animTime += dt;
+                    if (m.life <= 0) { minions.splice(i, 1); continue; }
+
+                    if (m.type === 'spider' || m.type === 'doll' || m.type === 'door_monster') {
+                        let closest = null; let minDist2 = Infinity;
+                        enemies.forEach(e => { let d=(e.x-m.x)**2+(e.y-m.y)**2; if(d<minDist2){minDist2=d;closest=e;} });
+                        if (closest) {
+                            let dx=closest.x-m.x, dy=closest.y-m.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+                            m.facingAngle = Math.atan2(dy,dx);
+                            if (dist > m.radius + closest.radius) {
+                                m.x += (dx/dist)*m.speed*dt; m.y += (dy/dist)*m.speed*dt;
+                            } else if (m.attackCooldown <= 0) {
+                                closest.hp -= m.damage; closest.hitCount++;
+                                damageTexts.push({x:closest.x,y:closest.y-18,text:'-'+m.damage,life:0.5,vy:-38});
+                                for(let p=0;p<2;p++) activeSplatter.push({x:closest.x,y:closest.y,vx:(Math.random()-0.5)*180,vy:(Math.random()-0.5)*180,size:Math.random()*3+1,color:'#6a040f',friction:0.8,scaleX:1,angle:0});
+                                if (m.type === 'spider') {
+                                    minions.splice(i, 1); continue; // spider dies on hit
+                                }
+                                m.attackCooldown = m.type === 'doll' ? 0.8 : 1.0;
+                                triggerShake(2, 0.07);
+                            }
+                        }
+                        if (m.attackCooldown > 0) m.attackCooldown -= dt;
+                        // Doll HP
+                        if (m.type === 'doll') {
+                            enemies.forEach(e => {
+                                if ((e.x-m.x)**2+(e.y-m.y)**2 < (e.radius+m.radius)**2) { m.hp -= 8*dt; }
+                            });
+                            if (m.hp <= 0) { minions.splice(i, 1); continue; }
+                        }
+                        // Door monster HP
+                        if (m.type === 'door_monster') {
+                            enemies.forEach(e => {
+                                if ((e.x-m.x)**2+(e.y-m.y)**2 < (e.radius+m.radius)**2) { m.hp -= 5*dt; }
+                            });
+                            if (m.hp <= 0) { minions.splice(i, 1); continue; }
+                        }
+                    } else if (m.type === 'spirit') {
+                        let closest = null; let minDist2 = Infinity;
+                        enemies.forEach(e => { let d=(e.x-m.x)**2+(e.y-m.y)**2; if(d<minDist2){minDist2=d;closest=e;} });
+                        if (closest) {
+                            let dx=closest.x-m.x, dy=closest.y-m.y, dist=Math.sqrt(dx*dx+dy*dy)||1;
+                            m.x += (dx/dist)*m.speed*dt; m.y += (dy/dist)*m.speed*dt;
+                            if (minDist2 < (m.radius+closest.radius)**2 && m.hitCooldown <= 0) {
+                                closest.hp -= m.damage; closest.hitCount++;
+                                damageTexts.push({x:closest.x,y:closest.y-18,text:'-'+m.damage,life:0.5,vy:-35});
+                                m.hitCooldown = 0.5;
+                            }
+                        }
+                        if (m.hitCooldown > 0) m.hitCooldown -= dt;
+                    } else if (m.type === 'door') {
+                        m.openAngle = Math.min(1, (1 - m.life/m.maxLife) / 0.6);
+                        if (!m.spawned && m.life < m.maxLife * 0.4) {
+                            m.spawned = true;
+                            minions.push({type:'door_monster',x:m.x,y:m.y,vx:0,vy:0,radius:12,hp:30,maxHp:30,damage:m.doorDmg||14,speed:160,life:10,maxLife:10,attackCooldown:0,facingAngle:0,animTime:0});
+                        }
+                    }
+
+                    // Wall bounds for non-door types
+                    if (m.type !== 'door') {
+                        m.x = Math.max(35, Math.min(ROOM_SIZE-35, m.x));
+                        m.y = Math.max(35, Math.min(ROOM_SIZE-35, m.y));
+                    }
+                }
+
+                // Laser effects update
+                for (let i = laserEffects.length - 1; i >= 0; i--) {
+                    laserEffects[i].life -= dt;
+                    if (laserEffects[i].life <= 0) laserEffects.splice(i, 1);
                 }
 
                 for (let i = activeSplatter.length - 1; i >= 0; i--) {
@@ -2267,7 +2905,7 @@
                 ctx.restore();
             });
 
-            // Draw explosions (Blood Syringe)
+            // Draw explosions (Blood Syringe + Heart of Ash)
             explosionEffects.forEach(ef => {
                 let alpha = ef.life / ef.maxLife;
                 ctx.save();
@@ -2282,6 +2920,104 @@
                 ctx.strokeStyle = '#ff6600'; ctx.lineWidth = 2.5;
                 ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 20;
                 ctx.beginPath(); ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI*2); ctx.stroke();
+                ctx.restore();
+            });
+
+            // Draw laser effects (Living Eye, Vein Cannon, Crown of Eyes)
+            laserEffects.forEach(lz => {
+                let alpha = lz.life / lz.maxLife;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = lz.color; ctx.lineWidth = lz.width;
+                ctx.shadowColor = lz.color; ctx.shadowBlur = lz.width * 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(lz.x1, lz.y1); ctx.lineTo(lz.x2, lz.y2); ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = lz.width * 0.35; ctx.shadowBlur = 0;
+                ctx.beginPath(); ctx.moveTo(lz.x1, lz.y1); ctx.lineTo(lz.x2, lz.y2); ctx.stroke();
+                ctx.restore();
+            });
+
+            // Draw minions (spiders, spirits, dolls, doors, door monsters)
+            minions.forEach(m => {
+                ctx.save();
+                if (m.type === 'spider') {
+                    ctx.translate(m.x, m.y); ctx.rotate(m.facingAngle||0);
+                    ctx.shadowColor='rgba(20,10,0,0.8)'; ctx.shadowBlur=4;
+                    ctx.fillStyle='#0e0600'; ctx.beginPath(); ctx.ellipse(0,0,7,4.5,0,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#1a0c00'; ctx.beginPath(); ctx.arc(6,0,3.5,0,Math.PI*2); ctx.fill();
+                    ctx.shadowColor='#ff1100'; ctx.shadowBlur=5;
+                    ctx.fillStyle='#dd0000'; ctx.beginPath(); ctx.arc(7,-1,1.2,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(7,1,1.2,0,Math.PI*2); ctx.fill();
+                    ctx.shadowColor='transparent'; ctx.strokeStyle='#160800'; ctx.lineWidth=1.5; ctx.lineCap='round';
+                    for(let l=0;l<4;l++){
+                        let ly=-3+l*2, lx=-1+Math.sin(m.animTime*9+l*1.3)*2.5;
+                        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx-9,ly-4); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx-9,ly+4); ctx.stroke();
+                    }
+                } else if (m.type === 'spirit') {
+                    ctx.translate(m.x, m.y);
+                    let pulse = Math.sin(m.animTime*2.8)*0.25+0.75;
+                    ctx.globalAlpha = pulse * 0.82;
+                    ctx.shadowColor='#00aaff'; ctx.shadowBlur=22;
+                    ctx.fillStyle='rgba(80,170,255,0.85)';
+                    ctx.beginPath();
+                    ctx.moveTo(-7,9); ctx.bezierCurveTo(-9,0,-9,-11,0,-13); ctx.bezierCurveTo(9,-11,9,0,7,9);
+                    ctx.bezierCurveTo(4,6,1,6,0,9); ctx.bezierCurveTo(-1,6,-4,6,-7,9); ctx.fill();
+                    ctx.fillStyle='rgba(0,30,60,0.9)';
+                    ctx.beginPath(); ctx.ellipse(-2,-3,2.2,3.2,0,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(2,-3,2.2,3.2,0,0,Math.PI*2); ctx.fill();
+                } else if (m.type === 'doll') {
+                    ctx.translate(m.x, m.y); ctx.rotate(m.facingAngle||0);
+                    ctx.shadowColor='rgba(80,0,0,0.6)'; ctx.shadowBlur=7;
+                    ctx.fillStyle='#c8b08a'; ctx.beginPath(); ctx.ellipse(0,3.5,4,6,0,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#d4b896'; ctx.beginPath(); ctx.arc(0,-5,5.5,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#1a0000';
+                    ctx.beginPath(); ctx.arc(-2,-5,1.3,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(2,-5,1.3,0,Math.PI*2); ctx.fill();
+                    ctx.strokeStyle='#6a0000'; ctx.lineWidth=0.9; ctx.beginPath(); ctx.moveTo(-3,-2); ctx.lineTo(3,-2); ctx.stroke();
+                    ctx.fillStyle='#220030'; ctx.beginPath(); ctx.moveTo(-5,5); ctx.lineTo(-7,12); ctx.lineTo(7,12); ctx.lineTo(5,5); ctx.closePath(); ctx.fill();
+                    let swing = Math.sin(m.animTime*8)*0.4;
+                    ctx.strokeStyle='#c8b08a'; ctx.lineWidth=2;
+                    ctx.beginPath(); ctx.moveTo(-4,-1); ctx.lineTo(-9+swing*5,3); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(4,-1); ctx.lineTo(11+swing*5,-5); ctx.stroke();
+                    ctx.shadowColor='#ccc'; ctx.shadowBlur=3;
+                    ctx.strokeStyle='#bbb'; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.moveTo(10+swing*5,-4); ctx.lineTo(16+swing*5,-8); ctx.stroke();
+                    ctx.fillStyle='#bbb'; ctx.beginPath(); ctx.moveTo(16+swing*5,-8); ctx.lineTo(18+swing*5,-11); ctx.lineTo(13+swing*5,-7); ctx.fill();
+                    // HP bar
+                    let hpF = m.hp / m.maxHp;
+                    ctx.globalAlpha=0.7; ctx.fillStyle='#222'; ctx.fillRect(-10,-20,20,3);
+                    ctx.fillStyle='#ff4444'; ctx.fillRect(-10,-20,20*hpF,3); ctx.globalAlpha=1;
+                } else if (m.type === 'door') {
+                    ctx.translate(m.x, m.y);
+                    let oa = m.openAngle||0;
+                    ctx.fillStyle='#1a0e06'; ctx.fillRect(-22,-32,44,62);
+                    ctx.fillStyle='#0e0603'; ctx.fillRect(-20,-30,40,58);
+                    ctx.save();
+                    ctx.transform(1-oa*0.85,0,0,1,0,0);
+                    ctx.fillStyle='#2e1a0a'; ctx.fillRect(-18,-28,36,54);
+                    ctx.strokeStyle='#1a0e04'; ctx.lineWidth=2; ctx.strokeRect(-18,-28,36,54);
+                    ctx.fillStyle='#8b5c30'; ctx.beginPath(); ctx.arc(11,0,3.5,0,Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    if (oa > 0.1) {
+                        let rGrad = ctx.createRadialGradient(0,0,0,0,0,18);
+                        rGrad.addColorStop(0,`rgba(255,60,0,${oa*0.6})`); rGrad.addColorStop(1,'rgba(0,0,0,0)');
+                        ctx.fillStyle=rGrad; ctx.fillRect(-18,-28,36,54);
+                    }
+                } else if (m.type === 'door_monster') {
+                    ctx.translate(m.x, m.y); ctx.rotate(m.facingAngle||0);
+                    ctx.shadowColor='#00ff44'; ctx.shadowBlur=10;
+                    ctx.fillStyle='#163a1c'; ctx.beginPath(); ctx.ellipse(0,0,11,6.5,0,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#1e5228'; ctx.beginPath(); ctx.arc(8,0,5.5,0,Math.PI*2); ctx.fill();
+                    ctx.fillStyle='#00ff44'; ctx.shadowBlur=6;
+                    ctx.beginPath(); ctx.arc(7,-3,1.5,0,Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(7,3,1.5,0,Math.PI*2); ctx.fill();
+                    ctx.strokeStyle='#00ff44'; ctx.lineWidth=1.5;
+                    ctx.beginPath(); ctx.moveTo(7,-2); ctx.quadraticCurveTo(12,0,7,2); ctx.stroke();
+                    let hpF=m.hp/m.maxHp; ctx.globalAlpha=0.75;
+                    ctx.fillStyle='#111'; ctx.fillRect(-11,-18,22,3);
+                    ctx.fillStyle='#00ff44'; ctx.fillRect(-11,-18,22*hpF,3); ctx.globalAlpha=1;
+                }
                 ctx.restore();
             });
 
