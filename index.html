@@ -377,33 +377,42 @@
         let grinderBloodPool = 0;      // grows 0→1 as players die nearby (cosmetic only here)
         const grinderBloodSplatters = [];
 
-        // Pre-generate static blood tendrils around the grinder
-        const grinderTendrils = [];
-        for (let i = 0; i < 28; i++) {
-            const angle = (i / 28) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
-            const len   = 40 + Math.random() * 80;
-            const width = 3 + Math.random() * 8;
-            grinderTendrils.push({
-                angle, len, width,
-                wobble: (Math.random() - 0.5) * 0.4,
-                alpha: 0.55 + Math.random() * 0.4,
-                segments: Math.floor(3 + Math.random() * 3),
-                drip: Math.random() < 0.45,
-                dripLen: 8 + Math.random() * 20,
-            });
+        // Pre-generate blood pool — irregular splat polygons that look like pooled blood
+        // Each splat is a polygon with randomised radii, drawn as a flat dark pool
+        function makeSplatPolygon(cx, cy, avgR, points, roughness) {
+            const pts = [];
+            for (let i = 0; i < points; i++) {
+                const a = (i / points) * Math.PI * 2;
+                const r = avgR * (1 - roughness * 0.5 + Math.random() * roughness);
+                pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
+            }
+            return pts;
         }
 
-        // Pre-generate blood pool blobs
-        const grinderPoolBlobs = [];
-        for (let i = 0; i < 22; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const dist  = GRINDER_PIT_R * 0.55 + Math.random() * (GRINDER_OUTER_R * 0.65 - GRINDER_PIT_R * 0.55);
-            grinderPoolBlobs.push({
-                angle, dist,
-                rx: 12 + Math.random() * 28,
-                ry: 8  + Math.random() * 18,
-                rot: Math.random() * Math.PI,
-                alpha: 0.35 + Math.random() * 0.45,
+        // Main central pool — large irregular blob sitting on the rim
+        const grinderMainPool = makeSplatPolygon(8, 12, GRINDER_OUTER_R * 0.82, 32, 0.38);
+
+        // Several secondary splat pools around the rim
+        const grinderSplatPools = [];
+        for (let i = 0; i < 9; i++) {
+            const a   = (i / 9) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+            const d   = GRINDER_OUTER_R * (0.7 + Math.random() * 0.5);
+            const r   = 18 + Math.random() * 38;
+            const pts = makeSplatPolygon(Math.cos(a) * d, Math.sin(a) * d, r, 18, 0.5);
+            grinderSplatPools.push({ pts, alpha: 0.55 + Math.random() * 0.35 });
+        }
+
+        // Small dots / drips scattered further out
+        const grinderDrips = [];
+        for (let i = 0; i < 40; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = GRINDER_OUTER_R * (0.6 + Math.random() * 0.9);
+            grinderDrips.push({
+                x: Math.cos(a) * d, y: Math.sin(a) * d,
+                r: 2 + Math.random() * 9,
+                alpha: 0.4 + Math.random() * 0.5,
+                elongate: 0.3 + Math.random() * 1.4, // stretch in radial direction
+                angle: a,
             });
         }
 
@@ -439,72 +448,60 @@
                 ctx.beginPath(); ctx.arc(0, 0, rr, 0, Math.PI * 2); ctx.stroke();
             }
 
-            // ── 2. BLOOD POOL / TENDRILS ────────────────────────────────────
-            // Large dark base pool
-            const poolGrad = ctx.createRadialGradient(4, 6, 10, 0, 0, GRINDER_OUTER_R + 4);
-            poolGrad.addColorStop(0,    'rgba(55,2,2,0.85)');
-            poolGrad.addColorStop(0.35, 'rgba(40,1,1,0.72)');
-            poolGrad.addColorStop(0.65, 'rgba(28,0,0,0.50)');
-            poolGrad.addColorStop(0.85, 'rgba(18,0,0,0.28)');
-            poolGrad.addColorStop(1,    'rgba(8,0,0,0)');
-            ctx.fillStyle = poolGrad;
-            ctx.beginPath(); ctx.arc(0, 0, GRINDER_OUTER_R + 4, 0, Math.PI * 2); ctx.fill();
-
-            // Blood blobs
-            grinderPoolBlobs.forEach(b => {
-                const bx = Math.cos(b.angle) * b.dist;
-                const by = Math.sin(b.angle) * b.dist;
-                const bg = ctx.createRadialGradient(bx, by, 0, bx, by, Math.max(b.rx, b.ry));
-                bg.addColorStop(0, `rgba(72,3,3,${b.alpha})`);
-                bg.addColorStop(0.6, `rgba(45,1,1,${b.alpha * 0.6})`);
-                bg.addColorStop(1, 'rgba(20,0,0,0)');
-                ctx.save();
-                ctx.translate(bx, by);
-                ctx.rotate(b.rot);
-                ctx.fillStyle = bg;
+            // ── 2. BLOOD POOL ──────────────────────────────────────────────
+            // Helper to draw a polygon path from a point array
+            function drawPoly(pts) {
                 ctx.beginPath();
-                ctx.ellipse(0, 0, b.rx, b.ry, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
-
-            // Blood tendrils radiating outward
-            grinderTendrils.forEach(t => {
-                ctx.save();
-                ctx.rotate(t.angle);
-                ctx.globalAlpha = t.alpha;
-
-                const startR = GRINDER_PIT_R * 0.9;
-                const endR   = startR + t.len;
-
-                // Main tendril as a tapered path
-                ctx.beginPath();
-                ctx.moveTo(startR, -t.width * 0.5);
-                const mid = (startR + endR) / 2;
-                ctx.quadraticCurveTo(mid + 5, t.wobble * 15, endR, 0);
-                ctx.quadraticCurveTo(mid + 5, t.wobble * 15, startR,  t.width * 0.5);
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
+            }
 
-                const tg = ctx.createLinearGradient(startR, 0, endR, 0);
-                tg.addColorStop(0, 'rgba(80,4,4,0.9)');
-                tg.addColorStop(0.5,'rgba(60,2,2,0.7)');
-                tg.addColorStop(1, 'rgba(30,0,0,0)');
-                ctx.fillStyle = tg;
-                ctx.fill();
-
-                // Drip at tip
-                if (t.drip) {
-                    const tipX = endR;
-                    ctx.beginPath();
-                    ctx.moveTo(tipX, -2);
-                    ctx.quadraticCurveTo(tipX + t.dripLen * 0.3, t.dripLen * 0.5, tipX, t.dripLen);
-                    ctx.quadraticCurveTo(tipX - 3, t.dripLen * 0.5, tipX, -2);
-                    ctx.fillStyle = 'rgba(65,3,3,0.6)';
-                    ctx.fill();
-                }
-
+            // Small drips / satellite drops first (bottom layer)
+            grinderDrips.forEach(d => {
+                ctx.save();
+                ctx.globalAlpha = d.alpha;
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.angle);
+                ctx.scale(1, d.elongate);
+                ctx.fillStyle = '#1a0000';
+                ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI * 2); ctx.fill();
                 ctx.restore();
             });
+
+            // Secondary splat pools
+            grinderSplatPools.forEach(s => {
+                ctx.save();
+                ctx.globalAlpha = s.alpha;
+                drawPoly(s.pts);
+                // Flat dark blood colour — no gradient, just a solid very dark red
+                ctx.fillStyle = '#1c0101';
+                ctx.fill();
+                // Thin sheen highlight on edge (pooled blood has a slight wet sheen)
+                ctx.strokeStyle = 'rgba(60,5,5,0.35)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Main central pool
+            ctx.save();
+            ctx.globalAlpha = 0.92;
+            drawPoly(grinderMainPool);
+            ctx.fillStyle = '#130000';
+            ctx.fill();
+            // Wet sheen — radial highlight offset up-left like a light source
+            const sheenG = ctx.createRadialGradient(-18, -22, 4, 0, 0, GRINDER_OUTER_R * 0.78);
+            sheenG.addColorStop(0,   'rgba(90,12,8,0.28)');
+            sheenG.addColorStop(0.4, 'rgba(55,5,4,0.12)');
+            sheenG.addColorStop(1,   'rgba(20,0,0,0)');
+            ctx.fillStyle = sheenG;
+            ctx.fill(); // reuses the same clipped path? No — re-draw
+            drawPoly(grinderMainPool);
+            ctx.fillStyle = sheenG;
+            ctx.fill();
+            ctx.restore();
+
             ctx.globalAlpha = 1;
 
             // ── 3. PIT / VOID ──────────────────────────────────────────────
@@ -617,19 +614,30 @@
             ctx.restore(); // end blade rotation
 
             // ── 5. MOTION BLUR ARCS (speed illusion) ──────────────────────
-            const speed = 3.5; // radians per second
-            for (let i = 0; i < numBlades; i++) {
-                const trailAngle = grinderAngle + (i / numBlades) * Math.PI * 2;
-                const trailLen   = Math.PI / numBlades * 1.1;
-                ctx.save();
-                ctx.globalAlpha = 0.08;
-                ctx.strokeStyle = '#8a7c70';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.arc(0, 0, GRINDER_BLADE_R * 0.65, trailAngle - trailLen, trailAngle);
-                ctx.stroke();
-                ctx.restore();
+            // Draw several concentric blur rings at different radii for depth
+            const blurRadii = [GRINDER_BLADE_R * 0.38, GRINDER_BLADE_R * 0.62, GRINDER_BLADE_R * 0.88];
+            for (let ri = 0; ri < blurRadii.length; ri++) {
+                const br = blurRadii[ri];
+                for (let i = 0; i < numBlades; i++) {
+                    const trailAngle = grinderAngle + (i / numBlades) * Math.PI * 2;
+                    const trailLen   = Math.PI / numBlades * 1.6; // longer sweep = faster feel
+                    ctx.save();
+                    ctx.globalAlpha = 0.13 - ri * 0.03;
+                    ctx.strokeStyle = '#9a8e84';
+                    ctx.lineWidth = 3 - ri * 0.5;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, br, trailAngle - trailLen, trailAngle);
+                    ctx.stroke();
+                    ctx.restore();
+                }
             }
+            // Extra full-circle silver streak — like a continuous blur disc at speed
+            ctx.save();
+            ctx.globalAlpha = 0.06;
+            ctx.strokeStyle = '#b0a898';
+            ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.arc(0, 0, GRINDER_BLADE_R * 0.75, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
 
             // ── 6. DEPTH SHADOW inside pit (makes it look deep) ───────────
             const depthGrad = ctx.createRadialGradient(12, 14, 0, 0, 0, GRINDER_PIT_R * 0.9);
@@ -1225,11 +1233,6 @@
                 lightCtx.fill();
             });
 
-            const pRadius = 180;
-            const pGrad = lightCtx.createRadialGradient(player.x, player.y, 20, player.x, player.y, pRadius);
-            pGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)'); pGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            lightCtx.fillStyle = pGrad; lightCtx.beginPath(); lightCtx.arc(player.x, player.y, pRadius, 0, Math.PI*2); lightCtx.fill();
-
             // Grinder ambient light — faint red from pit
             const grinderGlow = lightCtx.createRadialGradient(GRINDER_X, GRINDER_Y, 20, GRINDER_X, GRINDER_Y, 200);
             grinderGlow.addColorStop(0,   'rgba(160, 18, 8, 0.30)');
@@ -1316,7 +1319,7 @@
                 timeAlive += dt; // Track score
 
                 // --- GRINDER UPDATE ---
-                grinderAngle += 3.5 * dt; // ~3.5 rad/s (fast spin)
+                grinderAngle += 9.0 * dt; // fast spin
 
                 // Proximity rumble: shake when player near grinder
                 const gdx = player.x - GRINDER_X, gdy = player.y - GRINDER_Y;
