@@ -52,8 +52,8 @@
             border-radius: 3px; position: relative; overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.04);
         }
-        .bar-bg.vitals-bg { height: 16px; }
-        .bar-bg.growth-bg { height: 8px; border-color: rgba(255,255,255,0.04); }
+        .bar-bg.vitals-bg { height: 12px; border-radius: 6px; }
+        .bar-bg.growth-bg { height: 6px; border-radius: 3px; border-color: rgba(255,255,255,0.04); }
         .bar-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
         .vitals-fill {
             background: linear-gradient(90deg, #5a0000 0%, #9d0208 50%, #d00000 80%, #ff2222 100%);
@@ -68,8 +68,8 @@
             text-shadow: 1px 1px 2px black; letter-spacing: 2px;
             font-family: 'Barlow', Arial, sans-serif;
         }
-        .vitals-label { font-size: 9px; line-height: 16px; }
-        .growth-label { font-size: 6px; line-height: 8px; opacity: 0.6; }
+        .vitals-label { font-size: 8px; line-height: 12px; }
+        .growth-label { font-size: 5px; line-height: 6px; opacity: 0.6; }
 
         #pause-btn {
             position: absolute; top: 15px; right: 20px; width: 45px; height: 45px;
@@ -119,7 +119,7 @@
         .cards-container { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; }
         
         .card {
-            width: 200px; height: 320px;
+            width: 210px; height: 330px;
             border-radius: 18px; padding: 25px 15px; box-sizing: border-box;
             display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -158,24 +158,24 @@
         .card-content { z-index: 2; position: relative; display: flex; flex-direction: column; align-items: center; width: 100%; height: 100%; }
         
         .card-icon-container {
-            width: 70px; height: 70px; background: rgba(0,0,0,0.6); border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 15px rgba(255,255,255,0.1);
-            display: flex; justify-content: center; align-items: center; font-size: 32px;
-            margin-bottom: 12px; position: relative; text-shadow: 0 0 10px rgba(255,255,255,0.8);
+            width: 76px; height: 76px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 20px rgba(255,255,255,0.15), 0 5px 15px rgba(0,0,0,0.8);
+            display: flex; justify-content: center; align-items: center;
+            margin-bottom: 12px; position: relative;
+            background: radial-gradient(circle, #2a2a35 0%, #0a0a0f 100%);
         }
-        .card-common .card-icon-container { box-shadow: 0 0 20px rgba(180, 200, 255, 0.3), inset 0 0 15px rgba(180, 200, 255, 0.2); }
 
         .card h3 { 
-            color: white; margin: 0 0 5px 0; text-transform: uppercase; font-size: 22px; 
+            color: white; margin: 0 0 5px 0; text-transform: uppercase; font-size: 24px; 
             font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-align: center;
         }
         .card .rarity { 
-            font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; 
-            margin-bottom: 12px; font-weight: 800;
+            font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1.5px; 
+            margin-bottom: 12px; font-weight: 800; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 4px;
         }
         .card .desc { 
             color: #ccc; font-size: 13px; text-align: center; line-height: 1.4; flex-grow: 1; font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); padding: 0 5px;
         }
         .card .menu-btn {
             width: 100%; margin: 0; padding: 10px; font-size: 13px; margin-top: auto;
@@ -359,14 +359,17 @@
         let roomTextTimer = 2.0; let keyDroppedTimer = 0; let exitDoorProgress = 0; 
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
 
-        // Weapons Library (With Icons)
+        // Weapons Library (With scales and power rankings)
         const WEAPONS = {
-            'nailgun': { name: 'Rusty Nail Gun', rarity: 'common', desc: 'Auto-fires short rusty spikes.\nDamage: 3', icon: '🔫' },
-            'candle': { name: 'Candle Holder', rarity: 'common', desc: 'Shoots small flickering flames.\nDamage: 2', icon: '🕯️' },
-            'revolver': { name: 'Broken Revolver', rarity: 'common', desc: 'Fires slow, heavy slugs.\nDamage: 10', icon: '💥' },
-            'knife': { name: 'Kitchen Knife', rarity: 'common', desc: 'Orbits close and stabs rapidly.\nDamage: 4', icon: '🔪' },
-            'needle': { name: 'Sewing Needle', rarity: 'common', desc: 'Fast shots that pierce 3 targets.\nDamage: 5', icon: '🪡' },
-            'bone': { name: 'Bone Fragment', rarity: 'common', desc: 'Violently bounces between foes.\nDamage: 3', icon: '🦴' }
+            'nailgun': { name: 'Rusty Nail Gun', rarity: 'common', chance: '62%', desc: 'Auto-fires short rusty spikes.\nDamage: 3', scale: 1.2, power: 10 },
+            'candle': { name: 'Candle Holder', rarity: 'common', chance: '66%', desc: 'Shoots small flickering flames.\nDamage: 2', scale: 0.9, power: 8 },
+            'revolver': { name: 'Broken Revolver', rarity: 'common', chance: '58%', desc: 'Fires slow, heavy slugs.\nDamage: 10', scale: 1.3, power: 15 },
+            'knife': { name: 'Kitchen Knife', rarity: 'common', chance: '64%', desc: 'Orbits close and stabs rapidly.\nDamage: 4', scale: 1.1, power: 12 },
+            'needle': { name: 'Sewing Needle', rarity: 'common', chance: '65%', desc: 'Fast shots that pierce 3 targets.\nDamage: 5', scale: 0.6, power: 11 },
+            'bone': { name: 'Bone Fragment', rarity: 'common', chance: '60%', desc: 'Violently bounces between foes.\nDamage: 3', scale: 0.8, power: 9 },
+            'bottle': { name: 'Cracked Bottle', rarity: 'common', chance: '61%', desc: 'Shatters into glass shrapnel.\nDamage: 4', scale: 1.0, power: 11 },
+            'chain': { name: 'Iron Chain', rarity: 'common', chance: '59%', desc: 'Whips in a wide arc.\nDamage: 6', scale: 1.4, power: 13 },
+            'feather': { name: 'Crow Feather', rarity: 'common', chance: '63%', desc: 'Piercing dark feathers.\nDamage: 4', scale: 0.7, power: 10 }
         };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
@@ -395,6 +398,51 @@
             } else if (state === 'gameover') { document.getElementById('gameover-menu').classList.remove('hidden'); document.getElementById('hud').classList.add('hidden'); runGameOverSequence(); }
         }
 
+        // Shared function to draw weapon models for both Cards and Orbiting Logic
+        function drawWeaponEntity(ctx, id, flash = 0) {
+            ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5; ctx.shadowOffsetY = 5; 
+            if (id === 'nailgun') {
+                ctx.fillStyle = '#8B4513'; ctx.fillRect(-10, -4, 20, 8);
+                ctx.fillStyle = '#A0522D'; ctx.fillRect(0, -6, 5, 12); 
+                ctx.fillStyle = '#aaa'; ctx.fillRect(10, -2, 4, 4); 
+            } else if (id === 'candle') {
+                ctx.fillStyle = '#DAA520'; ctx.fillRect(-6, -2, 12, 6);
+                ctx.fillStyle = '#FFF8DC'; ctx.fillRect(-4, -10, 8, 10);
+                ctx.shadowColor = '#ff4500'; ctx.shadowBlur = 8;
+                ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'revolver') {
+                ctx.fillStyle = '#2F4F4F'; ctx.fillRect(-8, -4, 12, 8); 
+                ctx.fillStyle = '#111'; ctx.fillRect(-10, 0, 4, 10); 
+                ctx.fillStyle = '#696969'; ctx.fillRect(4, -3, 6, 6); 
+            } else if (id === 'knife') {
+                ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, -4); ctx.lineTo(-4, 4); ctx.fill();
+                ctx.fillStyle = '#3a2010'; ctx.fillRect(-12, -2, 8, 4);
+            } else if (id === 'needle') {
+                ctx.fillStyle = '#ccc'; ctx.fillRect(-12, -0.5, 24, 1);
+                ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(-10, 0, 1.5, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'bone') {
+                ctx.fillStyle = '#e4e6d9'; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 4, 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(-5, -2, 2.5, 0, Math.PI*2); ctx.arc(-5, 2, 2.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5, -2, 2.5, 0, Math.PI*2); ctx.arc(5, 2, 2.5, 0, Math.PI*2); ctx.fill();
+            } else if (id === 'bottle') {
+                ctx.fillStyle = 'rgba(46, 139, 87, 0.9)'; ctx.beginPath();
+                ctx.moveTo(8, -3); ctx.lineTo(8, 3); ctx.lineTo(2, 3); ctx.lineTo(-2, 6); ctx.lineTo(-12, 6); ctx.lineTo(-12, -6); ctx.lineTo(-2, -6); ctx.lineTo(2, -3); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(-10, -4, 6, 2);
+            } else if (id === 'chain') {
+                ctx.strokeStyle = '#777'; ctx.lineWidth = 3;
+                for(let i=0; i<4; i++) { ctx.beginPath(); ctx.ellipse(-10 + i*8, 0, 5, 2, 0, 0, Math.PI*2); ctx.stroke(); }
+                ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(16, -4); ctx.lineTo(16, 4); ctx.fill();
+            } else if (id === 'feather') {
+                ctx.fillStyle = '#1a0d23'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.quadraticCurveTo(0, -6, -12, 0); ctx.quadraticCurveTo(0, 6, 12, 0); ctx.fill();
+                ctx.strokeStyle = '#4a2b63'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(12, 0); ctx.stroke();
+            }
+
+            if (flash > 0 && id !== 'knife' && id !== 'chain') {
+                ctx.shadowColor = '#ffea00'; ctx.shadowBlur = 10; ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(16, 0, 4, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
         function triggerLevelUp() {
             setGameState('levelup');
             const container = document.getElementById('cards-container');
@@ -403,21 +451,33 @@
             const available = Object.keys(WEAPONS).sort(() => 0.5 - Math.random());
             const choices = available.slice(0, 3);
             
-            choices.forEach(key => {
+            choices.forEach((key, index) => {
                 const w = WEAPONS[key];
                 const card = document.createElement('div');
                 card.className = `card card-${w.rarity}`;
                 card.innerHTML = `
                     <div class="card-content">
-                        <div class="card-icon-container">${w.icon}</div>
+                        <canvas id="icon-canvas-${index}" class="card-icon-container" width="76" height="76"></canvas>
                         <h3>${w.name}</h3>
-                        <div class="rarity">${w.rarity}</div>
+                        <div class="rarity">${w.rarity} <span style="color: #666; margin: 0 4px;">|</span> ${w.chance}</div>
                         <div class="desc">${w.desc.replace('\n', '<br>')}</div>
                         <button class="menu-btn primary">Select</button>
                     </div>
                 `;
                 card.onclick = (e) => { selectCard(key); };
                 container.appendChild(card);
+
+                // Draw the custom weapon icon onto the card's canvas
+                setTimeout(() => {
+                    const c = document.getElementById(`icon-canvas-${index}`);
+                    if(c) {
+                        const ctxIcon = c.getContext('2d');
+                        ctxIcon.translate(38, 38);
+                        ctxIcon.scale(1.8 * w.scale, 1.8 * w.scale);
+                        ctxIcon.rotate(-Math.PI/4); // Point up and right
+                        drawWeaponEntity(ctxIcon, key, 0);
+                    }
+                }, 50);
             });
         }
 
@@ -429,9 +489,23 @@
             if (key === 'knife') fireRate = 0.4;
             if (key === 'needle') fireRate = 0.6;
             if (key === 'bone') fireRate = 0.8;
+            if (key === 'bottle') fireRate = 0.9;
+            if (key === 'chain') fireRate = 0.8;
+            if (key === 'feather') fireRate = 0.5;
 
-            player.orbitingWeapons.push({ id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0, lungeTimer: 0, hasHit: false, lungeOffset: 0 });
-            player.weapons++;
+            const newWeapon = { id: key, fireTimer: 0, rate: fireRate, lastAimAngle: 0, lungeTimer: 0, hasHit: false, lungeOffset: 0, sweepAngle: 0 };
+
+            if (player.orbitingWeapons.length >= 12) {
+                // Find weakest weapon to replace
+                let weakestIdx = 0; let minPower = Infinity;
+                player.orbitingWeapons.forEach((w, i) => {
+                    if (WEAPONS[w.id].power < minPower) { minPower = WEAPONS[w.id].power; weakestIdx = i; }
+                });
+                player.orbitingWeapons[weakestIdx] = newWeapon;
+            } else {
+                player.orbitingWeapons.push(newWeapon);
+                player.weapons++;
+            }
             setGameState('playing');
         };
 
@@ -453,7 +527,7 @@
         }
 
         function restartRun() {
-            player.hp = player.maxHp = 100; player.xp = 0; player.level = 1; player.weapons = 2; 
+            player.hp = player.maxHp = 100; player.xp = 0; player.level = 1; player.maxXp = 30; player.weapons = 2; 
             player.x = 200; player.y = ROOM_SIZE / 2;
             player.orbitingWeapons = []; player.orbitTime = 0; player.pendingLevels = 0;
             timeAlive = 0; totalKills = 0; currentRoom = 0;
@@ -554,74 +628,52 @@
                 else if (type === 'revolver') { this.speed = 500; this.damage = 10; }
                 else if (type === 'needle') { this.speed = 1800; this.damage = 5; this.pierceCount = 3; }
                 else if (type === 'bone') { this.speed = 800; this.damage = 3; this.bounceCount = 3; this.life = 2.0; }
+                else if (type === 'bottle') { this.speed = 600; this.damage = 4; }
+                else if (type === 'feather') { this.speed = 1600; this.damage = 4; this.pierceCount = 2; }
                 
                 this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
             }
             update(dt) {
                 if (this.type === 'candle') { this.vx += (Math.random() - 0.5) * 200 * dt; this.vy += (Math.random() - 0.5) * 200 * dt; }
                 if (this.type === 'bone') { this.rotation += dt * 15; }
+                if (this.type === 'bottle') { this.rotation += dt * 10; }
                 this.x += this.vx * dt; this.y += this.vy * dt; this.life -= dt;
                 
                 this.trail.push({x: this.x, y: this.y});
-                if (this.type === 'needle' && this.trail.length > 20) this.trail.shift();
+                if ((this.type === 'needle' || this.type === 'feather') && this.trail.length > 20) this.trail.shift();
                 else if (this.trail.length > 8) this.trail.shift();
             }
             draw(ctx) {
                 ctx.save();
                 
-                // Draw Trails first
+                // Draw Trails
                 if (this.type === 'needle' && this.trail.length > 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
                     ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 1; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5; ctx.stroke();
+                } else if (this.type === 'feather' && this.trail.length > 1) {
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = 'rgba(100,50,150,0.5)'; ctx.lineWidth = 2; ctx.stroke();
                 } else if (this.type === 'candle' && this.trail.length > 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
                     ctx.strokeStyle = 'rgba(100,100,100,0.5)'; ctx.lineWidth = 2; ctx.stroke();
                 } else if (this.type === 'bone' && this.trail.length > 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    ctx.beginPath(); ctx.moveTo(this.trail[0].x, this.trail[0].y);
                     for(let i=1; i<this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
                     ctx.strokeStyle = 'rgba(200,200,200,0.3)'; ctx.lineWidth = 4; ctx.stroke();
                 }
 
                 ctx.translate(this.x, this.y); 
                 
-                // Base rotation for drawing the projectile
-                if (this.type === 'bone') {
-                    ctx.rotate(this.rotation);
-                } else {
-                    ctx.rotate(Math.atan2(this.vy, this.vx));
-                }
+                if (this.type === 'bone' || this.type === 'bottle') ctx.rotate(this.rotation);
+                else ctx.rotate(Math.atan2(this.vy, this.vx));
 
-                if (this.type === 'nailgun') {
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 2;
-                    ctx.fillStyle = '#8B4513'; ctx.fillRect(-6, -1, 12, 2);
-                    ctx.fillStyle = '#a0a0a0'; ctx.beginPath(); ctx.moveTo(6, -1); ctx.lineTo(10, 0); ctx.lineTo(6, 1); ctx.fill();
-                } else if (this.type === 'candle') {
-                    ctx.shadowColor = '#ff4500'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#ff8c00'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.arc(1, 0, 2, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'revolver') {
-                    ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
-                    ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'needle') {
-                    ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 4;
-                    ctx.fillStyle = '#ccc'; ctx.fillRect(-12, -0.5, 24, 1);
-                    ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(-10, 0, 1.5, 0, Math.PI*2); ctx.fill();
-                } else if (this.type === 'bone') {
-                    ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 5;
-                    ctx.fillStyle = '#e4e6d9'; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 4, 2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(-5, -2, 2.5, 0, Math.PI*2); ctx.arc(-5, 2, 2.5, 0, Math.PI*2); ctx.fill();
-                    ctx.beginPath(); ctx.arc(5, -2, 2.5, 0, Math.PI*2); ctx.arc(5, 2, 2.5, 0, Math.PI*2); ctx.fill();
-                } else {
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 5;
-                    const bulletGrad = ctx.createLinearGradient(0, -2, 0, 2);
-                    bulletGrad.addColorStop(0, '#666666'); bulletGrad.addColorStop(0.5, '#222222'); bulletGrad.addColorStop(1, '#000000'); 
-                    ctx.fillStyle = bulletGrad; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(2, -2.5); ctx.lineTo(-8, -2.5); ctx.lineTo(-8, 2.5); ctx.lineTo(2, 2.5); ctx.closePath(); ctx.fill();
-                }
+                // Scale for specific projectiles
+                if(WEAPONS[this.type]) ctx.scale(WEAPONS[this.type].scale, WEAPONS[this.type].scale);
+
+                drawWeaponEntity(ctx, this.type, 0); 
                 ctx.restore();
             }
         }
@@ -755,7 +807,7 @@
                     if (this.freezeTimer <= 0) { this.state = 'lunging'; this.lungeTimer = 0.55; this.lungeVx = (dx / (this.distToPlayer||1)) * 460; this.lungeVy = (dy / (this.distToPlayer||1)) * 460; triggerShake(5, 0.12); }
                 } else if (this.state === 'lunging') {
                     this.lungeTimer -= dt; this.x += this.lungeVx * dt; this.y += this.lungeVy * dt; this.lungeVx *= Math.pow(0.80, dt * 60); this.lungeVy *= Math.pow(0.80, dt * 60);
-                    if (this.distToPlayer < this.radius + 28) { player.hp -= 22 * dt; updateHUD(); if (this.attackCooldown <= 0) { this.attackCooldown = 0.5; damageTexts.push({ x: player.x, y: player.y - 30, text: '-22', life: 0.7, vy: -65 }); triggerShake(5, 0.12); } }
+                    if (this.distToPlayer < this.radius + 28) { player.hp -= 22 * dt; player.hurtTimer = 0.15; updateHUD(); if (this.attackCooldown <= 0) { this.attackCooldown = 0.5; damageTexts.push({ x: player.x, y: player.y - 30, text: '-22', life: 0.7, vy: -65 }); triggerShake(5, 0.12); } }
                     if (this.lungeTimer <= 0) { this.state = 'crawling'; this.crawlTimer = 4 + Math.random() * 5; }
                 }
                 if (this.attackCooldown > 0) this.attackCooldown -= dt;
@@ -801,7 +853,7 @@
                     for (let other of allEnemies) { if (other !== this) { let odx = this.x - other.x; let ody = this.y - other.y; let odist = Math.sqrt(odx*odx + ody*ody); let minDist = this.radius + other.radius + 15; 
                             if (odist > 0 && odist < minDist) { let push = (minDist - odist) / 2; separationX += (odx / odist) * push * 5; separationY += (ody / odist) * push * 5; } } }
                     let forwardSpeed = 0;
-                    if (this.distToPlayer > player.radius + 20) { forwardSpeed = this.speed; } else { player.hp -= 10 * dt; player.hurtTimer = 0.2; updateHUD(); if (this.attackCooldown <= 0) { this.isAttacking = true; this.attackTime = 0.3; this.attackCooldown = 1.0; } }
+                    if (this.distToPlayer > player.radius + 20) { forwardSpeed = this.speed; } else { player.hp -= 10 * dt; player.hurtTimer = 0.15; updateHUD(); if (this.attackCooldown <= 0) { this.isAttacking = true; this.attackTime = 0.3; this.attackCooldown = 1.0; } }
                     if (this.attackCooldown > 0) this.attackCooldown -= dt; if (this.isAttacking) { this.attackTime -= dt; if (this.attackTime <= 0) this.isAttacking = false; }
                     this.x += (Math.cos(this.facingAngle) * forwardSpeed + separationX) * dt; this.y += (Math.sin(this.facingAngle) * forwardSpeed + separationY) * dt;
                     this.legs.forEach(leg => leg.update(this.x, this.y, this.facingAngle, dt));
@@ -891,7 +943,8 @@
         class Player {
             constructor() {
                 this.hp = 100; this.maxHp = 100;
-                this.xp = 0; this.maxXp = 100; this.level = 1; this.weapons = 2;
+                this.xp = 0; this.maxXp = 30; // Starts low, 2 blue gems
+                this.level = 1; this.weapons = 2;
 
                 this.x = 200; this.y = ROOM_SIZE / 2; this.radius = 35; this.speed = 400; this.animTime = 0; this.facingAngle = 0; 
                 this.fireRate = 0.12; this.fireTimer = 0; this.leftGunNext = true; 
@@ -976,13 +1029,14 @@
                 this.orbitTime += dt * 2.0;
                 this.orbitingWeapons.forEach((w, i) => {
                     if (w.fireTimer > 0) w.fireTimer -= dt;
+                    if (w.sweepTimer > 0) w.sweepTimer -= dt;
                     
-                    let orbitRadius = w.id === 'knife' ? 45 : 75;
+                    let orbitRadius = (w.id === 'knife' || w.id === 'chain') ? 45 : 75;
                     let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
                     let wx = this.x + Math.cos(angle) * orbitRadius;
                     let wy = this.y + Math.sin(angle) * orbitRadius;
                     
-                    // Specific logic for the Knife (it is a melee lunge, not a projectile)
+                    // Specific logic for Melee Weapons (Knife & Chain)
                     if (w.id === 'knife') {
                         if (w.lungeTimer > 0) {
                             w.lungeTimer -= dt;
@@ -994,9 +1048,9 @@
                                 let kx = this.x + Math.cos(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
                                 let ky = this.y + Math.sin(w.lastAimAngle) * (orbitRadius + w.lungeOffset);
                                 enemies.forEach(e => {
-                                    if ((e.x - kx)**2 + (e.y - ky)**2 < (e.radius + 20)**2) {
-                                        e.hp -= 4; e.hitCount++; w.hasHit = true;
-                                        damageTexts.push({ x: e.x, y: e.y - 20, text: "-4", life: 0.6, vy: -40 });
+                                    if ((e.x - kx)**2 + (e.y - ky)**2 < (e.radius + 25)**2) {
+                                        e.hp -= WEAPONS[w.id].power; e.hitCount++; w.hasHit = true;
+                                        damageTexts.push({ x: e.x, y: e.y - 20, text: "-" + WEAPONS[w.id].power, life: 0.6, vy: -40 });
                                         
                                         // Simple blood hit effect
                                         if (e.hitCount % 2 === 0) {
@@ -1011,8 +1065,29 @@
                                     }
                                 });
                             }
+                        } else { w.lungeOffset = 0; }
+                    } else if (w.id === 'chain') {
+                        if (w.sweepTimer > 0) {
+                            // Sweep 180 degrees
+                            let progress = 1 - (w.sweepTimer / 0.3);
+                            w.sweepAngle = w.lastAimAngle - Math.PI/2 + (Math.PI * progress);
+                            
+                            let kx = this.x + Math.cos(w.sweepAngle) * 90;
+                            let ky = this.y + Math.sin(w.sweepAngle) * 90;
+                            enemies.forEach(e => {
+                                if ((e.x - kx)**2 + (e.y - ky)**2 < (e.radius + 30)**2 && !e.chainHit) {
+                                    e.hp -= WEAPONS[w.id].power; e.hitCount++; e.chainHit = true;
+                                    damageTexts.push({ x: e.x, y: e.y - 20, text: "-" + WEAPONS[w.id].power, life: 0.6, vy: -40 });
+                                    if (e.hitCount % 2 === 0) {
+                                        for(let p = 0; p < 2; p++) {
+                                            activeSplatter.push({ x: e.x, y: e.y, vx: (Math.random()-0.5)*150, vy: (Math.random()-0.5)*150, size: Math.random()*3+1, color: e.type==='choir'?'#3d0b6e':'#6a040f', friction: 0.8, scaleX: 1, angle: 0 });
+                                        }
+                                    }
+                                }
+                            });
                         } else {
-                            w.lungeOffset = 0;
+                            // Reset hit flags on enemies when not sweeping
+                            enemies.forEach(e => e.chainHit = false);
                         }
                     }
 
@@ -1024,7 +1099,7 @@
                             if (dist < minDist) { minDist = dist; closest = e; }
                         });
                         
-                        let maxRange = w.id === 'knife' ? 12000 : 400000; // Knife attacks only when very close
+                        let maxRange = (w.id === 'knife' || w.id === 'chain') ? 12000 : 400000; 
                         if (closest && minDist < maxRange) {
                             let aimAngle = Math.atan2(closest.y - wy, closest.x - wx);
                             w.lastAimAngle = aimAngle;
@@ -1032,15 +1107,17 @@
                             
                             if (w.id === 'knife') {
                                 w.lungeTimer = 0.2; w.hasHit = false;
+                            } else if (w.id === 'chain') {
+                                w.sweepTimer = 0.3; w.sweepAngle = aimAngle - Math.PI/2;
                             } else {
                                 let tipX = wx + Math.cos(aimAngle) * 15;
                                 let tipY = wy + Math.sin(aimAngle) * 15;
                                 bullets.push(new Bullet(tipX, tipY, aimAngle, w.id));
                             }
                         } else {
-                            if (w.id !== 'knife' || w.lungeTimer <= 0) w.lastAimAngle = this.facingAngle;
+                            if ((w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0)) w.lastAimAngle = this.facingAngle;
                         }
-                    } else if (w.fireTimer <= 0 && (w.id !== 'knife' || w.lungeTimer <= 0)) {
+                    } else if (w.fireTimer <= 0 && (w.id !== 'knife' || w.lungeTimer <= 0) && (w.id !== 'chain' || w.sweepTimer <= 0)) {
                         w.lastAimAngle = this.facingAngle;
                     }
                 });
@@ -1075,7 +1152,7 @@
 
             drawOrbitingWeapons(ctx) {
                 this.orbitingWeapons.forEach((w, i) => {
-                    let orbitRadius = w.id === 'knife' ? 45 : 75;
+                    let orbitRadius = (w.id === 'knife' || w.id === 'chain') ? 45 : 75;
                     let angle = this.orbitTime + (i / this.orbitingWeapons.length) * Math.PI * 2;
                     
                     let wx = Math.cos(angle) * orbitRadius; 
@@ -1085,15 +1162,21 @@
                     ctx.translate(wx, wy);
                     
                     let aimAngle = w.lastAimAngle !== undefined ? w.lastAimAngle : angle + Math.PI/2;
+                    if (w.id === 'chain' && w.sweepTimer > 0) aimAngle = w.sweepAngle;
+
                     ctx.rotate(aimAngle);
                     
                     let recoil = 0;
                     if (w.id === 'knife') {
-                        ctx.translate(w.lungeOffset, 0); // Slash forward
-                        // Draw slash swoosh
+                        ctx.translate(w.lungeOffset, 0); 
                         if (w.lungeOffset > 10) {
                             ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-w.lungeOffset, -5); ctx.lineTo(-w.lungeOffset, 5);
                             ctx.fillStyle = `rgba(255,255,255,${w.lungeOffset/60})`; ctx.fill();
+                        }
+                    } else if (w.id === 'chain') {
+                        if (w.sweepTimer > 0) {
+                            ctx.beginPath(); ctx.arc(0, 0, 45, -0.2, 0.2); 
+                            ctx.strokeStyle = `rgba(200,200,200,${w.sweepTimer/0.3})`; ctx.lineWidth=3; ctx.stroke();
                         }
                     } else {
                         if (w.fireTimer > w.rate - 0.1) recoil = 8;
@@ -1101,37 +1184,12 @@
                     }
 
                     if (Math.abs(aimAngle) > Math.PI/2) ctx.scale(1, -1); 
-
-                    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 5;
-
-                    if (w.id === 'nailgun') {
-                        ctx.fillStyle = '#8B4513'; ctx.fillRect(-10, -4, 20, 8);
-                        ctx.fillStyle = '#A0522D'; ctx.fillRect(0, -6, 5, 12); 
-                        ctx.fillStyle = '#aaa'; ctx.fillRect(10, -2, 4, 4); 
-                    } else if (w.id === 'candle') {
-                        ctx.fillStyle = '#DAA520'; ctx.fillRect(-6, -2, 12, 6);
-                        ctx.fillStyle = '#FFF8DC'; ctx.fillRect(-4, -10, 8, 10);
-                        ctx.fillStyle = '#FF4500'; ctx.beginPath(); ctx.arc(0, -12, 4, 0, Math.PI*2); ctx.fill();
-                    } else if (w.id === 'revolver') {
-                        ctx.fillStyle = '#2F4F4F'; ctx.fillRect(-8, -4, 12, 8); 
-                        ctx.fillStyle = '#111'; ctx.fillRect(-10, 0, 4, 10); 
-                        ctx.fillStyle = '#696969'; ctx.fillRect(4, -3, 6, 6); 
-                    } else if (w.id === 'knife') {
-                        ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-4, -4); ctx.lineTo(-4, 4); ctx.fill();
-                        ctx.fillStyle = '#3a2010'; ctx.fillRect(-12, -2, 8, 4);
-                    } else if (w.id === 'needle') {
-                        ctx.fillStyle = '#ccc'; ctx.fillRect(-12, -0.5, 24, 1);
-                        ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(-10, 0, 1.5, 0, Math.PI*2); ctx.fill();
-                    } else if (w.id === 'bone') {
-                        ctx.fillStyle = '#e4e6d9'; ctx.beginPath(); ctx.roundRect(-5, -2, 10, 4, 2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(-5, -2, 2.5, 0, Math.PI*2); ctx.arc(-5, 2, 2.5, 0, Math.PI*2); ctx.fill();
-                        ctx.beginPath(); ctx.arc(5, -2, 2.5, 0, Math.PI*2); ctx.arc(5, 2, 2.5, 0, Math.PI*2); ctx.fill();
-                    }
                     
-                    if (w.fireTimer > w.rate - 0.05 && w.id !== 'knife') {
-                        ctx.shadowColor = '#ffea00'; ctx.shadowBlur = 10; ctx.fillStyle = '#ffffff';
-                        ctx.beginPath(); ctx.arc(16, 0, 4, 0, Math.PI*2); ctx.fill();
-                    }
+                    // Apply visual scale!
+                    if (WEAPONS[w.id]) ctx.scale(WEAPONS[w.id].scale, WEAPONS[w.id].scale);
+
+                    drawWeaponEntity(ctx, w.id, w.fireTimer > w.rate - 0.05 ? 1 : 0);
+                    
                     ctx.restore();
                 });
             }
@@ -1441,7 +1499,7 @@
                         while (player.xp >= player.maxXp) {
                             player.xp -= player.maxXp;
                             player.level++;
-                            player.maxXp = Math.floor(player.maxXp * 1.25);
+                            player.maxXp = Math.floor(player.maxXp * 1.4 + 10); // Much harder scaling
                             player.pendingLevels++;
                         }
                         updateHUD();
@@ -1457,7 +1515,7 @@
                     let eb = enemyBullets[i]; eb.update(dt);
                     let dx = player.x - eb.x; let dy = player.y - eb.y;
                     if (dx*dx + dy*dy < (player.radius + eb.radius) * (player.radius + eb.radius)) {
-                        player.hp -= eb.damage; player.hurtTimer = 0.2; updateHUD();
+                        player.hp -= eb.damage; player.hurtTimer = 0.15; updateHUD();
                         damageTexts.push({ x: player.x + (Math.random() - 0.5) * 16, y: player.y - 30, text: "-" + eb.damage, life: 0.7, vy: -55 - Math.random() * 20 });
                         triggerShake(4, 0.1); enemyBullets.splice(i, 1);
                         
@@ -1480,6 +1538,17 @@
                         if (dx*dx + dy*dy < enemy.radius * enemy.radius) {
                             enemy.hp -= b.damage; enemy.hitCount++;
                             damageTexts.push({ x: enemy.x + (Math.random() - 0.5) * 20, y: enemy.y - 20, text: "-" + b.damage, life: 0.6, vy: -40 - Math.random() * 20 });
+
+                            // Bottle Shatter
+                            if (b.type === 'bottle') {
+                                for(let p=0; p<6; p++) {
+                                    activeSplatter.push({
+                                        x: enemy.x, y: enemy.y, vx: (Math.random()-0.5)*300, vy: (Math.random()-0.5)*300,
+                                        size: Math.random()*2+1, color: '#2e8b57', friction: 0.9, scaleX: 1, angle: 0
+                                    });
+                                }
+                                triggerShake(3, 0.1);
+                            }
 
                             if (enemy.hitCount % 3 === 0) {
                                 let hitAngle = Math.atan2(b.vy, b.vx); let numHit = 1 + Math.floor(Math.random() * 2);
@@ -1700,8 +1769,8 @@
 
             if (player.hurtTimer > 0) {
                 ctx.save();
-                let alpha = (player.hurtTimer / 0.2) * 0.7; 
-                let grad = ctx.createRadialGradient(width/2, height/2, height*0.3, width/2, height/2, height*0.8);
+                let alpha = (player.hurtTimer / 0.15) * 0.4; 
+                let grad = ctx.createRadialGradient(width/2, height/2, height*0.4, width/2, height/2, height*0.8);
                 grad.addColorStop(0, 'rgba(180, 0, 0, 0)'); grad.addColorStop(1, `rgba(180, 0, 0, ${alpha})`);
                 ctx.fillStyle = grad; ctx.fillRect(0, 0, width, height); ctx.restore();
             }
