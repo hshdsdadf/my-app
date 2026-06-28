@@ -796,13 +796,87 @@
                 } else { stick.vectorX = 0; stick.vectorY = 0; stick.magnitude = 0; }
             });
         }
+
+        function resetStick(side) {
+            const stick = input[side];
+            stick.active = false;
+            stick.id = null;
+            stick.vectorX = 0;
+            stick.vectorY = 0;
+            stick.magnitude = 0;
+        }
+
+        function updatePointerStick(side, pointerId, x, y, isStart = false) {
+            const stick = input[side];
+            if (isStart || !stick.active) {
+                stick.active = true;
+                stick.id = pointerId;
+                stick.baseX = x;
+                stick.baseY = y;
+            }
+            if (stick.id !== pointerId) return;
+
+            stick.currentX = x;
+            stick.currentY = y;
+            let dx = stick.currentX - stick.baseX;
+            let dy = stick.currentY - stick.baseY;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > JOYSTICK_MAX_RADIUS) {
+                dx = (dx / dist) * JOYSTICK_MAX_RADIUS;
+                dy = (dy / dist) * JOYSTICK_MAX_RADIUS;
+                dist = JOYSTICK_MAX_RADIUS;
+                stick.baseX = stick.currentX - dx;
+                stick.baseY = stick.currentY - dy;
+            }
+            stick.vectorX = dx / JOYSTICK_MAX_RADIUS;
+            stick.vectorY = dy / JOYSTICK_MAX_RADIUS;
+            stick.magnitude = dist / JOYSTICK_MAX_RADIUS;
+        }
+
+        function isGameplayPointerTarget(e) {
+            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay')) return false;
+            if (isPointOnComputerAction(e.clientX, e.clientY)) return false;
+            return gameState === 'playing';
+        }
+
+        function handlePointerDown(e) {
+            if (!isGameplayPointerTarget(e)) return;
+            e.preventDefault();
+            ensureAudio();
+            const side = e.clientX < width / 2 ? 'left' : 'right';
+            updatePointerStick(side, e.pointerId, e.clientX, e.clientY, true);
+        }
+
+        function handlePointerMove(e) {
+            if (gameState !== 'playing') return;
+            if (input.left.id === e.pointerId) {
+                e.preventDefault();
+                updatePointerStick('left', e.pointerId, e.clientX, e.clientY);
+            } else if (input.right.id === e.pointerId) {
+                e.preventDefault();
+                updatePointerStick('right', e.pointerId, e.clientX, e.clientY);
+            }
+        }
+
+        function handlePointerUp(e) {
+            if (input.left.id === e.pointerId) resetStick('left');
+            if (input.right.id === e.pointerId) resetStick('right');
+        }
+
         window.addEventListener('touchstart', (e) => { ensureAudio(); }, { once: true, passive: true });
         window.addEventListener('touchstart', handleTouch, { passive: false }); window.addEventListener('touchmove', handleTouch, { passive: false });
         window.addEventListener('touchend', handleTouch, { passive: false }); window.addEventListener('touchcancel', handleTouch, { passive: false });
-        let mouseDown = false;
-        window.addEventListener('mousedown', (e) => { if (isPointOnComputerAction(e.clientX, e.clientY)) return; if (gameState === 'playing') { mouseDown = true; handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); } });
-        window.addEventListener('mousemove', (e) => { if (mouseDown && gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); });
-        window.addEventListener('mouseup', (e) => { mouseDown = false; if (gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [] }); });
+        if (window.PointerEvent) {
+            window.addEventListener('pointerdown', handlePointerDown, { passive: false });
+            window.addEventListener('pointermove', handlePointerMove, { passive: false });
+            window.addEventListener('pointerup', handlePointerUp, { passive: false });
+            window.addEventListener('pointercancel', handlePointerUp, { passive: false });
+        } else {
+            let mouseDown = false;
+            window.addEventListener('mousedown', (e) => { if (isPointOnComputerAction(e.clientX, e.clientY)) return; if (gameState === 'playing') { mouseDown = true; handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); } });
+            window.addEventListener('mousemove', (e) => { if (mouseDown && gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); });
+            window.addEventListener('mouseup', (e) => { mouseDown = false; if (gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [] }); });
+        }
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'e') {
