@@ -625,8 +625,6 @@
         const SHELF_W = 230;
         const SHELF_H = 88;
         const SHELF_ANGLE = 0.02;
-        const FLOOR_LAMP_X = 300;
-        const FLOOR_LAMP_Y = ROOM_SIZE - 142;
 
         // --- GENERATOR PROP ---
         const GENERATOR_W = 170;
@@ -1953,40 +1951,6 @@
             ctx.restore();
         }
 
-        function drawFloorLamp(ctx, time) {
-            ctx.save();
-            ctx.translate(FLOOR_LAMP_X, FLOOR_LAMP_Y);
-
-            ctx.save();
-            ctx.globalAlpha = 0.36 + Math.sin(time * 3) * 0.03;
-            const pool = ctx.createRadialGradient(0, 0, 5, 0, 0, 78);
-            pool.addColorStop(0, 'rgba(255,225,145,0.8)');
-            pool.addColorStop(0.45, 'rgba(255,185,80,0.23)');
-            pool.addColorStop(1, 'rgba(255,145,35,0)');
-            ctx.fillStyle = pool;
-            ctx.beginPath(); ctx.arc(0, 0, 78, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-
-            ctx.fillStyle = 'rgba(0,0,0,0.45)';
-            ctx.beginPath(); ctx.ellipse(8, 10, 22, 12, 0.3, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowColor = 'rgba(255,210,120,0.7)';
-            ctx.shadowBlur = 20;
-            const lamp = ctx.createRadialGradient(-4, -5, 2, 0, 0, 18);
-            lamp.addColorStop(0, '#fff4c9');
-            lamp.addColorStop(0.38, '#b9a56e');
-            lamp.addColorStop(1, '#262822');
-            ctx.fillStyle = lamp;
-            ctx.beginPath(); ctx.ellipse(0, 0, 22, 15, -0.25, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowColor = 'transparent';
-            ctx.strokeStyle = '#151818';
-            ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.arc(0, 0, 24, 0.2, Math.PI * 1.65); ctx.stroke();
-            ctx.fillStyle = '#070808';
-            ctx.beginPath(); ctx.arc(-15, 10, 4, 0, Math.PI * 2); ctx.fill();
-
-            ctx.restore();
-        }
-
         function collideCircleWithStorageShelf(obj, radius) {
             const cos = Math.cos(-SHELF_ANGLE);
             const sin = Math.sin(-SHELF_ANGLE);
@@ -2546,10 +2510,11 @@
                 const pX = l.x + (l.x - camX) * pFactor;
                 const pY = l.y + (l.y - camY) * pFactor;
                 
-                const radius = 350;
+                const radius = 470;
                 const grad = lightCtx.createRadialGradient(pX, pY, 10, pX, pY, radius);
-                grad.addColorStop(0, 'rgba(255, 255, 255, 0.85)'); 
-                grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.3)');  
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)'); 
+                grad.addColorStop(0.38, 'rgba(255, 255, 255, 0.38)');  
+                grad.addColorStop(0.72, 'rgba(255, 255, 255, 0.10)');
                 grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
                 
                 lightCtx.fillStyle = grad;
@@ -2558,6 +2523,14 @@
                 lightCtx.arc(pX, pY, radius, 0, Math.PI * 2); 
                 lightCtx.fill();
             });
+
+            // Soft reflected ceiling spill along the lower wall so the storage and phone read.
+            const lowerWallGlow = lightCtx.createLinearGradient(0, ROOM_SIZE - 360, 0, ROOM_SIZE);
+            lowerWallGlow.addColorStop(0, 'rgba(255,255,255,0)');
+            lowerWallGlow.addColorStop(0.55, 'rgba(255,255,255,0.055)');
+            lowerWallGlow.addColorStop(1, 'rgba(255,255,255,0.13)');
+            lightCtx.fillStyle = lowerWallGlow;
+            lightCtx.fillRect(0, ROOM_SIZE - 360, ROOM_SIZE, 360);
 
             // Grinder ambient light — faint red from pit
             const grinderGlow = lightCtx.createRadialGradient(GRINDER_X, GRINDER_Y, 20, GRINDER_X, GRINDER_Y, 200);
@@ -2575,13 +2548,6 @@
                 lightCtx.fillStyle = dockGlow;
                 lightCtx.beginPath(); lightCtx.arc(DOCK_X, DOCK_Y, 190, 0, Math.PI * 2); lightCtx.fill();
             }
-
-            const floorLampGlow = lightCtx.createRadialGradient(FLOOR_LAMP_X, FLOOR_LAMP_Y, 6, FLOOR_LAMP_X, FLOOR_LAMP_Y, 165);
-            floorLampGlow.addColorStop(0, 'rgba(255, 220, 140, 0.45)');
-            floorLampGlow.addColorStop(0.32, 'rgba(255, 178, 70, 0.17)');
-            floorLampGlow.addColorStop(1, 'rgba(90, 45, 5, 0)');
-            lightCtx.fillStyle = floorLampGlow;
-            lightCtx.beginPath(); lightCtx.arc(FLOOR_LAMP_X, FLOOR_LAMP_Y, 165, 0, Math.PI * 2); lightCtx.fill();
 
             // Generator warning lamps cut a small red pocket through the room darkness.
             const generatorPulse = 0.45 + Math.abs(Math.sin(lastTime / 180)) * 0.35;
@@ -2895,7 +2861,6 @@
             // Draw World Elements
             drawRoom(ctx);
             drawStorageShelf(ctx, lastTime / 1000);
-            drawFloorLamp(ctx, lastTime / 1000);
             drawWallPhone(ctx, lastTime / 1000);
             drawLabTable(ctx, lastTime / 1000);
             drawPowerDock(ctx, lastTime / 1000);
