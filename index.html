@@ -1615,89 +1615,84 @@
             ctx.beginPath(); ctx.moveTo(-136, 0); ctx.lineTo(136, 0); ctx.stroke();
             ctx.restore();
 
-            // Top-down rugged terminal: closed metal computer body with glowing screen inset.
+            // Top-down rugged terminal: a flat tabletop unit, not a side-view monitor.
             ctx.save();
-            ctx.translate(-75, -10);
-            ctx.rotate(0.03);
-            ctx.fillStyle = '#101516';
-            ctx.shadowColor = 'rgba(0,0,0,0.7)';
-            ctx.shadowBlur = 10;
-            ctx.beginPath(); ctx.roundRect(-52, -34, 104, 68, 5); ctx.fill();
-            const caseGrad = ctx.createLinearGradient(-50, -32, 52, 34);
-            caseGrad.addColorStop(0, '#4d5655');
-            caseGrad.addColorStop(0.5, '#1d2425');
+            ctx.translate(-78, -8);
+            ctx.rotate(-0.05);
+            ctx.shadowColor = 'rgba(0,0,0,0.62)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 7;
+            const caseGrad = ctx.createLinearGradient(-58, -40, 58, 40);
+            caseGrad.addColorStop(0, '#626962');
+            caseGrad.addColorStop(0.32, '#2c3434');
+            caseGrad.addColorStop(0.68, '#151b1d');
             caseGrad.addColorStop(1, '#070909');
             ctx.fillStyle = caseGrad;
-            ctx.beginPath(); ctx.roundRect(-46, -28, 92, 56, 4); ctx.fill();
-            ctx.shadowColor = 'rgba(46,190,220,0.58)';
-            ctx.shadowBlur = 16;
-            const screen = ctx.createRadialGradient(-10, -6, 2, 0, 0, 32);
+            ctx.beginPath(); ctx.roundRect(-62, -43, 124, 86, 8); ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.strokeStyle = 'rgba(210,218,205,0.22)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#0a0d0e';
+            ctx.beginPath(); ctx.roundRect(-47, -30, 94, 43, 4); ctx.fill();
+            ctx.shadowColor = 'rgba(46,190,220,0.52)';
+            ctx.shadowBlur = 13;
+            const screen = ctx.createRadialGradient(-10, -9, 2, 0, -8, 38);
             screen.addColorStop(0, '#a8f2ff');
-            screen.addColorStop(0.55, '#2a98b8');
+            screen.addColorStop(0.52, '#2a98b8');
             screen.addColorStop(1, '#062a35');
             ctx.fillStyle = screen;
-            ctx.beginPath(); ctx.roundRect(-34, -18, 68, 34, 3); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-39, -24, 78, 31, 3); ctx.fill();
             ctx.shadowBlur = 0;
             ctx.strokeStyle = 'rgba(190,245,255,0.5)';
             ctx.lineWidth = 1;
-            for (let y = -9; y <= 8; y += 8) {
-                ctx.beginPath(); ctx.moveTo(-24, y); ctx.lineTo(22, y + 1); ctx.stroke();
+            for (let y = -17; y <= -1; y += 7) {
+                ctx.beginPath(); ctx.moveTo(-28, y); ctx.lineTo(26, y + 1); ctx.stroke();
             }
-            ctx.fillStyle = '#070808';
-            ctx.beginPath(); ctx.roundRect(-38, 22, 76, 13, 2); ctx.fill();
-            ctx.fillStyle = 'rgba(210,220,205,0.25)';
-            for (let x = -30; x <= 30; x += 10) {
-                ctx.fillRect(x, 25, 5, 2);
+
+            // Keyboard deck drawn flat on the same top plane.
+            ctx.fillStyle = '#0c0f10';
+            ctx.beginPath(); ctx.roundRect(-46, 18, 92, 18, 3); ctx.fill();
+            ctx.fillStyle = 'rgba(205,212,198,0.30)';
+            for (let row = 0; row < 2; row++) {
+                for (let col = 0; col < 12; col++) {
+                    ctx.fillRect(-39 + col * 7, 22 + row * 6, 4, 2);
+                }
             }
+            ctx.fillStyle = 'rgba(180,190,180,0.18)';
+            ctx.beginPath(); ctx.roundRect(-18, 33, 36, 3, 1); ctx.fill();
             ctx.restore();
 
-            // Top-down articulated lamp: base, arm, and shade all lie on the tabletop plane.
-            ctx.save();
-            ctx.translate(76, -20);
-            ctx.fillStyle = '#171b1b';
-            ctx.shadowColor = 'rgba(0,0,0,0.65)';
-            ctx.shadowBlur = 8;
-            ctx.beginPath(); ctx.arc(-10, 24, 18, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = '#242b2b';
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(-10, 24); ctx.lineTo(8, 4); ctx.lineTo(31, -10); ctx.stroke();
-            ctx.shadowColor = 'rgba(255,205,110,0.65)';
-            ctx.shadowBlur = 18;
-            const shade = ctx.createRadialGradient(31, -10, 2, 31, -10, 24);
-            shade.addColorStop(0, '#fff0c6');
-            shade.addColorStop(0.38, '#aa996d');
-            shade.addColorStop(1, '#2d302d');
-            ctx.fillStyle = shade;
-            ctx.beginPath(); ctx.ellipse(31, -10, 25, 17, -0.22, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'rgba(255,232,150,0.35)';
-            ctx.beginPath(); ctx.arc(31, -10, 6, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-
-            ctx.save();
-            ctx.globalAlpha = 0.18 + Math.sin(time * 2.2) * 0.018;
-            const lampPool = ctx.createRadialGradient(108, -30, 4, 74, -8, 112);
-            lampPool.addColorStop(0, 'rgba(255,225,145,0.75)');
-            lampPool.addColorStop(0.48, 'rgba(255,185,80,0.22)');
-            lampPool.addColorStop(1, 'rgba(255,160,40,0)');
-            ctx.fillStyle = lampPool;
-            ctx.beginPath(); ctx.ellipse(74, -8, 120, 58, -0.15, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
-
-            // Low-tech clutter: old books/manuals and a paper note.
+            // Low-tech manuals, drawn as top-down books with covers, page blocks, and spines.
             const books = [
-                { x: 18, y: 28, w: 76, h: 13, c: '#24313a' },
-                { x: 20, y: 13, w: 68, h: 13, c: '#3a241f' },
-                { x: 16, y: -2, w: 82, h: 13, c: '#27382e' }
+                { x: 26, y: -25, w: 62, h: 38, c: '#263540', a: -0.12 },
+                { x: 54, y: 12, w: 58, h: 34, c: '#3c261f', a: 0.08 },
+                { x: 8, y: 27, w: 72, h: 32, c: '#26382e', a: -0.02 }
             ];
             books.forEach(b => {
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.rotate(b.a);
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetX = 3;
+                ctx.shadowOffsetY = 4;
+                ctx.fillStyle = '#c8c0a0';
+                ctx.beginPath(); ctx.roundRect(-b.w / 2 + 4, -b.h / 2 + 3, b.w - 6, b.h - 6, 2); ctx.fill();
                 ctx.fillStyle = b.c;
-                ctx.beginPath(); ctx.roundRect(b.x, b.y, b.w, b.h, 2); ctx.fill();
-                ctx.strokeStyle = 'rgba(230,220,180,0.22)';
+                ctx.beginPath(); ctx.roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 3); ctx.fill();
+                ctx.shadowColor = 'transparent';
+                ctx.fillStyle = 'rgba(255,255,230,0.10)';
+                ctx.beginPath(); ctx.roundRect(-b.w / 2 + 10, -b.h / 2 + 6, b.w - 18, b.h - 12, 2); ctx.fill();
+                ctx.fillStyle = 'rgba(0,0,0,0.34)';
+                ctx.fillRect(-b.w / 2 + 8, -b.h / 2 + 3, 5, b.h - 6);
+                ctx.strokeStyle = 'rgba(230,220,180,0.28)';
                 ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(b.x + 9, b.y + 2); ctx.lineTo(b.x + 9, b.y + b.h - 2); ctx.stroke();
-                ctx.strokeStyle = 'rgba(0,0,0,0.28)';
-                ctx.beginPath(); ctx.moveTo(b.x, b.y + b.h - 1); ctx.lineTo(b.x + b.w, b.y + b.h - 1); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-b.w / 2 + 17, -b.h / 2 + 9); ctx.lineTo(b.w / 2 - 13, -b.h / 2 + 9); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(-b.w / 2 + 17, -b.h / 2 + 16); ctx.lineTo(b.w / 2 - 20, -b.h / 2 + 16); ctx.stroke();
+                ctx.restore();
             });
 
             ctx.save();
@@ -2320,7 +2315,7 @@
                 lightCtx.beginPath(); lightCtx.arc(DOCK_X, DOCK_Y, 190, 0, Math.PI * 2); lightCtx.fill();
             }
 
-            // Lower-right work table light: cool computer glow and warmer desk lamp pool.
+            // Lower-right work table light: only the old terminal screen glows.
             const computerX = TABLE_X - 75;
             const computerY = TABLE_Y - 10;
             const compGlow = lightCtx.createRadialGradient(computerX, computerY, 5, computerX, computerY, 100);
@@ -2329,15 +2324,6 @@
             compGlow.addColorStop(1, 'rgba(0, 55, 80, 0)');
             lightCtx.fillStyle = compGlow;
             lightCtx.beginPath(); lightCtx.arc(computerX, computerY, 100, 0, Math.PI * 2); lightCtx.fill();
-
-            const lampX = TABLE_X + 107;
-            const lampY = TABLE_Y - 30;
-            const lampGlow = lightCtx.createRadialGradient(lampX, lampY, 6, lampX, lampY, 150);
-            lampGlow.addColorStop(0, 'rgba(255, 220, 140, 0.48)');
-            lampGlow.addColorStop(0.35, 'rgba(255, 184, 80, 0.19)');
-            lampGlow.addColorStop(1, 'rgba(95, 45, 5, 0)');
-            lightCtx.fillStyle = lampGlow;
-            lightCtx.beginPath(); lightCtx.arc(lampX, lampY, 150, 0, Math.PI * 2); lightCtx.fill();
 
             // Generator warning lamps cut a small red pocket through the room darkness.
             const generatorPulse = 0.45 + Math.abs(Math.sin(lastTime / 180)) * 0.35;
