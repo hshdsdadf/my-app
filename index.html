@@ -185,6 +185,191 @@
 
         @keyframes pop { 0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 20% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; } 40% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 80% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
         .pop-anim { animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        #terminal-menu {
+            background:
+                radial-gradient(circle at 50% 45%, rgba(48, 80, 58, 0.16), transparent 42%),
+                rgba(3, 5, 4, 0.78);
+            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+        #terminal-menu.hidden .terminal-shell {
+            opacity: 0;
+            transform: translateY(18px) scale(0.975);
+        }
+        .terminal-shell {
+            width: min(900px, 88vw);
+            height: min(560px, 82vh);
+            background: linear-gradient(145deg, #111512, #030504 68%, #0c0f0c);
+            border: 10px solid #11120f;
+            border-radius: 6px;
+            box-shadow:
+                0 32px 100px rgba(0,0,0,0.9),
+                inset 0 0 0 2px rgba(120,130,100,0.18),
+                inset 0 0 60px rgba(0,0,0,0.72);
+            position: relative;
+            pointer-events: auto;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            transition: opacity 0.34s ease, transform 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+            padding: 16px;
+        }
+        .terminal-shell::before {
+            content: "";
+            position: absolute; inset: 14px;
+            border-radius: 3px;
+            background:
+                repeating-linear-gradient(0deg, rgba(170, 255, 170, 0.035) 0px, rgba(170, 255, 170, 0.035) 1px, transparent 2px, transparent 5px),
+                radial-gradient(circle at 50% 45%, rgba(97, 180, 105, 0.20), rgba(8, 27, 12, 0.92) 58%, rgba(0,0,0,0.96));
+            box-shadow: inset 0 0 55px rgba(0,0,0,0.95), inset 0 0 0 1px rgba(150,255,150,0.12);
+            pointer-events: none;
+        }
+        .terminal-screen {
+            position: relative;
+            z-index: 1;
+            height: 100%;
+            box-sizing: border-box;
+            color: #9dff9d;
+            font-family: "Courier New", monospace;
+            text-shadow: 0 0 8px rgba(120,255,120,0.42);
+            padding: 30px 32px;
+            display: grid;
+            grid-template-columns: 210px 1fr;
+            gap: 28px;
+        }
+        .terminal-header {
+            position: absolute;
+            top: 28px;
+            right: 32px;
+            text-align: right;
+            font-size: 14px;
+            line-height: 1.7;
+            letter-spacing: 1px;
+            color: #b8ffb8;
+        }
+        .terminal-title { font-weight: 700; color: #d5ffd5; }
+        .terminal-rule {
+            opacity: 0.68;
+            letter-spacing: 2px;
+            margin: 6px 0 2px;
+        }
+        .terminal-tabs {
+            align-self: stretch;
+            padding-top: 76px;
+            border-right: 1px solid rgba(151,255,151,0.22);
+        }
+        .terminal-tab {
+            height: 42px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            margin: 0 18px 10px 0;
+            border: 1px solid rgba(130,255,130,0.16);
+            background: rgba(40,90,45,0.10);
+            color: rgba(200,255,200,0.82);
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+        .terminal-tab.active {
+            background: rgba(95,180,90,0.20);
+            border-color: rgba(170,255,170,0.48);
+            color: #eaffea;
+            box-shadow: inset 3px 0 0 rgba(170,255,170,0.8), 0 0 18px rgba(80,255,100,0.08);
+        }
+        .terminal-content {
+            padding-top: 118px;
+            min-width: 0;
+        }
+        .terminal-panel {
+            min-height: 250px;
+            border: 1px solid rgba(151,255,151,0.18);
+            background: rgba(0,0,0,0.18);
+            box-shadow: inset 0 0 28px rgba(0,0,0,0.55);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+        .terminal-panel-title {
+            font-size: 18px;
+            color: #e5ffe5;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+        }
+        .terminal-placeholder {
+            color: rgba(180,255,180,0.58);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+        .terminal-close {
+            position: absolute;
+            right: 16px;
+            bottom: 14px;
+            z-index: 2;
+            border: 1px solid rgba(160,255,160,0.22);
+            background: rgba(0,0,0,0.34);
+            color: rgba(210,255,210,0.78);
+            font-family: "Courier New", monospace;
+            letter-spacing: 2px;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+        .terminal-close:hover {
+            color: #ffffff;
+            border-color: rgba(200,255,200,0.55);
+            background: rgba(80,140,80,0.20);
+        }
+
+        #computer-action {
+            position: absolute;
+            left: 50%;
+            bottom: 104px;
+            transform: translateX(-50%) translateY(8px) scale(0.96);
+            height: 54px;
+            min-width: 186px;
+            padding: 0 18px 0 12px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            border: 1px solid rgba(230,255,230,0.20);
+            background: rgba(4, 6, 5, 0.84);
+            box-shadow: 0 16px 42px rgba(0,0,0,0.72), inset 0 0 18px rgba(80,140,80,0.10);
+            color: #f2fff2;
+            font: 700 12px "Courier New", monospace;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            opacity: 1;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #computer-action.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(18px) scale(0.94);
+        }
+        #computer-action .hold-ring {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: conic-gradient(#ffffff 0deg, rgba(255,255,255,0.15) 0deg);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 0 12px rgba(255,255,255,0.14);
+            flex: 0 0 auto;
+        }
+        #computer-action .hold-ring::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(4,6,5,0.96);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.7);
+        }
+        #computer-action.pressing {
+            border-color: rgba(255,255,255,0.48);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.78), 0 0 22px rgba(200,255,200,0.14);
+        }
     </style>
 </head>
 <body>
@@ -279,6 +464,38 @@
             </div>
         </div>
 
+        <!-- Containment Terminal -->
+        <div id="terminal-menu" class="menu-overlay hidden">
+            <div class="terminal-shell">
+                <div class="terminal-screen">
+                    <div class="terminal-header">
+                        <div class="terminal-title">CONTAINMENT TERMINAL v4.8</div>
+                        <div>Employee #47</div>
+                        <div>Credits: 0</div>
+                        <div class="terminal-rule">------</div>
+                    </div>
+                    <div class="terminal-tabs">
+                        <div class="terminal-tab active">Deploys</div>
+                        <div class="terminal-tab">Traps</div>
+                        <div class="terminal-tab">Facility Upgrades</div>
+                        <div class="terminal-tab">Weapons</div>
+                    </div>
+                    <div class="terminal-content">
+                        <div class="terminal-panel">
+                            <div class="terminal-panel-title">DEPLOYS</div>
+                            <div class="terminal-placeholder">NO DEPLOY RECORDS LOADED<br>AWAITING FACILITY AUTHORIZATION</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="terminal-close" onclick="closeTerminal()">ESC CLOSE</button>
+            </div>
+        </div>
+
+        <div id="computer-action" class="hidden">
+            <div class="hold-ring"></div>
+            <div>HOLD TO OPEN</div>
+        </div>
+
         <div id="countdown-display"></div>
     </div>
 
@@ -287,6 +504,7 @@
         const ctx = canvas.getContext('2d', { alpha: false }); 
         const lightCanvas = document.createElement('canvas');
         const lightCtx = lightCanvas.getContext('2d');
+        const computerAction = document.getElementById('computer-action');
 
         let width = window.innerWidth;
         let height = window.innerHeight;
@@ -299,10 +517,11 @@
         window.addEventListener('resize', resize); resize();
 
         // --- GLOBAL STATE & SETTINGS ---
-        let gameState = 'playing'; // playing, paused, settings, countdown, gameover
+        let gameState = 'playing'; // playing, paused, settings, countdown, terminalOpening, terminal, gameover
         let countdownValue = 0; let countdownTimer = 0;
 
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
+        const terminalState = { eDown: false, touchHold: false, hold: 0, holdRequired: 1.15, openVisual: 0 };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
 
@@ -471,6 +690,7 @@
             document.getElementById('pause-menu').classList.add('hidden');
             document.getElementById('settings-menu').classList.add('hidden');
             document.getElementById('gameover-menu').classList.add('hidden');
+            document.getElementById('terminal-menu').classList.add('hidden');
             document.getElementById('pause-btn').classList.add('hidden');
             document.getElementById('hud').classList.remove('hidden');
             
@@ -479,7 +699,28 @@
                 input.left.active = false; input.right.active = false;
             } else if (state === 'paused') { document.getElementById('pause-menu').classList.remove('hidden');
             } else if (state === 'settings') { document.getElementById('settings-menu').classList.remove('hidden');
+            } else if (state === 'terminalOpening') { document.getElementById('hud').classList.add('hidden');
+            } else if (state === 'terminal') { document.getElementById('terminal-menu').classList.remove('hidden'); document.getElementById('hud').classList.add('hidden');
             } else if (state === 'gameover') { document.getElementById('gameover-menu').classList.remove('hidden'); document.getElementById('hud').classList.add('hidden'); runGameOverSequence(); }
+        }
+
+        function closeTerminal() {
+            terminalState.eDown = false;
+            terminalState.touchHold = false;
+            terminalState.hold = 0;
+            setGameState('playing');
+        }
+
+        function updateComputerActionButton() {
+            const visible = gameState === 'playing' && isNearComputer();
+            computerAction.classList.toggle('hidden', !visible);
+            if (!visible) terminalState.touchHold = false;
+
+            const progress = Math.min(1, terminalState.hold / terminalState.holdRequired);
+            computerAction.style.setProperty('--hold-progress', `${progress * 360}deg`);
+            const ring = computerAction.querySelector('.hold-ring');
+            ring.style.background = `conic-gradient(#ffffff ${progress * 360}deg, rgba(255,255,255,0.15) 0deg)`;
+            computerAction.classList.toggle('pressing', visible && terminalState.touchHold);
         }
 
         function updateHUD() {
@@ -555,6 +796,33 @@
         window.addEventListener('mousedown', (e) => { if (e.target !== canvas) return; if (gameState === 'playing') { mouseDown = true; handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); } });
         window.addEventListener('mousemove', (e) => { if (mouseDown && gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); });
         window.addEventListener('mouseup', (e) => { mouseDown = false; if (gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [] }); });
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'e') {
+                terminalState.eDown = true;
+                if (isNearComputer()) e.preventDefault();
+            }
+            if (key === 'escape' && gameState === 'terminal') closeTerminal();
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key.toLowerCase() === 'e') {
+                terminalState.eDown = false;
+                if (gameState === 'playing') terminalState.hold = 0;
+            }
+        });
+        computerAction.addEventListener('pointerdown', (e) => {
+            if (gameState !== 'playing' || !isNearComputer()) return;
+            e.preventDefault();
+            ensureAudio();
+            terminalState.touchHold = true;
+            if (computerAction.setPointerCapture) computerAction.setPointerCapture(e.pointerId);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => {
+            computerAction.addEventListener(type, () => {
+                terminalState.touchHold = false;
+                if (gameState === 'playing') terminalState.hold = 0;
+            });
+        });
 
         // --- GAME OBJECTS ---
         const ROOM_SIZE = 1200;
@@ -616,6 +884,9 @@
         const TABLE_H = 118;
         const TABLE_ANGLE = -0.01;
         const TABLE_COLLISION_PAD = 10;
+        const COMPUTER_LOCAL_X = -78;
+        const COMPUTER_LOCAL_Y = 8;
+        const COMPUTER_USE_RADIUS = 118;
 
         // --- WALL / STORAGE PROPS ---
         const PHONE_X = TABLE_X - 250;
@@ -1585,6 +1856,23 @@
             return (player.moveX * (dx / dist) + player.moveY * (dy / dist)) > 0.24;
         }
 
+        function getComputerWorldPos() {
+            const cos = Math.cos(TABLE_ANGLE);
+            const sin = Math.sin(TABLE_ANGLE);
+            return {
+                x: TABLE_X + COMPUTER_LOCAL_X * cos - COMPUTER_LOCAL_Y * sin,
+                y: TABLE_Y + COMPUTER_LOCAL_X * sin + COMPUTER_LOCAL_Y * cos
+            };
+        }
+
+        function isNearComputer() {
+            if (typeof player === 'undefined') return false;
+            const p = getComputerWorldPos();
+            const dx = player.x - p.x;
+            const dy = player.y - p.y;
+            return dx * dx + dy * dy <= COMPUTER_USE_RADIUS * COMPUTER_USE_RADIUS;
+        }
+
         function drawLabTable(ctx, time) {
             ctx.save();
             ctx.translate(TABLE_X, TABLE_Y);
@@ -1629,8 +1917,9 @@
 
             // Top-down rugged computer: closed casing viewed from above, no visible screen face.
             ctx.save();
-            ctx.translate(-78, 8);
+            ctx.translate(COMPUTER_LOCAL_X, COMPUTER_LOCAL_Y);
             ctx.rotate(-0.05);
+            const computerOpen = terminalState.openVisual;
             ctx.shadowColor = 'rgba(0,0,0,0.62)';
             ctx.shadowBlur = 8;
             ctx.shadowOffsetX = 5;
@@ -1657,9 +1946,35 @@
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
+            if (computerOpen > 0.01) {
+                ctx.save();
+                ctx.globalAlpha = computerOpen;
+                ctx.translate(0, -38 - computerOpen * 18);
+                ctx.scale(1, 0.22 + computerOpen * 0.58);
+                ctx.shadowColor = 'rgba(90,255,120,0.18)';
+                ctx.shadowBlur = 18 * computerOpen;
+                const screenGrad = ctx.createLinearGradient(-52, -42, 52, 32);
+                screenGrad.addColorStop(0, '#24382a');
+                screenGrad.addColorStop(0.45, '#07130a');
+                screenGrad.addColorStop(1, '#68c46d');
+                ctx.fillStyle = screenGrad;
+                ctx.beginPath(); ctx.roundRect(-54, -38, 108, 70, 5); ctx.fill();
+                ctx.shadowColor = 'transparent';
+                ctx.strokeStyle = `rgba(190,255,190,${0.12 + computerOpen * 0.28})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.globalAlpha = computerOpen * 0.75;
+                ctx.strokeStyle = 'rgba(160,255,160,0.35)';
+                ctx.lineWidth = 1;
+                for (let y = -22; y <= 16; y += 11) {
+                    ctx.beginPath(); ctx.moveTo(-36, y); ctx.lineTo(36 - Math.abs(y), y); ctx.stroke();
+                }
+                ctx.restore();
+            }
+
             // Vented top panel, bolts, and service label sell the top-down angle.
             ctx.save();
-            ctx.globalAlpha = 0.72;
+            ctx.globalAlpha = 0.72 * (1 - computerOpen * 0.45);
             ctx.strokeStyle = 'rgba(0,0,0,0.65)';
             ctx.lineWidth = 2;
             for (let x = -33; x <= 29; x += 10) {
@@ -2662,6 +2977,51 @@
             ctx.restore();
         }
 
+        function drawComputerPrompt(ctx, camX, camY) {
+            if (gameState !== 'playing' || !isNearComputer()) return;
+
+            const p = getComputerWorldPos();
+            const sx = width / 2 + (p.x - camX + currentShakeX) * settings.zoom;
+            const sy = height / 2 + (p.y - camY - 108 + currentShakeY) * settings.zoom;
+            const progress = Math.min(1, terminalState.hold / terminalState.holdRequired);
+
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.globalAlpha = 0.92;
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 18;
+            ctx.fillStyle = 'rgba(4, 6, 5, 0.78)';
+            ctx.strokeStyle = 'rgba(230,255,230,0.18)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(-92, -24, 184, 48, 7);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.shadowColor = 'transparent';
+            ctx.font = '700 12px "Courier New", monospace';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#f2fff2';
+            ctx.fillText('HOLD TO OPEN', -48, 0);
+
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+            ctx.beginPath(); ctx.arc(-66, 0, 13, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowColor = 'rgba(255,255,255,0.45)';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(-66, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+            ctx.stroke();
+            ctx.shadowColor = 'transparent';
+            ctx.font = '700 12px "Courier New", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.92)';
+            ctx.fillText('', -66, 0);
+            ctx.restore();
+        }
+
         // --- UI / JOYSTICKS ---
         function drawJoysticks(ctx) {
             ctx.lineWidth = 3;
@@ -2681,6 +3041,12 @@
             let dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
             if (dt > 0.1) dt = 0.1; 
+            const terminalTarget = (gameState === 'terminalOpening' || gameState === 'terminal') ? 1 : 0;
+            terminalState.openVisual += (terminalTarget - terminalState.openVisual) * Math.min(1, dt * 8);
+            if (gameState === 'terminalOpening' && terminalState.openVisual > 0.92) {
+                setGameState('terminal');
+            }
+            updateComputerActionButton();
 
             if (gameState === 'countdown') {
                 countdownTimer -= dt;
@@ -2697,6 +3063,18 @@
 
             if (gameState === 'playing') {
                 timeAlive += dt; // Track score
+                const nearComputer = isNearComputer();
+                if (nearComputer && (terminalState.eDown || terminalState.touchHold)) {
+                    terminalState.hold += dt;
+                    if (terminalState.hold >= terminalState.holdRequired) {
+                        terminalState.hold = terminalState.holdRequired;
+                        input.left.active = false;
+                        input.right.active = false;
+                        setGameState('terminalOpening');
+                    }
+                } else {
+                    terminalState.hold = Math.max(0, terminalState.hold - dt * 3.4);
+                }
 
                 // --- GRINDER UPDATE ---
                 grinderPower += (grinderTargetPower - grinderPower) * Math.min(1, dt * 0.38);
