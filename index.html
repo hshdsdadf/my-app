@@ -196,6 +196,7 @@
         #terminal-menu.hidden .terminal-shell {
             opacity: 0;
             transform: translateY(18px) scale(0.975);
+            pointer-events: none;
         }
         .terminal-shell {
             width: min(900px, 88vw);
@@ -766,7 +767,7 @@
         }
 
         function handleTouch(e) {
-            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay')) return;
+            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay:not(.hidden)')) return;
             if (gameState !== 'playing') { input.left.active = false; input.right.active = false; return; }
             e.preventDefault(); const halfWidth = width / 2; let leftFound = false; let rightFound = false;
 
@@ -834,7 +835,7 @@
         }
 
         function isGameplayPointerTarget(e) {
-            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay')) return false;
+            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay:not(.hidden)')) return false;
             if (isPointOnComputerAction(e.clientX, e.clientY)) return false;
             return gameState === 'playing';
         }
