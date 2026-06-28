@@ -303,7 +303,6 @@
         let countdownValue = 0; let countdownTimer = 0;
 
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
-        let enemySpawnTimer = 1.2;
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
 
@@ -501,7 +500,6 @@
             player.x = ROOM_SIZE / 2; player.y = ROOM_SIZE / 2;
             generator.x = GENERATOR_START_X; generator.y = GENERATOR_START_Y; generator.vx = 0; generator.vy = 0; generator.pushJolt = 0; generator.blockedPulse = 0; generator.docked = false;
             grinderAngle = 0; grinderPower = 0; grinderTargetPower = 0; dockLockPulse = 0;
-            enemySpawnTimer = 1.2;
             timeAlive = 0; totalKills = 0;
             deathParticles = []; deadEnemies.length = 0; enemyBullets.length = 0;
             updateHUD(); 
@@ -2679,39 +2677,6 @@
         const player = new Player();
         let lastTime = performance.now();
 
-        function spawnEnemyFromVent() {
-            const side = Math.random() < 0.5 ? 'left' : 'right';
-            const x = side === 'left' ? 72 : ROOM_SIZE - 72;
-            const y = VENT_Y + (Math.random() - 0.5) * (VENT_H - 76);
-            const roll = Math.random();
-            let enemy;
-
-            if (timeAlive > 42 && roll > 0.86) {
-                enemy = new Choir(x, y);
-            } else if (timeAlive > 18 && roll > 0.68) {
-                enemy = new Kneeler(x, y);
-            } else {
-                enemy = new Smiler(x, y);
-            }
-
-            if (side === 'right') enemy.facingAngle = Math.PI;
-            enemies.push(enemy);
-
-            for (let i = 0; i < 10; i++) {
-                activeSplatter.push({
-                    x: side === 'left' ? 48 : ROOM_SIZE - 48,
-                    y: y + (Math.random() - 0.5) * 34,
-                    vx: (side === 'left' ? 1 : -1) * (25 + Math.random() * 90),
-                    vy: (Math.random() - 0.5) * 60,
-                    size: 0.8 + Math.random() * 1.8,
-                    color: Math.random() > 0.35 ? '#080909' : '#2a0d09',
-                    friction: 0.62,
-                    scaleX: 1.0 + Math.random() * 0.8,
-                    angle: side === 'left' ? 0 : Math.PI
-                });
-            }
-        }
-
         function gameLoop(currentTime) {
             let dt = (currentTime - lastTime) / 1000; 
             lastTime = currentTime;
@@ -2732,12 +2697,6 @@
 
             if (gameState === 'playing') {
                 timeAlive += dt; // Track score
-                enemySpawnTimer -= dt;
-                const enemyCap = 8 + Math.min(8, Math.floor(timeAlive / 18));
-                if (enemySpawnTimer <= 0 && enemies.length < enemyCap) {
-                    spawnEnemyFromVent();
-                    enemySpawnTimer = Math.max(0.85, 2.65 - timeAlive * 0.018) + Math.random() * 0.75;
-                }
 
                 // --- GRINDER UPDATE ---
                 grinderPower += (grinderTargetPower - grinderPower) * Math.min(1, dt * 0.38);
