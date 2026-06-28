@@ -1615,7 +1615,7 @@
             ctx.beginPath(); ctx.moveTo(-136, 0); ctx.lineTo(136, 0); ctx.stroke();
             ctx.restore();
 
-            // Top-down rugged terminal: a flat tabletop unit, not a side-view monitor.
+            // Top-down rugged computer: closed casing viewed from above, no visible screen face.
             ctx.save();
             ctx.translate(-78, -8);
             ctx.rotate(-0.05);
@@ -1635,34 +1635,73 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            ctx.fillStyle = '#0a0d0e';
-            ctx.beginPath(); ctx.roundRect(-47, -30, 94, 43, 4); ctx.fill();
-            ctx.shadowColor = 'rgba(46,190,220,0.52)';
-            ctx.shadowBlur = 13;
-            const screen = ctx.createRadialGradient(-10, -9, 2, 0, -8, 38);
-            screen.addColorStop(0, '#a8f2ff');
-            screen.addColorStop(0.52, '#2a98b8');
-            screen.addColorStop(1, '#062a35');
-            ctx.fillStyle = screen;
-            ctx.beginPath(); ctx.roundRect(-39, -24, 78, 31, 3); ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(190,245,255,0.5)';
+            const lidGrad = ctx.createLinearGradient(-44, -28, 42, 25);
+            lidGrad.addColorStop(0, '#333c3c');
+            lidGrad.addColorStop(0.55, '#161d1f');
+            lidGrad.addColorStop(1, '#090b0c');
+            ctx.fillStyle = lidGrad;
+            ctx.beginPath(); ctx.roundRect(-48, -30, 96, 52, 5); ctx.fill();
+            ctx.strokeStyle = 'rgba(185,195,185,0.18)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Vented top panel, bolts, and service label sell the top-down angle.
+            ctx.save();
+            ctx.globalAlpha = 0.72;
+            ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+            ctx.lineWidth = 2;
+            for (let x = -33; x <= 29; x += 10) {
+                ctx.beginPath();
+                ctx.moveTo(x, -20);
+                ctx.lineTo(x + 5, 7);
+                ctx.stroke();
+            }
+            ctx.strokeStyle = 'rgba(210,220,205,0.18)';
             ctx.lineWidth = 1;
-            for (let y = -17; y <= -1; y += 7) {
-                ctx.beginPath(); ctx.moveTo(-28, y); ctx.lineTo(26, y + 1); ctx.stroke();
+            for (let x = -30; x <= 30; x += 12) {
+                ctx.beginPath();
+                ctx.moveTo(x, -18);
+                ctx.lineTo(x + 4, 5);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(200,205,180,0.16)';
+            ctx.beginPath(); ctx.roundRect(-22, 12, 44, 8, 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-18, 16); ctx.lineTo(16, 16); ctx.stroke();
+
+            ctx.fillStyle = '#060707';
+            [[-51, -34], [51, -34], [-51, 34], [51, 34]].forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 3, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // Tiny status LEDs are visible from above, but not a screen.
+            for (let i = 0; i < 3; i++) {
+                const active = i === 0 || Math.sin(time * 3 + i) > 0.35;
+                ctx.shadowColor = active ? 'rgba(70,220,120,0.42)' : 'transparent';
+                ctx.shadowBlur = active ? 6 : 0;
+                ctx.fillStyle = active ? '#48d36f' : '#183020';
+                ctx.beginPath(); ctx.arc(33 + i * 8, 24, 2.4, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Keyboard deck drawn flat on the same top plane.
-            ctx.fillStyle = '#0c0f10';
-            ctx.beginPath(); ctx.roundRect(-46, 18, 92, 18, 3); ctx.fill();
-            ctx.fillStyle = 'rgba(205,212,198,0.30)';
-            for (let row = 0; row < 2; row++) {
-                for (let col = 0; col < 12; col++) {
-                    ctx.fillRect(-39 + col * 7, 22 + row * 6, 4, 2);
+            // Separate flat keyboard/control pad, also top-down.
+            ctx.shadowColor = 'rgba(0,0,0,0.42)';
+            ctx.shadowBlur = 5;
+            ctx.shadowOffsetX = 3;
+            ctx.shadowOffsetY = 4;
+            ctx.fillStyle = '#0a0d0e';
+            ctx.beginPath(); ctx.roundRect(-44, 47, 88, 21, 3); ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = 'rgba(205,212,198,0.24)';
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 13; col++) {
+                    ctx.fillRect(-37 + col * 6, 51 + row * 5, 3.5, 1.8);
                 }
             }
-            ctx.fillStyle = 'rgba(180,190,180,0.18)';
-            ctx.beginPath(); ctx.roundRect(-18, 33, 36, 3, 1); ctx.fill();
+            ctx.fillStyle = 'rgba(180,190,180,0.16)';
+            ctx.beginPath(); ctx.roundRect(-18, 63, 36, 2.5, 1); ctx.fill();
             ctx.restore();
 
             // Low-tech manuals, drawn as top-down books with covers, page blocks, and spines.
@@ -2314,16 +2353,6 @@
                 lightCtx.fillStyle = dockGlow;
                 lightCtx.beginPath(); lightCtx.arc(DOCK_X, DOCK_Y, 190, 0, Math.PI * 2); lightCtx.fill();
             }
-
-            // Lower-right work table light: only the old terminal screen glows.
-            const computerX = TABLE_X - 75;
-            const computerY = TABLE_Y - 10;
-            const compGlow = lightCtx.createRadialGradient(computerX, computerY, 5, computerX, computerY, 100);
-            compGlow.addColorStop(0, 'rgba(85, 215, 255, 0.34)');
-            compGlow.addColorStop(0.34, 'rgba(45, 155, 210, 0.13)');
-            compGlow.addColorStop(1, 'rgba(0, 55, 80, 0)');
-            lightCtx.fillStyle = compGlow;
-            lightCtx.beginPath(); lightCtx.arc(computerX, computerY, 100, 0, Math.PI * 2); lightCtx.fill();
 
             // Generator warning lamps cut a small red pocket through the room darkness.
             const generatorPulse = 0.45 + Math.abs(Math.sin(lastTime / 180)) * 0.35;
