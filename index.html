@@ -498,6 +498,7 @@
         function restartRun() { ensureAudio();
             player.hp = player.maxHp = 100;
             player.x = ROOM_SIZE / 2; player.y = ROOM_SIZE / 2;
+            generator.x = GENERATOR_START_X; generator.y = GENERATOR_START_Y; generator.vx = 0; generator.vy = 0; generator.pushJolt = 0; generator.blockedPulse = 0;
             timeAlive = 0; totalKills = 0;
             deathParticles = []; deadEnemies.length = 0; enemyBullets.length = 0;
             updateHUD(); 
@@ -600,11 +601,22 @@
         const grinderBloodSplatters = [];
 
         // --- GENERATOR PROP ---
-        const GENERATOR_X = 360;
-        const GENERATOR_Y = 485;
         const GENERATOR_W = 170;
         const GENERATOR_H = 96;
         const GENERATOR_ANGLE = -0.08;
+        const GENERATOR_START_X = 210;
+        const GENERATOR_START_Y = 805;
+        const GENERATOR_RADIUS = 86;
+        const GENERATOR_PUSH_SPEED = 58;
+        const GENERATOR_GRINDER_CLEARANCE = GRINDER_OUTER_R + GENERATOR_RADIUS + 34;
+        const generator = {
+            x: GENERATOR_START_X,
+            y: GENERATOR_START_Y,
+            vx: 0,
+            vy: 0,
+            pushJolt: 0,
+            blockedPulse: 0
+        };
         let generatorFanAngle = 0;
         let generatorFlywheelAngle = 0;
 
@@ -894,35 +906,10 @@
             const fanBlur = 0.18 + pulse * 0.08;
 
             ctx.save();
-            ctx.translate(GENERATOR_X, GENERATOR_Y);
+            ctx.translate(generator.x, generator.y);
+            const shoveRattle = generator.pushJolt * 1.4;
+            ctx.translate((Math.random() - 0.5) * shoveRattle, (Math.random() - 0.5) * shoveRattle);
             ctx.rotate(GENERATOR_ANGLE);
-
-            // Dragging power cables, painted first so they disappear under the machine.
-            ctx.save();
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            const cablePaths = [
-                [[-72, 30], [-124, 54], [-168, 48], [-218, 80]],
-                [[-66, 38], [-112, 78], [-154, 76], [-202, 112]],
-                [[-58, 44], [-96, 98], [-136, 124], [-178, 150]]
-            ];
-            cablePaths.forEach((p, i) => {
-                ctx.shadowColor = 'rgba(0,0,0,0.9)';
-                ctx.shadowBlur = 16;
-                ctx.shadowOffsetX = 14;
-                ctx.shadowOffsetY = 16;
-                ctx.strokeStyle = i === 1 ? '#020202' : '#060607';
-                ctx.lineWidth = i === 1 ? 14 : 11;
-                ctx.beginPath();
-                ctx.moveTo(p[0][0], p[0][1]);
-                ctx.bezierCurveTo(p[1][0], p[1][1], p[2][0], p[2][1], p[3][0], p[3][1]);
-                ctx.stroke();
-                ctx.shadowColor = 'transparent';
-                ctx.strokeStyle = 'rgba(45,45,48,0.45)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            });
-            ctx.restore();
 
             // Weighty cast shadows; the object should feel bolted to the floor.
             ctx.save();
@@ -1132,6 +1119,171 @@
             ctx.beginPath(); ctx.moveTo(-46, -43); ctx.quadraticCurveTo(-34, -58, -20, -42); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(18, -43); ctx.quadraticCurveTo(34, -59, 49, -42); ctx.stroke();
 
+            if (generator.blockedPulse > 0) {
+                ctx.save();
+                ctx.globalAlpha = Math.min(0.75, generator.blockedPulse);
+                ctx.strokeStyle = 'rgba(255, 35, 20, 0.75)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = 'rgba(255,0,0,0.8)';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.roundRect(-GENERATOR_W / 2 - 6, -GENERATOR_H / 2 - 6, GENERATOR_W + 12, GENERATOR_H + 12, 9);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        function clampGeneratorAwayFromGrinder() {
+            const dx = generator.x - GRINDER_X;
+            const dy = generator.y - GRINDER_Y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            if (dist < GENERATOR_GRINDER_CLEARANCE) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+                generator.x = GRINDER_X + nx * GENERATOR_GRINDER_CLEARANCE;
+                generator.y = GRINDER_Y + ny * GENERATOR_GRINDER_CLEARANCE;
+                const intoGrinder = generator.vx * -nx + generator.vy * -ny;
+                if (intoGrinder > 0) {
+                    generator.vx += nx * intoGrinder;
+                    generator.vy += ny * intoGrinder;
+                }
+                generator.blockedPulse = 1;
+                triggerShake(3, 0.08);
+                return true;
+            }
+            return false;
+        }
+
+        function updateGeneratorPhysics(dt, player) {
+            generator.pushJolt = Math.max(0, generator.pushJolt - dt * 4.5);
+            generator.blockedPulse = Math.max(0, generator.blockedPulse - dt * 3.0);
+
+            generator.x += generator.vx * dt;
+            generator.y += generator.vy * dt;
+
+            const wallPad = 24 + GENERATOR_RADIUS;
+            generator.x = Math.max(wallPad, Math.min(ROOM_SIZE - wallPad, generator.x));
+            generator.y = Math.max(wallPad, Math.min(ROOM_SIZE - wallPad, generator.y));
+            clampGeneratorAwayFromGrinder();
+
+            const drag = Math.pow(0.08, dt);
+            generator.vx *= drag;
+            generator.vy *= drag;
+            if (Math.abs(generator.vx) < 2) generator.vx = 0;
+            if (Math.abs(generator.vy) < 2) generator.vy = 0;
+
+            player.isPushing = false;
+            player.pushIntensity = 0;
+
+            const dx = generator.x - player.x;
+            const dy = generator.y - player.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const minDist = GENERATOR_RADIUS + player.radius - 4;
+            if (dist >= minDist) return;
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const moveLen = Math.sqrt(player.moveX * player.moveX + player.moveY * player.moveY) || 0;
+            const movingIntoGenerator = moveLen > 0.05 && (player.moveX * nx + player.moveY * ny) > 0.28;
+
+            if (movingIntoGenerator && !player.isDashing) {
+                const mx = player.moveX / moveLen;
+                const my = player.moveY / moveLen;
+                const shove = GENERATOR_PUSH_SPEED * Math.min(1, input.left.magnitude) * dt;
+                const oldX = generator.x;
+                const oldY = generator.y;
+
+                generator.x += mx * shove;
+                generator.y += my * shove;
+                generator.vx += mx * 22 * dt;
+                generator.vy += my * 22 * dt;
+
+                const wallClampedX = Math.max(wallPad, Math.min(ROOM_SIZE - wallPad, generator.x));
+                const wallClampedY = Math.max(wallPad, Math.min(ROOM_SIZE - wallPad, generator.y));
+                const hitWall = wallClampedX !== generator.x || wallClampedY !== generator.y;
+                generator.x = wallClampedX;
+                generator.y = wallClampedY;
+                const blockedByGrinder = clampGeneratorAwayFromGrinder();
+
+                if (hitWall || blockedByGrinder) {
+                    generator.vx *= 0.2;
+                    generator.vy *= 0.2;
+                    generator.pushJolt = 1;
+                } else if (Math.abs(generator.x - oldX) + Math.abs(generator.y - oldY) > 0.01) {
+                    generator.pushJolt = Math.min(1, generator.pushJolt + 0.35);
+                }
+
+                player.isPushing = true;
+                player.pushAngle = Math.atan2(my, mx);
+                player.pushIntensity = Math.min(1, input.left.magnitude);
+                player.facingAngle = player.pushAngle;
+            }
+
+            const ndx = generator.x - player.x;
+            const ndy = generator.y - player.y;
+            const nd = Math.sqrt(ndx * ndx + ndy * ndy) || 1;
+            if (nd < minDist) {
+                const sep = minDist - nd;
+                player.x -= (ndx / nd) * sep;
+                player.y -= (ndy / nd) * sep;
+                const wallThickness = 20;
+                player.x = Math.max(player.radius + wallThickness, Math.min(ROOM_SIZE - player.radius - wallThickness, player.x));
+                player.y = Math.max(player.radius + wallThickness, Math.min(ROOM_SIZE - player.radius - wallThickness, player.y));
+            }
+        }
+
+        function drawPlayerPushContact(ctx, player) {
+            if (!player.isPushing || player.pushIntensity <= 0) return;
+            const dx = player.x - generator.x;
+            const dy = player.y - generator.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const px = -ny;
+            const py = nx;
+            const contactX = generator.x + nx * (GENERATOR_RADIUS * 0.78);
+            const contactY = generator.y + ny * (GENERATOR_RADIUS * 0.58);
+            const reachX = player.x + Math.cos(player.pushAngle) * 24;
+            const reachY = player.y + Math.sin(player.pushAngle) * 24 - 2;
+            const strain = 0.55 + Math.sin(lastTime / 65) * 0.12;
+
+            ctx.save();
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            for (let i = -1; i <= 1; i += 2) {
+                const hx = contactX + px * i * 14;
+                const hy = contactY + py * i * 14;
+                ctx.strokeStyle = 'rgba(210,210,205,0.75)';
+                ctx.lineWidth = 5;
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(reachX + px * i * 10, reachY + py * i * 10);
+                ctx.quadraticCurveTo((reachX + hx) / 2 + nx * 8, (reachY + hy) / 2 + ny * 8, hx, hy);
+                ctx.stroke();
+
+                const handGrad = ctx.createRadialGradient(hx - 3, hy - 3, 1, hx, hy, 10);
+                handGrad.addColorStop(0, '#ffffff');
+                handGrad.addColorStop(0.7, '#dfe1d7');
+                handGrad.addColorStop(1, '#9b9f93');
+                ctx.fillStyle = handGrad;
+                ctx.beginPath();
+                ctx.ellipse(hx, hy, 10, 6.5, player.pushAngle + i * 0.25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.shadowColor = 'rgba(255,255,255,0.25)';
+            ctx.shadowBlur = 8;
+            ctx.strokeStyle = `rgba(230,230,220,${0.25 + strain * 0.25})`;
+            ctx.lineWidth = 1.5;
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(player.x - nx * (42 + i * 3) + px * i * 9, player.y - ny * (42 + i * 3) + py * i * 9);
+                ctx.lineTo(player.x - nx * (58 + i * 3) + px * i * 11, player.y - ny * (58 + i * 3) + py * i * 11);
+                ctx.stroke();
+            }
             ctx.restore();
         }
         const activeSplatter = []; const floorSplatters = []; const damageTexts = [];
@@ -1351,6 +1503,7 @@
                 this.isDashing = false; this.dashTime = 0; this.dashDuration = 0.15; this.dashSpeed = 1600;
                 this.dashCooldown = 0; this.dashMaxCooldown = 0.8; this.dashDirX = 0; this.dashDirY = 0;
                 this.dashParticles = []; this.dashRings = [];
+                this.moveX = 0; this.moveY = 0; this.isPushing = false; this.pushAngle = 0; this.pushIntensity = 0;
             }
 
             tryDash() {
@@ -1372,7 +1525,8 @@
                 if (input.right.doubleTapped) { this.tryDash(); input.right.doubleTapped = false; }
 
                 const moveMag = input.left.magnitude;
-                const leanAngle = (moveMag > 0.1) ? input.left.vectorX * 0.15 * moveMag : 0;
+                this.moveX = input.left.vectorX * moveMag;
+                this.moveY = input.left.vectorY * moveMag;
 
                 this.dashCooldown -= dt;
 
@@ -1386,8 +1540,10 @@
                     this.x += this.dashDirX * this.dashSpeed * dt; this.y += this.dashDirY * this.dashSpeed * dt;
                     if (this.dashTime <= 0) { this.isDashing = false; }
                 } else if (moveMag > 0) {
-                    this.x += input.left.vectorX * this.speed * moveMag * dt; this.y += input.left.vectorY * this.speed * moveMag * dt;
-                    this.animTime += dt * (10 + moveMag * 15); 
+                    const speedFactor = this.isPushing ? 0.28 : 1;
+                    this.x += input.left.vectorX * this.speed * moveMag * speedFactor * dt;
+                    this.y += input.left.vectorY * this.speed * moveMag * speedFactor * dt;
+                    this.animTime += dt * (10 + moveMag * 15) * (this.isPushing ? 0.65 : 1); 
                 } else { this.animTime += dt * 3; }
 
                 for (let i = this.dashParticles.length - 1; i >= 0; i--) {
@@ -1453,7 +1609,7 @@
                 const isMoving = input.left.magnitude > 0.1;
                 const runIntensity = input.left.magnitude; 
                 const bobbing = Math.sin(this.animTime) * (isMoving ? 5 * runIntensity : 2); 
-                const leanAngle = isMoving ? input.left.vectorX * 0.15 * runIntensity : 0; 
+                const leanAngle = this.isPushing ? Math.cos(this.pushAngle) * 0.22 : (isMoving ? input.left.vectorX * 0.15 * runIntensity : 0); 
                 const breathScale = 1 + Math.sin(this.animTime * 0.5) * 0.02; 
 
                 this.dashParticles.forEach(p => {
@@ -1495,8 +1651,10 @@
                 ctx.beginPath(); ctx.arc(10 + pupilOffsetX, -6 + pupilOffsetY, 1.5, 0, Math.PI*2); ctx.fill();
                 ctx.restore();
 
-                this.drawWeapon(ctx, -25, 12, this.facingAngle, true, this.recoilL, this.flashL); 
-                this.drawWeapon(ctx, 25, 12, this.facingAngle, false, this.recoilR, this.flashR); 
+                if (!this.isPushing) {
+                    this.drawWeapon(ctx, -25, 12, this.facingAngle, true, this.recoilL, this.flashL); 
+                    this.drawWeapon(ctx, 25, 12, this.facingAngle, false, this.recoilR, this.flashR); 
+                }
 
                 ctx.restore();
             }
@@ -1724,8 +1882,8 @@
 
             // Generator warning lamps cut a small red pocket through the room darkness.
             const generatorPulse = 0.45 + Math.abs(Math.sin(lastTime / 180)) * 0.35;
-            const genGlowX = GENERATOR_X + Math.cos(GENERATOR_ANGLE) * 58 - Math.sin(GENERATOR_ANGLE) * -2;
-            const genGlowY = GENERATOR_Y + Math.sin(GENERATOR_ANGLE) * 58 + Math.cos(GENERATOR_ANGLE) * -2;
+            const genGlowX = generator.x + Math.cos(GENERATOR_ANGLE) * 58 - Math.sin(GENERATOR_ANGLE) * -2;
+            const genGlowY = generator.y + Math.sin(GENERATOR_ANGLE) * 58 + Math.cos(GENERATOR_ANGLE) * -2;
             const generatorGlow = lightCtx.createRadialGradient(genGlowX, genGlowY, 4, genGlowX, genGlowY, 145);
             generatorGlow.addColorStop(0, `rgba(255, 20, 12, ${0.42 + generatorPulse * 0.28})`);
             generatorGlow.addColorStop(0.28, `rgba(180, 8, 4, ${0.18 + generatorPulse * 0.12})`);
@@ -1843,6 +2001,7 @@
                 }
 
                 player.update(dt);
+                updateGeneratorPhysics(dt, player);
 
                 // Update Enemy Bullets
                 for (let i = enemyBullets.length - 1; i >= 0; i--) {
@@ -2172,6 +2331,7 @@
             }); 
             
             player.draw(ctx);
+            drawPlayerPushContact(ctx, player);
 
             damageTexts.forEach(d => {
                 let alpha = Math.max(0, d.life / 0.6);
