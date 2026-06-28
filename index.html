@@ -1695,22 +1695,26 @@
                 ctx.beginPath(); ctx.arc(33 + i * 8, 24, 2.4, 0, Math.PI * 2); ctx.fill();
             }
 
-            // Separate flat keyboard/control pad, also top-down.
+            // Separate flat keyboard/control pad, top-down and facing into the room.
             ctx.shadowColor = 'rgba(0,0,0,0.42)';
             ctx.shadowBlur = 5;
             ctx.shadowOffsetX = 3;
             ctx.shadowOffsetY = 4;
             ctx.fillStyle = '#0a0d0e';
-            ctx.beginPath(); ctx.roundRect(-44, 47, 88, 21, 3); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-46, -68, 92, 22, 3); ctx.fill();
             ctx.shadowColor = 'transparent';
             ctx.fillStyle = 'rgba(205,212,198,0.24)';
             for (let row = 0; row < 3; row++) {
                 for (let col = 0; col < 13; col++) {
-                    ctx.fillRect(-37 + col * 6, 51 + row * 5, 3.5, 1.8);
+                    ctx.fillRect(-39 + col * 6, -64 + row * 5, 3.5, 1.8);
                 }
             }
             ctx.fillStyle = 'rgba(180,190,180,0.16)';
-            ctx.beginPath(); ctx.roundRect(-18, 63, 36, 2.5, 1); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(-18, -51, 36, 2.5, 1); ctx.fill();
+            ctx.strokeStyle = 'rgba(210,220,205,0.12)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(-24, -45); ctx.lineTo(-12, -38); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(24, -45); ctx.lineTo(12, -38); ctx.stroke();
             ctx.restore();
 
             // Low-tech manuals, drawn as top-down books with covers, page blocks, and spines.
@@ -2337,11 +2341,12 @@
         }
 
         class CeilingLight {
-            constructor(x, y, w, h, angle) {
+            constructor(x, y, w, h, angle, index = 0) {
                 this.x = x; this.y = y; this.w = w; this.h = h; this.angle = angle;
+                this.index = index;
             }
 
-            draw(ctx, camX, camY) {
+            draw(ctx, camX, camY, time = 0) {
                 function getCorners(cx, cy, w, h, angle) {
                     const cos = Math.cos(angle); const sin = Math.sin(angle);
                     const pts = [ {x: -w/2, y: -h/2}, {x: w/2,  y: -h/2}, {x: w/2,  y: h/2}, {x: -w/2, y: h/2} ];
@@ -2355,6 +2360,7 @@
 
                 const pCeiling = 0.45; // Ceiling attachment point (highest parallax = closest to camera)
                 const pLens = 0.38;    // The glowing lens (hangs down a bit closer to floor)
+                const power = getCeilingLightPower(this, time);
 
                 const ceilingCorners = getCorners(this.x, this.y, this.w, this.h, this.angle).map(pt => applyParallax(pt, pCeiling));
                 const lensCorners = getCorners(this.x, this.y, this.w, this.h, this.angle).map(pt => applyParallax(pt, pLens));
@@ -2406,7 +2412,8 @@
                 }
 
                 // --- Draw Lens Background (white glowing backplate) ---
-                ctx.fillStyle = '#ffffff';
+                const lensBase = Math.floor(78 + power * 177);
+                ctx.fillStyle = `rgba(${lensBase}, ${lensBase}, ${Math.min(255, lensBase + 8)}, ${0.34 + power * 0.66})`;
                 ctx.beginPath();
                 ctx.moveTo(lensCorners[0].x, lensCorners[0].y);
                 for(let i=1; i<4; i++) ctx.lineTo(lensCorners[i].x, lensCorners[i].y);
@@ -2420,7 +2427,7 @@
                 ctx.translate(lensCenter.x, lensCenter.y);
                 ctx.rotate(this.angle); // Currently 0, but good for robust code
                 
-                ctx.strokeStyle = '#c5ccd6';
+                ctx.strokeStyle = `rgba(197, 204, 214, ${0.20 + power * 0.62})`;
                 ctx.lineWidth = 1.5;
                 const gridStep = 8;
                 for (let x = -this.w/2; x <= this.w/2; x += gridStep) {
@@ -2432,7 +2439,7 @@
                 ctx.restore();
 
                 // --- Inner bright wash to simulate the bulb ---
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.fillStyle = `rgba(255, 255, 245, ${0.04 + power * 0.36})`;
                 ctx.beginPath();
                 ctx.moveTo(lensCorners[0].x, lensCorners[0].y);
                 for(let i=1; i<4; i++) ctx.lineTo(lensCorners[i].x, lensCorners[i].y);
@@ -2443,11 +2450,27 @@
             }
         }
 
+        function getCeilingLightPower(light, time) {
+            const online = generator.docked || grinderPower > 0.02;
+            if (online) {
+                const startupSurge = Math.max(0, 1 - grinderPower) * Math.abs(Math.sin(time * 16 + light.index * 1.7)) * 0.16;
+                return Math.min(1, 0.42 + grinderPower * 0.58 + startupSurge);
+            }
+            if (light.index === 0) {
+                return 0.56 + Math.sin(time * 1.2) * 0.03;
+            }
+
+            const weakPulse = Math.max(0, Math.sin(time * (5.6 + light.index * 1.35) + light.index * 2.4));
+            const badRelay = Math.max(0, Math.sin(time * (14.5 + light.index * 2.1) + light.index));
+            const shortBlink = Math.sin(time * (2.2 + light.index * 0.45) + light.index * 5.1) > 0.72 ? 0.16 : 0;
+            return Math.min(0.36, 0.04 + weakPulse * badRelay * 0.18 + shortBlink);
+        }
+
         const ceilingLights = [
-            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.3, 140, 35, 0),
-            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.3, 140, 35, 0),
-            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.7, 140, 35, 0),
-            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.7, 140, 35, 0)
+            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.3, 140, 35, 0, 0),
+            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.3, 140, 35, 0, 1),
+            new CeilingLight(ROOM_SIZE * 0.3, ROOM_SIZE * 0.7, 140, 35, 0, 2),
+            new CeilingLight(ROOM_SIZE * 0.7, ROOM_SIZE * 0.7, 140, 35, 0, 3)
         ];
 
         // --- ENVIRONMENT ---
@@ -2506,15 +2529,16 @@
             lightCtx.translate(-camX + sx, -camY + sy);
 
             ceilingLights.forEach(l => {
+                const lightPower = getCeilingLightPower(l, lastTime / 1000);
                 const pFactor = 0.38; // Match the pLens height so the glow originates exactly from the grating
                 const pX = l.x + (l.x - camX) * pFactor;
                 const pY = l.y + (l.y - camY) * pFactor;
                 
-                const radius = 470;
+                const radius = 260 + lightPower * 250;
                 const grad = lightCtx.createRadialGradient(pX, pY, 10, pX, pY, radius);
-                grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)'); 
-                grad.addColorStop(0.38, 'rgba(255, 255, 255, 0.38)');  
-                grad.addColorStop(0.72, 'rgba(255, 255, 255, 0.10)');
+                grad.addColorStop(0, `rgba(255, 255, 255, ${0.10 + lightPower * 0.86})`); 
+                grad.addColorStop(0.38, `rgba(255, 255, 255, ${0.03 + lightPower * 0.36})`);  
+                grad.addColorStop(0.72, `rgba(255, 255, 255, ${lightPower * 0.11})`);
                 grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      
                 
                 lightCtx.fillStyle = grad;
@@ -2525,10 +2549,11 @@
             });
 
             // Soft reflected ceiling spill along the lower wall so the storage and phone read.
+            const lowerWallStrength = generator.docked ? 0.07 + grinderPower * 0.10 : 0.032;
             const lowerWallGlow = lightCtx.createLinearGradient(0, ROOM_SIZE - 360, 0, ROOM_SIZE);
             lowerWallGlow.addColorStop(0, 'rgba(255,255,255,0)');
-            lowerWallGlow.addColorStop(0.55, 'rgba(255,255,255,0.055)');
-            lowerWallGlow.addColorStop(1, 'rgba(255,255,255,0.13)');
+            lowerWallGlow.addColorStop(0.55, `rgba(255,255,255,${lowerWallStrength * 0.45})`);
+            lowerWallGlow.addColorStop(1, `rgba(255,255,255,${lowerWallStrength})`);
             lightCtx.fillStyle = lowerWallGlow;
             lightCtx.fillRect(0, ROOM_SIZE - 360, ROOM_SIZE, 360);
 
@@ -3017,7 +3042,7 @@
             });
 
             // DRAW CEILING LIGHTS AFTER EVERYTHING ELSE (so they sit above the player)
-            ceilingLights.forEach(l => l.draw(ctx, camX, camY));
+            ceilingLights.forEach(l => l.draw(ctx, camX, camY, lastTime / 1000));
 
             ctx.restore(); 
 
