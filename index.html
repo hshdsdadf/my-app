@@ -617,6 +617,17 @@
         const TABLE_ANGLE = -0.01;
         const TABLE_COLLISION_PAD = 10;
 
+        // --- WALL / STORAGE PROPS ---
+        const PHONE_X = TABLE_X - 250;
+        const PHONE_Y = ROOM_SIZE - 34;
+        const SHELF_X = 150;
+        const SHELF_Y = ROOM_SIZE - 74;
+        const SHELF_W = 230;
+        const SHELF_H = 88;
+        const SHELF_ANGLE = 0.02;
+        const FLOOR_LAMP_X = 300;
+        const FLOOR_LAMP_Y = ROOM_SIZE - 142;
+
         // --- GENERATOR PROP ---
         const GENERATOR_W = 170;
         const GENERATOR_H = 96;
@@ -1797,6 +1808,216 @@
             obj.y += worldY * push;
             return true;
         }
+
+        function drawWallPhone(ctx, time) {
+            ctx.save();
+            ctx.translate(PHONE_X, PHONE_Y);
+            ctx.rotate(-0.01);
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.62)';
+            ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            ctx.shadowBlur = 16;
+            ctx.shadowOffsetY = 9;
+            ctx.beginPath(); ctx.roundRect(-34, -21, 68, 42, 6); ctx.fill();
+            ctx.restore();
+
+            const plate = ctx.createLinearGradient(-34, -20, 34, 20);
+            plate.addColorStop(0, '#3f4543');
+            plate.addColorStop(0.5, '#151a1b');
+            plate.addColorStop(1, '#050607');
+            ctx.fillStyle = plate;
+            ctx.beginPath(); ctx.roundRect(-32, -20, 64, 40, 6); ctx.fill();
+            ctx.strokeStyle = 'rgba(165,170,160,0.22)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Receiver seen from above, resting across the wall plate.
+            const receiver = ctx.createLinearGradient(-28, -9, 28, 9);
+            receiver.addColorStop(0, '#0b0d0e');
+            receiver.addColorStop(0.45, '#343a38');
+            receiver.addColorStop(1, '#070808');
+            ctx.fillStyle = receiver;
+            ctx.shadowColor = 'rgba(0,0,0,0.65)';
+            ctx.shadowBlur = 7;
+            ctx.beginPath(); ctx.roundRect(-27, -9, 54, 18, 8); ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.fillStyle = 'rgba(210,220,205,0.13)';
+            ctx.beginPath(); ctx.roundRect(-18, -4, 36, 4, 2); ctx.fill();
+
+            // Dial/keypad detail, still flat top-down.
+            ctx.fillStyle = '#080909';
+            ctx.beginPath(); ctx.arc(0, 13, 9, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(175,180,165,0.22)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+                const a = i * Math.PI * 2 / 8;
+                ctx.beginPath();
+                ctx.arc(Math.cos(a) * 5, 13 + Math.sin(a) * 5, 1.2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Short curled cord on wall/floor seam.
+            ctx.strokeStyle = 'rgba(5,5,5,0.85)';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(27, 4);
+            ctx.bezierCurveTo(42, 12, 26, 25, 45, 31);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(80,80,75,0.25)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function drawStorageShelf(ctx, time) {
+            ctx.save();
+            ctx.translate(SHELF_X, SHELF_Y);
+            ctx.rotate(SHELF_ANGLE);
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(0,0,0,0.62)';
+            ctx.shadowColor = 'rgba(0,0,0,0.95)';
+            ctx.shadowBlur = 26;
+            ctx.shadowOffsetX = 18;
+            ctx.shadowOffsetY = 22;
+            ctx.beginPath(); ctx.roundRect(-SHELF_W / 2 + 8, -SHELF_H / 2 + 10, SHELF_W, SHELF_H, 5); ctx.fill();
+            ctx.restore();
+
+            const metal = ctx.createLinearGradient(-SHELF_W / 2, -SHELF_H / 2, SHELF_W / 2, SHELF_H / 2);
+            metal.addColorStop(0, '#545b58');
+            metal.addColorStop(0.34, '#222829');
+            metal.addColorStop(0.7, '#111617');
+            metal.addColorStop(1, '#050606');
+            ctx.fillStyle = metal;
+            ctx.beginPath(); ctx.roundRect(-SHELF_W / 2, -SHELF_H / 2, SHELF_W, SHELF_H, 5); ctx.fill();
+            ctx.strokeStyle = 'rgba(185,190,175,0.22)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(0,0,0,0.65)';
+            ctx.lineWidth = 5;
+            [-34, 0, 34].forEach(y => {
+                ctx.beginPath(); ctx.moveTo(-104, y); ctx.lineTo(104, y); ctx.stroke();
+            });
+            ctx.strokeStyle = 'rgba(200,205,190,0.12)';
+            ctx.lineWidth = 1;
+            [-34, 0, 34].forEach(y => {
+                ctx.beginPath(); ctx.moveTo(-100, y - 3); ctx.lineTo(100, y - 3); ctx.stroke();
+            });
+
+            // Fuel cans, top-down: caps, handles, seams, grimy red paint.
+            const cans = [
+                { x: -78, y: -19, a: -0.08, c: '#6b1410' },
+                { x: -35, y: -20, a: 0.05, c: '#7a1812' },
+                { x: 12, y: -17, a: -0.02, c: '#53110d' },
+                { x: 60, y: -20, a: 0.09, c: '#6c1610' },
+                { x: -62, y: 21, a: 0.04, c: '#4f140e' },
+                { x: -12, y: 21, a: -0.08, c: '#741610' },
+                { x: 43, y: 22, a: 0.03, c: '#5d120d' }
+            ];
+            cans.forEach(can => {
+                ctx.save();
+                ctx.translate(can.x, can.y);
+                ctx.rotate(can.a);
+                ctx.shadowColor = 'rgba(0,0,0,0.7)';
+                ctx.shadowBlur = 7;
+                ctx.shadowOffsetY = 4;
+                ctx.fillStyle = can.c;
+                ctx.beginPath(); ctx.roundRect(-17, -20, 34, 40, 4); ctx.fill();
+                ctx.shadowColor = 'transparent';
+                const g = ctx.createLinearGradient(-15, -18, 15, 18);
+                g.addColorStop(0, 'rgba(255,115,85,0.18)');
+                g.addColorStop(0.55, 'rgba(0,0,0,0)');
+                g.addColorStop(1, 'rgba(0,0,0,0.35)');
+                ctx.fillStyle = g;
+                ctx.beginPath(); ctx.roundRect(-15, -18, 30, 36, 3); ctx.fill();
+                ctx.strokeStyle = 'rgba(30,0,0,0.65)';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(-10, -12); ctx.lineTo(10, 12); ctx.moveTo(10, -12); ctx.lineTo(-10, 12); ctx.stroke();
+                ctx.strokeStyle = 'rgba(210,150,120,0.22)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.roundRect(-10, -24, 20, 8, 3); ctx.stroke();
+                ctx.fillStyle = '#1b0c08';
+                ctx.beginPath(); ctx.arc(12, -15, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            });
+
+            ctx.fillStyle = 'rgba(8,9,9,0.9)';
+            [[-102, -38], [102, -38], [-102, 39], [102, 39]].forEach(p => {
+                ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, Math.PI * 2); ctx.fill();
+            });
+
+            ctx.restore();
+        }
+
+        function drawFloorLamp(ctx, time) {
+            ctx.save();
+            ctx.translate(FLOOR_LAMP_X, FLOOR_LAMP_Y);
+
+            ctx.save();
+            ctx.globalAlpha = 0.36 + Math.sin(time * 3) * 0.03;
+            const pool = ctx.createRadialGradient(0, 0, 5, 0, 0, 78);
+            pool.addColorStop(0, 'rgba(255,225,145,0.8)');
+            pool.addColorStop(0.45, 'rgba(255,185,80,0.23)');
+            pool.addColorStop(1, 'rgba(255,145,35,0)');
+            ctx.fillStyle = pool;
+            ctx.beginPath(); ctx.arc(0, 0, 78, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.beginPath(); ctx.ellipse(8, 10, 22, 12, 0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowColor = 'rgba(255,210,120,0.7)';
+            ctx.shadowBlur = 20;
+            const lamp = ctx.createRadialGradient(-4, -5, 2, 0, 0, 18);
+            lamp.addColorStop(0, '#fff4c9');
+            lamp.addColorStop(0.38, '#b9a56e');
+            lamp.addColorStop(1, '#262822');
+            ctx.fillStyle = lamp;
+            ctx.beginPath(); ctx.ellipse(0, 0, 22, 15, -0.25, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowColor = 'transparent';
+            ctx.strokeStyle = '#151818';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0, 0, 24, 0.2, Math.PI * 1.65); ctx.stroke();
+            ctx.fillStyle = '#070808';
+            ctx.beginPath(); ctx.arc(-15, 10, 4, 0, Math.PI * 2); ctx.fill();
+
+            ctx.restore();
+        }
+
+        function collideCircleWithStorageShelf(obj, radius) {
+            const cos = Math.cos(-SHELF_ANGLE);
+            const sin = Math.sin(-SHELF_ANGLE);
+            const dx = obj.x - SHELF_X;
+            const dy = obj.y - SHELF_Y;
+            const lx = dx * cos - dy * sin;
+            const ly = dx * sin + dy * cos;
+            const halfW = SHELF_W / 2 + 8;
+            const halfH = SHELF_H / 2 + 8;
+            const nearestX = Math.max(-halfW, Math.min(halfW, lx));
+            const nearestY = Math.max(-halfH, Math.min(halfH, ly));
+            let diffX = lx - nearestX;
+            let diffY = ly - nearestY;
+            let dist = Math.sqrt(diffX * diffX + diffY * diffY);
+            if (dist >= radius) return false;
+            if (dist < 0.001) {
+                const pushX = halfW - Math.abs(lx);
+                const pushY = halfH - Math.abs(ly);
+                if (pushX < pushY) { diffX = lx < 0 ? -1 : 1; diffY = 0; }
+                else { diffX = 0; diffY = ly < 0 ? -1 : 1; }
+                dist = 1;
+            }
+            const push = radius - dist;
+            const nlx = diffX / dist;
+            const nly = diffY / dist;
+            const worldX = nlx * Math.cos(SHELF_ANGLE) - nly * Math.sin(SHELF_ANGLE);
+            const worldY = nlx * Math.sin(SHELF_ANGLE) + nly * Math.cos(SHELF_ANGLE);
+            obj.x += worldX * push;
+            obj.y += worldY * push;
+            return true;
+        }
         const activeSplatter = []; const floorSplatters = []; const damageTexts = [];
 
         class Bullet {
@@ -2032,6 +2253,7 @@
                 this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
                 this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
                 collideCircleWithLabTable(this, this.radius);
+                collideCircleWithStorageShelf(this, this.radius);
                 this.x = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.x));
                 this.y = Math.max(this.radius + wallThickness, Math.min(ROOM_SIZE - this.radius - wallThickness, this.y));
 
@@ -2354,6 +2576,13 @@
                 lightCtx.beginPath(); lightCtx.arc(DOCK_X, DOCK_Y, 190, 0, Math.PI * 2); lightCtx.fill();
             }
 
+            const floorLampGlow = lightCtx.createRadialGradient(FLOOR_LAMP_X, FLOOR_LAMP_Y, 6, FLOOR_LAMP_X, FLOOR_LAMP_Y, 165);
+            floorLampGlow.addColorStop(0, 'rgba(255, 220, 140, 0.45)');
+            floorLampGlow.addColorStop(0.32, 'rgba(255, 178, 70, 0.17)');
+            floorLampGlow.addColorStop(1, 'rgba(90, 45, 5, 0)');
+            lightCtx.fillStyle = floorLampGlow;
+            lightCtx.beginPath(); lightCtx.arc(FLOOR_LAMP_X, FLOOR_LAMP_Y, 165, 0, Math.PI * 2); lightCtx.fill();
+
             // Generator warning lamps cut a small red pocket through the room darkness.
             const generatorPulse = 0.45 + Math.abs(Math.sin(lastTime / 180)) * 0.35;
             const genGlowX = generator.x + Math.cos(GENERATOR_ANGLE) * 58 - Math.sin(GENERATOR_ANGLE) * -2;
@@ -2665,6 +2894,9 @@
 
             // Draw World Elements
             drawRoom(ctx);
+            drawStorageShelf(ctx, lastTime / 1000);
+            drawFloorLamp(ctx, lastTime / 1000);
+            drawWallPhone(ctx, lastTime / 1000);
             drawLabTable(ctx, lastTime / 1000);
             drawPowerDock(ctx, lastTime / 1000);
             drawGrinder(ctx, lastTime / 1000);
