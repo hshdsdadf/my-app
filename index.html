@@ -759,13 +759,20 @@
         const input = { left: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 }, right: { active: false, id: null, baseX: 0, baseY: 0, currentX: 0, currentY: 0, vectorX: 0, vectorY: 0, magnitude: 0 } };
         const JOYSTICK_MAX_RADIUS = 60;
 
+        function isPointOnComputerAction(x, y) {
+            if (computerAction.classList.contains('hidden')) return false;
+            const r = computerAction.getBoundingClientRect();
+            return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        }
+
         function handleTouch(e) {
-            if (e.target !== canvas) return;
+            if (e.target && e.target.closest && e.target.closest('#pause-btn, #computer-action, .menu-overlay')) return;
             if (gameState !== 'playing') { input.left.active = false; input.right.active = false; return; }
             e.preventDefault(); const halfWidth = width / 2; let leftFound = false; let rightFound = false;
 
             for (let i = 0; i < e.touches.length; i++) {
                 const touch = e.touches[i];
+                if (isPointOnComputerAction(touch.clientX, touch.clientY)) continue;
                 if (touch.clientX < halfWidth) {
                     leftFound = true;
                     if (!input.left.active) { input.left.active = true; input.left.id = touch.identifier; input.left.baseX = touch.clientX; input.left.baseY = touch.clientY; }
@@ -793,7 +800,7 @@
         window.addEventListener('touchstart', handleTouch, { passive: false }); window.addEventListener('touchmove', handleTouch, { passive: false });
         window.addEventListener('touchend', handleTouch, { passive: false }); window.addEventListener('touchcancel', handleTouch, { passive: false });
         let mouseDown = false;
-        window.addEventListener('mousedown', (e) => { if (e.target !== canvas) return; if (gameState === 'playing') { mouseDown = true; handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); } });
+        window.addEventListener('mousedown', (e) => { if (isPointOnComputerAction(e.clientX, e.clientY)) return; if (gameState === 'playing') { mouseDown = true; handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); } });
         window.addEventListener('mousemove', (e) => { if (mouseDown && gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [{ identifier: 'mouse', clientX: e.clientX, clientY: e.clientY }] }); });
         window.addEventListener('mouseup', (e) => { mouseDown = false; if (gameState === 'playing') handleTouch({ preventDefault: ()=>{}, touches: [] }); });
         window.addEventListener('keydown', (e) => {
