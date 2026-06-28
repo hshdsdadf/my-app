@@ -523,6 +523,8 @@
 
         let totalKills = 0; let timeAlive = 0; let deathParticles = [];
         const terminalState = { eDown: false, touchHold: false, hold: 0, holdRequired: 1.15, openVisual: 0 };
+        const waveState = { active: false, number: 0, spawnsRemaining: 0, timer: 0, intermission: 0, started: false };
+        const ventState = { left: 0, right: 0 };
 
         const settings = { brightness: 0.55, zoom: 1.0, shake: 1.0 };
 
@@ -742,6 +744,8 @@
             player.x = ROOM_SIZE / 2; player.y = ROOM_SIZE / 2;
             generator.x = GENERATOR_START_X; generator.y = GENERATOR_START_Y; generator.vx = 0; generator.vy = 0; generator.pushJolt = 0; generator.blockedPulse = 0; generator.docked = false;
             grinderAngle = 0; grinderPower = 0; grinderTargetPower = 0; dockLockPulse = 0;
+            waveState.active = false; waveState.number = 0; waveState.spawnsRemaining = 0; waveState.timer = 0; waveState.intermission = 0; waveState.started = false;
+            ventState.left = 0; ventState.right = 0;
             timeAlive = 0; totalKills = 0;
             deathParticles = []; deadEnemies.length = 0; enemyBullets.length = 0;
             updateHUD(); 
@@ -1734,6 +1738,7 @@
             generator.blockedPulse = 0;
             dockLockPulse = 1.4;
             grinderTargetPower = 1;
+            startWaveSystem();
             triggerShake(14, 0.24);
         }
 
@@ -2358,12 +2363,81 @@
         }
         const activeSplatter = []; const floorSplatters = []; const damageTexts = [];
 
+        function getWaveSpawnCount(waveNumber) {
+            if (waveNumber === 1) return 2;
+            if (waveNumber === 2) return 2;
+            if (waveNumber === 3) return 3;
+            return Math.min(6, 3 + Math.floor((waveNumber - 3) / 2));
+        }
+
+        function startWaveSystem() {
+            if (waveState.started) return;
+            waveState.started = true;
+            waveState.number = 1;
+            waveState.active = true;
+            waveState.spawnsRemaining = getWaveSpawnCount(1);
+            waveState.timer = 1.4;
+            waveState.intermission = 0;
+        }
+
+        function spawnWatcherFromVent(side = Math.random() < 0.5 ? 'left' : 'right') {
+            const y = VENT_Y + (Math.random() - 0.5) * (VENT_H - 70);
+            ventState[side] = 1;
+            enemies.push(new Watcher(side, y));
+            triggerShake(7, 0.18);
+
+            for (let i = 0; i < 14; i++) {
+                activeSplatter.push({
+                    x: side === 'left' ? 42 : ROOM_SIZE - 42,
+                    y: y + (Math.random() - 0.5) * 58,
+                    vx: (side === 'left' ? 1 : -1) * (35 + Math.random() * 120),
+                    vy: (Math.random() - 0.5) * 95,
+                    size: 0.9 + Math.random() * 2.4,
+                    color: Math.random() > 0.25 ? '#0a0b0b' : '#2d0806',
+                    friction: 0.58,
+                    scaleX: 1 + Math.random() * 1.2,
+                    angle: side === 'left' ? 0 : Math.PI
+                });
+            }
+        }
+
+        function updateWaveSystem(dt) {
+            ventState.left = Math.max(0, ventState.left - dt * 1.5);
+            ventState.right = Math.max(0, ventState.right - dt * 1.5);
+            if (!waveState.started || !generator.docked) return;
+
+            if (waveState.active) {
+                waveState.timer -= dt;
+                if (waveState.spawnsRemaining > 0 && waveState.timer <= 0) {
+                    const batch = waveState.spawnsRemaining > 1 && Math.random() < 0.12 ? 2 : 1;
+                    for (let i = 0; i < batch && waveState.spawnsRemaining > 0; i++) {
+                        spawnWatcherFromVent(i === 1 ? (Math.random() < 0.5 ? 'left' : 'right') : undefined);
+                        waveState.spawnsRemaining--;
+                    }
+                    waveState.timer = 9.5 + Math.random() * 2.2;
+                }
+
+                if (waveState.spawnsRemaining <= 0 && enemies.length === 0) {
+                    waveState.active = false;
+                    waveState.intermission = 8.0;
+                }
+            } else {
+                waveState.intermission -= dt;
+                if (waveState.intermission <= 0) {
+                    waveState.number++;
+                    waveState.active = true;
+                    waveState.spawnsRemaining = getWaveSpawnCount(waveState.number);
+                    waveState.timer = 2.0;
+                }
+            }
+        }
+
         class Bullet {
             constructor(x, y, angle) {
                 this.x = x; this.y = y; this.angle = angle;
                 this.life = 1.0; 
                 this.hitEnemies = new Set();
-                this.speed = 1200; this.damage = 10;
+                this.speed = 1200; this.damage = 20;
                 this.vx = Math.cos(angle) * this.speed; this.vy = Math.sin(angle) * this.speed;
             }
             update(dt) {
@@ -2396,6 +2470,150 @@
                 ctx.strokeStyle = '#f0aaff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2); ctx.stroke();
                 ctx.fillStyle = 'rgba(210,85,255,0.4)'; ctx.fill(); ctx.restore();
             }
+        }
+
+        class Watcher {
+            constructor(side, y) {
+                this.type = 'watcher';
+                this.side = side;
+                this.x = side === 'left' ? 42 : ROOM_SIZE - 42;
+                this.y = y;
+                this.radius = 28;
+                this.hp = 80;
+                this.hitCount = 0;
+                this.facingAngle = side === 'left' ? 0 : Math.PI;
+                this.headAngle = this.facingAngle;
+                this.drawX = this.x;
+                this.drawY = this.y;
+                this.drawAngle = this.facingAngle;
+                this.emerge = 0;
+                this.state = 'emerging';
+                this.stareTimer = 0;
+                this.burstTimer = 0;
+                this.burstCooldown = 1.2;
+                this.attackCooldown = 0;
+                this.sway = Math.random() * Math.PI * 2;
+            }
+
+            update(dt, player, allEnemies) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const targetAngle = Math.atan2(dy, dx);
+                let turn = ((targetAngle - this.headAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+                this.headAngle += Math.max(-dt * 1.7, Math.min(dt * 1.7, turn));
+                this.sway += dt * 3.2;
+
+                if (this.state === 'emerging') {
+                    this.emerge = Math.min(1, this.emerge + dt * 0.42);
+                    const crawlX = this.side === 'left' ? 64 + this.emerge * 58 : ROOM_SIZE - 64 - this.emerge * 58;
+                    this.x += (crawlX - this.x) * Math.min(1, dt * 4);
+                    this.facingAngle = this.side === 'left' ? 0 : Math.PI;
+                    if (this.emerge >= 1) this.state = 'staring';
+                } else {
+                    this.facingAngle = targetAngle;
+                    this.burstCooldown = Math.max(0, this.burstCooldown - dt);
+                    if (this.state === 'bursting') {
+                        this.burstTimer -= dt;
+                        this.x += (dx / dist) * 250 * dt;
+                        this.y += (dy / dist) * 250 * dt;
+                        if (this.burstTimer <= 0) {
+                            this.state = 'staring';
+                            this.stareTimer = 0;
+                            this.burstCooldown = 2.5;
+                        }
+                    } else {
+                        this.stareTimer += dt;
+                        const slowSpeed = 44 + Math.min(28, this.stareTimer * 7);
+                        if (dist > this.radius + player.radius + 12) {
+                            this.x += (dx / dist) * slowSpeed * dt;
+                            this.y += (dy / dist) * slowSpeed * dt;
+                        }
+                        if (this.stareTimer > 2.6 && this.burstCooldown <= 0) {
+                            this.state = 'bursting';
+                            this.burstTimer = 1.15;
+                            triggerShake(5, 0.16);
+                        }
+                    }
+                }
+
+                if (this.attackCooldown > 0) this.attackCooldown -= dt;
+                if (dist < this.radius + player.radius + 3) {
+                    player.hp -= (this.state === 'bursting' ? 28 : 12) * dt;
+                    player.hurtTimer = 0.15;
+                    updateHUD();
+                    if (this.attackCooldown <= 0) {
+                        this.attackCooldown = 0.55;
+                        damageTexts.push({ x: player.x, y: player.y - 30, text: this.state === 'bursting' ? '-28' : '-12', life: 0.7, vy: -60 });
+                        triggerShake(this.state === 'bursting' ? 6 : 3, 0.12);
+                    }
+                }
+
+                this.x = Math.max(58, Math.min(ROOM_SIZE - 58, this.x));
+                this.y = Math.max(58, Math.min(ROOM_SIZE - 58, this.y));
+                allEnemies.forEach(o => {
+                    if (o === this) return;
+                    const odx = this.x - o.x, ody = this.y - o.y;
+                    const od = Math.sqrt(odx * odx + ody * ody);
+                    const minD = this.radius + (o.radius || 18);
+                    if (od > 0 && od < minD) {
+                        const p = (minD - od) / od;
+                        this.x += odx * p * 0.35;
+                        this.y += ody * p * 0.35;
+                    }
+                });
+
+                this.drawX = this.x;
+                this.drawY = this.y;
+                this.drawAngle = this.facingAngle;
+            }
+
+            drawBody(ctx) {
+                const emergeScale = 0.35 + this.emerge * 0.65;
+                ctx.save();
+                ctx.translate(this.drawX, this.drawY);
+                ctx.rotate(this.drawAngle);
+                ctx.scale(emergeScale, emergeScale);
+                ctx.shadowColor = 'rgba(0,0,0,0.88)';
+                ctx.shadowBlur = 18;
+                ctx.shadowOffsetY = 10;
+                ctx.fillStyle = 'rgba(0,0,0,0.52)';
+                ctx.beginPath(); ctx.ellipse(-5, 34, 34, 13, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowOffsetY = 0;
+
+                ctx.strokeStyle = '#080909';
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                [[-15, -18, -31, -4], [-14, 15, -32, 35], [14, -18, 31, -4], [14, 15, 32, 35]].forEach(l => {
+                    ctx.beginPath(); ctx.moveTo(l[0], l[1]); ctx.lineTo(l[2], l[3] + Math.sin(this.sway + l[0]) * 3); ctx.stroke();
+                });
+
+                const bodyGrad = ctx.createLinearGradient(-18, -44, 22, 36);
+                bodyGrad.addColorStop(0, '#202424');
+                bodyGrad.addColorStop(0.5, '#090b0c');
+                bodyGrad.addColorStop(1, '#020303');
+                ctx.fillStyle = bodyGrad;
+                ctx.beginPath(); ctx.ellipse(0, 2, 21, 46, 0, 0, Math.PI * 2); ctx.fill();
+
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(this.drawX, this.drawY);
+                ctx.rotate(this.headAngle);
+                ctx.shadowColor = this.state === 'bursting' ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = this.state === 'bursting' ? 20 : 12;
+                const headGrad = ctx.createRadialGradient(-5, -7, 2, 0, 0, 22);
+                headGrad.addColorStop(0, '#343837');
+                headGrad.addColorStop(0.7, '#0b0d0d');
+                headGrad.addColorStop(1, '#010202');
+                ctx.fillStyle = headGrad;
+                ctx.beginPath(); ctx.ellipse(18, 0, 18, 24, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'rgba(0,0,0,0.55)';
+                ctx.beginPath(); ctx.ellipse(21, 0, 9, 16, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
+
+            drawSmile(ctx) {}
         }
 
         class CreepyLeg {
@@ -2851,6 +3069,7 @@
             const innerX = isLeft ? x + VENT_W - 10 : x + 10;
             const openX = isLeft ? x + VENT_W - 15 : x + 7;
             const time = lastTime / 1000;
+            const burst = ventState[side] || 0;
             const warning = 0.28 + Math.max(0, Math.sin(time * 2.8 + (isLeft ? 0 : 1.7))) * 0.22;
 
             ctx.save();
@@ -2872,7 +3091,11 @@
             mouthGrad.addColorStop(0.58, '#080b0c');
             mouthGrad.addColorStop(1, '#262e30');
             ctx.fillStyle = mouthGrad;
-            ctx.beginPath(); ctx.roundRect(openX, y + 16, VENT_W - 22, VENT_H - 32, 3); ctx.fill();
+            ctx.beginPath(); ctx.roundRect(openX - burst * (isLeft ? 0 : 10), y + 16 - burst * 4, VENT_W - 22 + burst * 10, VENT_H - 32 + burst * 8, 3); ctx.fill();
+            if (burst > 0.02) {
+                ctx.fillStyle = `rgba(0,0,0,${0.35 * burst})`;
+                ctx.beginPath(); ctx.roundRect(openX - burst * 8, y + 12, VENT_W - 16 + burst * 16, VENT_H - 24, 3); ctx.fill();
+            }
 
             ctx.strokeStyle = 'rgba(220,225,215,0.22)';
             ctx.lineWidth = 2;
@@ -2881,18 +3104,20 @@
             ctx.lineCap = 'round';
             for (let i = 0; i < 10; i++) {
                 const sy = y + 28 + i * 16;
+                const kick = burst * (8 + (i % 3) * 4) * (isLeft ? 1 : -1);
+                const rattle = Math.sin(time * 42 + i) * burst * 3;
                 const rust = i % 3 === 0 ? 'rgba(70,32,22,0.62)' : 'rgba(96,108,108,0.72)';
                 ctx.strokeStyle = rust;
                 ctx.lineWidth = 7;
                 ctx.beginPath();
-                ctx.moveTo(x + 13, sy);
-                ctx.lineTo(x + VENT_W - 13, sy - (isLeft ? 2 : -2));
+                ctx.moveTo(x + 13 + kick, sy + rattle);
+                ctx.lineTo(x + VENT_W - 13 + kick, sy - (isLeft ? 2 : -2) - rattle);
                 ctx.stroke();
                 ctx.strokeStyle = 'rgba(0,0,0,0.65)';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                ctx.moveTo(x + 13, sy + 4);
-                ctx.lineTo(x + VENT_W - 13, sy + 2);
+                ctx.moveTo(x + 13 + kick, sy + 4 + rattle);
+                ctx.lineTo(x + VENT_W - 13 + kick, sy + 2 - rattle);
                 ctx.stroke();
             }
 
@@ -3194,6 +3419,7 @@
 
                 player.update(dt);
                 updateGeneratorPhysics(dt, player);
+                updateWaveSystem(dt);
 
                 // Update Enemy Bullets
                 for (let i = enemyBullets.length - 1; i >= 0; i--) {
@@ -3239,7 +3465,7 @@
                                 let hitAngle = Math.atan2(b.vy, b.vx); let numHit = 1 + Math.floor(Math.random() * 2);
                                 for(let p = 0; p < numHit; p++) {
                                     let spread = (Math.random() - 0.5) * 0.6; let speed = 10 + Math.random() * 22; let size = 0.7 + Math.random() * 1.1;
-                                    let colors = ['#100000']; if (enemy.type === 'choir') colors = ['#2a004a', '#110022'];
+                                    let colors = ['#100000']; if (enemy.type === 'choir') colors = ['#2a004a', '#110022']; if (enemy.type === 'watcher') colors = ['#060707', '#1b0504'];
                                     activeSplatter.push({
                                         x: enemy.x + (Math.random()-0.5)*3, y: enemy.y + (Math.random()-0.5)*3,
                                         vx: Math.cos(hitAngle + spread) * speed, vy: Math.sin(hitAngle + spread) * speed,
@@ -3279,6 +3505,7 @@
                         let numDeath = 7 + Math.floor(Math.random() * 5);
                         let colors = ['#6a040f', '#370617', '#9d0208', '#03071e'];
                         if (enemy.type === 'choir') colors = ['#3d0b6e', '#5e179e', '#2a004a', '#110022'];
+                        if (enemy.type === 'watcher') colors = ['#090a0a', '#1b0504', '#2a0806', '#050606'];
 
                         for(let p = 0; p < numDeath; p++) {
                             let angle = Math.random() * Math.PI * 2; let speed = 15 + Math.random() * 65; let size = 1.2 + Math.random() * 3.0;
@@ -3294,9 +3521,9 @@
                             blobOffsets.push({ a: Math.random() * Math.PI * 2, distFrac: 0.15 + Math.random() * 0.45, rFrac: 0.55 + Math.random() * 0.55, ox: (Math.random()-0.5) * 0.25, oy: (Math.random()-0.5) * 0.2 });
                         }
                         
-                        let bodyCol = '#0e0a0a'; if (enemy.type === 'kneeler') bodyCol = '#142e1c'; if (enemy.type === 'choir') bodyCol = '#2a1a36';
+                        let bodyCol = '#0e0a0a'; if (enemy.type === 'kneeler') bodyCol = '#142e1c'; if (enemy.type === 'choir') bodyCol = '#2a1a36'; if (enemy.type === 'watcher') bodyCol = '#070909';
                         deadEnemies.push({
-                            x: enemy.x, y: enemy.y, facingAngle: enemy.facingAngle || 0, legs: enemy.legs, life: 5.0, maxLife: 5.0,
+                            x: enemy.x, y: enemy.y, facingAngle: enemy.facingAngle || 0, legs: enemy.legs, life: enemy.type === 'watcher' ? 999999 : 5.0, maxLife: enemy.type === 'watcher' ? 999999 : 5.0, permanent: enemy.type === 'watcher',
                             growDuration: 4.5, puddleRadius: 2, maxPuddleRadius: 20 + Math.random() * 10, blobOffsets, bodyColor: bodyCol, type: enemy.type
                         });
                         
@@ -3363,7 +3590,7 @@
                     let growFrac = Math.min(1, (d.maxLife - d.life) / d.growDuration);
                     let eased = 1 - Math.pow(1 - growFrac, 2.8); 
                     d.puddleRadius = 2 + (d.maxPuddleRadius - 2) * eased;
-                    if (d.life <= 0) deadEnemies.splice(i, 1);
+                    if (!d.permanent && d.life <= 0) deadEnemies.splice(i, 1);
                 }
 
                 for (let i = damageTexts.length - 1; i >= 0; i--) { let d = damageTexts[i]; d.y += d.vy * dt; d.life -= dt; if (d.life <= 0) damageTexts.splice(i, 1); }
@@ -3388,7 +3615,7 @@
             drawGrinder(ctx, lastTime / 1000);
 
             deadEnemies.forEach(d => {
-                const fadeStart = 2.0; const alpha = d.life > fadeStart ? 1.0 : (d.life / fadeStart); const pr = d.puddleRadius;
+                const fadeStart = 2.0; const alpha = d.permanent ? 1.0 : (d.life > fadeStart ? 1.0 : (d.life / fadeStart)); const pr = d.puddleRadius;
                 ctx.save(); ctx.globalAlpha = alpha;
 
                 ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.facingAngle); ctx.scale(1.32, 0.76); 
@@ -3414,7 +3641,28 @@
                 }
                 ctx.restore();
 
-                if (d.type === 'choir') {
+                if (d.type === 'watcher') {
+                    ctx.save();
+                    ctx.translate(d.x, d.y);
+                    ctx.rotate(d.facingAngle + 0.25);
+                    ctx.shadowColor = 'rgba(0,0,0,0.82)';
+                    ctx.shadowBlur = 14;
+                    ctx.shadowOffsetY = 7;
+                    ctx.strokeStyle = '#050606';
+                    ctx.lineWidth = 8;
+                    ctx.lineCap = 'round';
+                    [[-15, -18, -38, -4], [-13, 18, -38, 37], [14, -18, 38, -4], [13, 18, 36, 38]].forEach(l => {
+                        ctx.beginPath(); ctx.moveTo(l[0], l[1]); ctx.lineTo(l[2], l[3]); ctx.stroke();
+                    });
+                    ctx.fillStyle = d.bodyColor || '#070909';
+                    ctx.beginPath(); ctx.ellipse(0, 4, 24, 54, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowColor = 'transparent';
+                    ctx.fillStyle = '#030404';
+                    ctx.beginPath(); ctx.ellipse(22, -36, 19, 24, -0.12, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(60,65,62,0.20)';
+                    ctx.beginPath(); ctx.ellipse(20, -39, 7, 15, -0.2, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                } else if (d.type === 'choir') {
                     ctx.save(); ctx.translate(d.x, d.y); ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
                     ctx.fillStyle = d.bodyColor || '#2a1a36';
                     ctx.beginPath(); ctx.arc(-8, -5, 14, 0, Math.PI * 2); ctx.fill();
