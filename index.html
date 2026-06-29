@@ -2266,6 +2266,28 @@
             { id: 'medkit_minor', name: 'Minor Medkit', type: 'heal', chance: 0.33, color: '#ff6b81', effect: 'Instantly restore 50 Health.', heal: 50, stats: { heal: 50, util: 20 } }
         ];
 
+        const commonItemSettings = [
+            { id: 'common_sock', name: 'Sock', type: 'common_item', mode: 'passive', chance: 0.055, color: '#bdc3c7', effect: '+1 player speed.', speedFlat: 1, stats: { speed: 15, util: 25 } },
+            { id: 'common_glass_bottle', name: 'Glass Bottle', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#70c878', effect: 'Throws a bottle that shatters into small shards.', cooldown: 2.6, dmg: 16, stats: { dmg: 42, range: 58, util: 44 } },
+            { id: 'common_rusty_knife', name: 'Rusty Knife', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#b46a38', effect: 'Fast short-range stab.', cooldown: 0.72, dmg: 13, melee: true, range: 95, stats: { dmg: 38, fire: 70, range: 18 } },
+            { id: 'common_bent_fork', name: 'Bent Fork', type: 'common_item', mode: 'passive', chance: 0.055, color: '#bdc3c7', effect: '+5% attack speed.', cooldownMult: 0.95, stats: { fire: 40, util: 18 } },
+            { id: 'common_old_boot', name: 'Old Boot', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#8b5a2b', effect: 'Kicks nearby enemies away.', cooldown: 3.2, dmg: 8, melee: true, range: 125, knockback: 620, stats: { dmg: 22, force: 90, range: 22 } },
+            { id: 'common_pocket_sand', name: 'Pocket Sand', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#d8c07a', effect: 'Blinds enemies for 0.5 second.', cooldown: 1.25, dmg: 3, stats: { fire: 58, util: 82, range: 44 } },
+            { id: 'common_slingshot', name: 'Slingshot', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#9a6b3d', effect: 'Shoots small rocks.', cooldown: 0.95, dmg: 10, stats: { dmg: 30, fire: 48, range: 56 } },
+            { id: 'common_black_sleeve', name: 'Black Sleeve', type: 'common_item', mode: 'passive', chance: 0.055, color: '#252525', effect: '+3 melee damage.', meleeBonus: 3, stats: { dmg: 28, util: 12 } },
+            { id: 'common_duct_tape', name: 'Duct Tape', type: 'common_item', mode: 'passive', chance: 0.055, color: '#9fa5a8', effect: '+5 max HP.', hpBonus: 5, stats: { vit: 28, util: 28 } },
+            { id: 'common_lucky_penny', name: 'Lucky Penny', type: 'common_item', mode: 'passive', chance: 0.055, color: '#c07820', effect: '+3% crit chance.', critChance: 0.03, stats: { crit: 32, util: 28 } },
+            { id: 'common_broken_remote', name: 'Broken Remote', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#555b66', effect: 'Randomly zaps one enemy.', cooldown: 3.0, dmg: 18, stats: { dmg: 45, range: 70, util: 38 } },
+            { id: 'common_plastic_straw', name: 'Plastic Straw', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#e9eef2', effect: 'Shoots tiny darts quickly.', cooldown: 0.34, dmg: 4, stats: { dmg: 12, fire: 92, range: 38 } },
+            { id: 'common_mop_handle', name: 'Mop Handle', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#b88448', effect: 'Long-range melee poke.', cooldown: 1.05, dmg: 11, melee: true, range: 170, stats: { dmg: 34, fire: 48, range: 58 } },
+            { id: 'common_canned_beans', name: 'Canned Beans', type: 'common_item', mode: 'passive', chance: 0.055, color: '#9aa4ad', effect: '+2 armor.', armorFlat: 2, stats: { def: 40, vit: 12 } },
+            { id: 'common_rubber_ball', name: 'Rubber Ball', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#d22f45', effect: 'Bounces between 2 enemies.', cooldown: 1.8, dmg: 9, stats: { dmg: 26, fire: 44, range: 62 } },
+            { id: 'common_loose_brick', name: 'Loose Brick', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#a44a32', effect: 'Throws a heavy brick.', cooldown: 2.4, dmg: 24, knockback: 420, stats: { dmg: 65, force: 70, fire: 18 } },
+            { id: 'common_bandage_roll', name: 'Bandage Roll', type: 'common_item', mode: 'passive', chance: 0.055, color: '#f0d8c0', effect: '+1 HP regeneration.', regen: 1, stats: { heal: 34, util: 34 } },
+            { id: 'common_bike_chain', name: 'Bike Chain', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#7f8c8d', effect: 'Circles around the player and swings at enemies.', cooldown: 0.9, dmg: 10, melee: true, range: 135, stats: { dmg: 36, fire: 58, range: 34 } },
+            { id: 'common_firecracker', name: 'Firecracker', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#e74c3c', effect: 'Small explosion every few seconds.', cooldown: 3.6, dmg: 22, stats: { dmg: 55, area: 62, fire: 16 } }
+        ];
+
         const armorSettings = [
             { id: 'armor_common', name: 'Scrap Vest', chance: 0.70, color: '#95a5a6', effect: '+5% dmg reduction, +20 Health.', dr: 0.05, hpBonus: 20, stats: { def: 20, vit: 40 } },
             { id: 'armor_uncommon', name: 'Reinforced Plates', chance: 0.20, color: '#7f8c8d', effect: '+16% dmg reduction, -5% Move Speed.', dr: 0.16, speedMod: 0.95, stats: { def: 60, vit: 30 } },
@@ -2508,6 +2530,11 @@
             chaosSurgeTimer: 10, // Chaos Surge: triggers every 10s
             critChance: 0,
             critMultiplier: 2.0,
+            commonItems: [],
+            commonMeleeBonus: 0,
+            flatArmor: 0,
+            hpRegen: 0,
+            regenTick: 0,
             hasEcho: false,
             echoTimer: 0,
             echoNextReady: false,
@@ -2932,6 +2959,9 @@
                     }
                     return medkitSettings[1]; 
                 }
+                if (typeRoll < 0.78) {
+                    return commonItemSettings[Math.floor(Math.random() * commonItemSettings.length)];
+                }
                 const types = ['rifle', 'shotgun', 'smg'];
                 const selectedType = types[Math.floor(Math.random() * types.length)];
                 const typePool = raritySettings.filter(r => r.type === selectedType);
@@ -3334,10 +3364,11 @@
                 };
                 cardContainer.appendChild(btn);
             } else {
-                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
-                const getCardGlow = (item) => item.glowClass || (item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
+                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'common_item' ? (item.mode === 'passive' ? 'Common Passive' : 'Common Scrap') : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
+                const getCardGlow = (item) => item.glowClass || (item.type === 'common_item' ? 'glow-common' : item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
                 const applyCard = (item) => {
                     if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + item.heal); createExplosion(player.x, player.y, '#ff4757', 20); closeLevelUp(); }
+                    else if (item.type === 'common_item') applyCommonItem(item);
                     else if (item.type === 'ability') { applyAbility(item); }
                     else if (item.type === 'powerful') applyPowerful(item);
                     else if (item.id && item.id.startsWith('armor')) selectArmor(item);
@@ -3352,9 +3383,10 @@
                 };
 
                 // Build 3 cards that are all different "category" types
-                // Categories: weapon, armor, ability, powerful, heal
+                // Categories: weapon, armor, ability, powerful, heal, common_item
                 const getCategory = (item) => {
                     if (item.type === 'heal') return 'heal';
+                    if (item.type === 'common_item') return 'common_item';
                     if (item.type === 'ability') return 'ability';
                     if (item.type === 'powerful') return 'powerful';
                     if (item.id && item.id.startsWith('armor')) return 'armor';
@@ -3413,6 +3445,7 @@
             else if (data.type === 'shotgun') iconHtml = getShotgunSVG(data.color, trait);
             else if (data.type === 'smg') iconHtml = getSMGSVG(data.color, trait);
             else if (data.type === 'heal') iconHtml = getMedkitSVG(data.color);
+            else if (data.type === 'common_item') iconHtml = getCommonItemSVG(data.id, data.color);
             else if (data.type === 'powerful') iconHtml = getPowerfulSVG(data.id, data.color);
             else if (data.id && data.id.startsWith('armor')) iconHtml = getArmorSVG(data.color, data.id);
             else if (data.id === 'collector_orb') iconHtml = `<svg width="70" height="70" viewBox="0 0 70 70"><defs><radialGradient id="og" cx="50%" cy="50%"><stop offset="0%" stop-color="#fff"/><stop offset="40%" stop-color="${data.color}"/><stop offset="100%" stop-color="${data.color}22"/></radialGradient></defs><circle cx="35" cy="35" r="32" fill="none" stroke="${data.color}" stroke-width="2" stroke-dasharray="6 4" opacity="0.5"/><circle cx="35" cy="35" r="22" fill="none" stroke="${data.color}" stroke-width="1.5" opacity="0.3"/><circle cx="35" cy="35" r="12" fill="url(#og)"/><circle cx="35" cy="13" r="6" fill="${data.color}"/><circle cx="55" cy="47" r="5" fill="${data.color}" opacity="0.8"/><circle cx="15" cy="47" r="5" fill="${data.color}" opacity="0.8"/></svg>`;
@@ -3441,6 +3474,32 @@
             `;
             card.onclick = onClick;
             return card;
+        }
+
+        function getCommonItemSVG(id, color) {
+            const c = color || '#bdc3c7';
+            const glow = `<circle cx="35" cy="35" r="31" fill="${c}" opacity="0.08"/><circle cx="35" cy="35" r="25" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.32" stroke-dasharray="4 5"/>`;
+            const wrap = (body) => `<svg width="70" height="70" viewBox="0 0 70 70"><defs><linearGradient id="${id}g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="rgba(255,255,255,0.38)"/><stop offset="45%" stop-color="${c}"/><stop offset="100%" stop-color="rgba(0,0,0,0.72)"/></linearGradient></defs>${glow}<g stroke="#0a0906" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</g></svg>`;
+            if (id === 'common_sock') return wrap(`<path d="M26 11 L43 11 L43 38 Q43 52 31 56 Q18 59 14 49 Q11 41 20 37 L26 34 Z" fill="url(#${id}g)"/><path d="M20 37 Q30 40 43 38" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>`);
+            if (id === 'common_glass_bottle') return wrap(`<path d="M30 8 L41 8 L40 23 Q48 29 47 48 Q46 58 35 59 Q24 58 23 48 Q22 29 30 23 Z" fill="rgba(80,190,110,0.48)"/><path d="M30 8 L41 8 L40 18 L30 18 Z" fill="url(#${id}g)"/><path d="M28 31 Q35 27 43 32" fill="none" stroke="#d9ffe3" stroke-width="1.5" opacity="0.55"/><path d="M22 58 L17 63 M47 57 L54 62 M36 59 L36 66" fill="none" stroke="${c}" opacity="0.65"/>`);
+            if (id === 'common_rusty_knife') return wrap(`<path d="M16 55 L42 17 Q49 9 55 12 Q50 24 41 31 L24 59 Z" fill="url(#${id}g)"/><path d="M13 57 L25 45 L31 51 L19 63 Z" fill="#3a2618"/><path d="M38 23 L49 13" stroke="#e6d1aa" stroke-width="1.2" opacity="0.45"/>`);
+            if (id === 'common_bent_fork') return wrap(`<path d="M34 16 C40 25 28 30 36 39 L24 61" fill="none" stroke="url(#${id}g)" stroke-width="6"/><path d="M31 10 L31 24 M37 10 L36 24 M43 11 L39 25" fill="none" stroke="url(#${id}g)" stroke-width="3"/><path d="M40 25 Q35 28 31 25" fill="none" stroke="${c}" stroke-width="2" opacity="0.5"/>`);
+            if (id === 'common_old_boot') return wrap(`<path d="M20 16 L38 16 L41 42 L58 45 Q62 52 55 57 L23 57 Q14 55 17 46 Z" fill="url(#${id}g)"/><path d="M23 39 Q35 43 53 43" fill="none" stroke="rgba(255,255,255,0.17)" stroke-width="1.4"/><path d="M24 24 L37 24 M25 30 L38 30" stroke="#1a0f08" stroke-width="1.2"/>`);
+            if (id === 'common_pocket_sand') return wrap(`<path d="M20 42 Q31 26 50 39 Q46 57 28 58 Q17 55 20 42 Z" fill="url(#${id}g)"/><circle cx="21" cy="23" r="3" fill="${c}"/><circle cx="33" cy="17" r="2" fill="${c}"/><circle cx="47" cy="25" r="2.5" fill="${c}"/><path d="M24 42 Q35 48 48 41" fill="none" stroke="#fff0b0" stroke-width="1.2" opacity="0.4"/>`);
+            if (id === 'common_slingshot') return wrap(`<path d="M22 14 L32 34 L26 61 L38 61 L35 34 L48 14" fill="none" stroke="url(#${id}g)" stroke-width="7"/><path d="M22 14 Q35 28 48 14" fill="none" stroke="#202020" stroke-width="3"/><circle cx="35" cy="26" r="5" fill="#4b3323"/>`);
+            if (id === 'common_black_sleeve') return wrap(`<path d="M23 14 Q38 9 48 21 L41 58 Q31 63 20 56 Z" fill="#121212"/><path d="M24 20 Q35 27 46 23" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.38"/><path d="M20 55 Q31 48 42 58" fill="none" stroke="#444" stroke-width="3"/>`);
+            if (id === 'common_duct_tape') return wrap(`<ellipse cx="35" cy="35" rx="24" ry="21" fill="url(#${id}g)"/><ellipse cx="35" cy="35" rx="12" ry="10" fill="#111"/><path d="M17 29 Q35 23 53 30 M18 43 Q35 49 52 42" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.3"/>`);
+            if (id === 'common_lucky_penny') return wrap(`<circle cx="35" cy="35" r="24" fill="url(#${id}g)"/><circle cx="35" cy="35" r="17" fill="none" stroke="#5f2d08" stroke-width="2"/><text x="35" y="43" text-anchor="middle" fill="#2b1203" font-size="24" font-weight="900" font-family="serif" stroke="none">1</text>`);
+            if (id === 'common_broken_remote') return wrap(`<rect x="23" y="10" width="24" height="50" rx="6" fill="url(#${id}g)"/><path d="M27 18 L43 52" stroke="#111" stroke-width="2"/><circle cx="34" cy="23" r="5" fill="#e74c3c"/><circle cx="29" cy="38" r="3" fill="#222"/><circle cx="40" cy="38" r="3" fill="#222"/><path d="M45 8 L58 2 M50 13 L64 10" stroke="${c}" opacity="0.85"/>`);
+            if (id === 'common_plastic_straw') return wrap(`<path d="M15 51 L45 15 Q50 9 56 14 L25 55 Z" fill="url(#${id}g)"/><path d="M45 15 L58 9" fill="none" stroke="${c}" stroke-width="4"/><path d="M22 45 L50 18" stroke="#fff" stroke-width="1.2" opacity="0.45"/>`);
+            if (id === 'common_mop_handle') return wrap(`<path d="M18 58 L52 12" stroke="url(#${id}g)" stroke-width="7"/><path d="M13 55 Q22 62 31 58 M12 61 Q24 67 36 61" fill="none" stroke="#d8d0bd" stroke-width="3"/><path d="M45 19 L55 7" stroke="#fff0cf" stroke-width="1.4" opacity="0.35"/>`);
+            if (id === 'common_canned_beans') return wrap(`<ellipse cx="35" cy="16" rx="17" ry="6" fill="url(#${id}g)"/><rect x="18" y="16" width="34" height="39" fill="url(#${id}g)"/><ellipse cx="35" cy="55" rx="17" ry="6" fill="#58606a"/><rect x="22" y="27" width="26" height="15" rx="2" fill="#e7d8aa"/><text x="35" y="38" text-anchor="middle" fill="#5a2416" font-size="7" font-weight="900" font-family="monospace" stroke="none">BEANS</text>`);
+            if (id === 'common_rubber_ball') return wrap(`<circle cx="35" cy="35" r="22" fill="url(#${id}g)"/><path d="M19 29 Q35 42 51 29 M23 50 Q38 36 48 18" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2"/><circle cx="28" cy="27" r="5" fill="rgba(255,255,255,0.18)" stroke="none"/>`);
+            if (id === 'common_loose_brick') return wrap(`<path d="M16 26 L47 14 L56 43 L24 56 Z" fill="url(#${id}g)"/><path d="M21 33 L52 22 M25 44 L55 34 M35 19 L42 50" fill="none" stroke="#552316" stroke-width="1.6" opacity="0.55"/>`);
+            if (id === 'common_bandage_roll') return wrap(`<circle cx="35" cy="35" r="23" fill="url(#${id}g)"/><circle cx="35" cy="35" r="10" fill="#2a1f1a"/><path d="M16 35 Q35 21 54 35 Q35 49 16 35 Z" fill="#f8e7d1" opacity="0.82"/><path d="M30 35 L40 35 M35 30 L35 40" stroke="#b03020" stroke-width="3"/>`);
+            if (id === 'common_bike_chain') return wrap(`<path d="M18 35 Q18 14 35 14 Q52 14 52 35 Q52 56 35 56 Q18 56 18 35 Z" fill="none" stroke="url(#${id}g)" stroke-width="6"/><path d="M24 25 L46 45 M46 25 L24 45" stroke="#222" stroke-width="3" opacity="0.6"/><circle cx="35" cy="35" r="6" fill="#1a1a1a"/>`);
+            if (id === 'common_firecracker') return wrap(`<rect x="26" y="22" width="18" height="34" rx="4" fill="url(#${id}g)"/><path d="M35 22 Q40 12 52 11" fill="none" stroke="#f1c40f" stroke-width="3"/><path d="M50 8 L56 3 M54 12 L64 12 M50 16 L57 22" stroke="#ffdd66" stroke-width="2"/><path d="M29 29 L41 29 M29 39 L41 39" stroke="#fff" stroke-width="1.4" opacity="0.35"/>`);
+            return wrap(`<circle cx="35" cy="35" r="20" fill="url(#${id}g)"/><path d="M35 17 L40 31 L55 31 L43 40 L48 55 L35 46 L22 55 L27 40 L15 31 L30 31 Z" fill="${c}" opacity="0.75"/>`);
         }
 
         function getSMGSVG(color, trait) {
@@ -4642,6 +4701,203 @@
             closeLevelUp();
         }
 
+        function applyCommonItem(item) {
+            if (item.mode === 'passive') {
+                if (item.speedFlat) player.speed += item.speedFlat;
+                if (item.cooldownMult) player.cooldownMult = (player.cooldownMult || 1) * item.cooldownMult;
+                if (item.meleeBonus) player.commonMeleeBonus = (player.commonMeleeBonus || 0) + item.meleeBonus;
+                if (item.hpBonus) {
+                    player.maxHp += item.hpBonus;
+                    player.baseHp += item.hpBonus;
+                    player.hp = Math.min(player.maxHp, player.hp + item.hpBonus);
+                }
+                if (item.critChance) player.critChance += item.critChance;
+                if (item.armorFlat) player.flatArmor = (player.flatArmor || 0) + item.armorFlat;
+                if (item.regen) player.hpRegen = (player.hpRegen || 0) + item.regen;
+                createExplosion(player.x, player.y, item.color, 14);
+                addFloatingText(player.x, player.y - 55, item.name, item.color, 16);
+                closeLevelUp();
+                return;
+            }
+
+            player.commonItems.push({
+                config: item,
+                angle: Math.random() * Math.PI * 2,
+                orbitRadius: 82 + player.commonItems.length * 14,
+                timer: Math.random() * (item.cooldown || 1),
+                attackAnim: 0,
+                lookAngle: 0
+            });
+            createExplosion(player.x, player.y, item.color, 12);
+            closeLevelUp();
+        }
+
+        function nearestEnemyFrom(x, y, range = 900) {
+            let nearest = null, minD = range;
+            enemies.forEach(e => {
+                if (e.introHidden) return;
+                const d = Math.sqrt((e.x - x)**2 + (e.y - y)**2);
+                if (d < minD) { minD = d; nearest = e; }
+            });
+            return nearest;
+        }
+
+        function damageEnemyWithCommonItem(e, item, x, y, dmg, knockback = 160) {
+            const dealt = dmg + (item.melee ? (player.commonMeleeBonus || 0) : 0);
+            e.hp -= dealt;
+            e.hitTimer = 0.15;
+            totalDamageDealt += dealt;
+            const a = Math.atan2(e.y - y, e.x - x);
+            e.kx += Math.cos(a) * knockback;
+            e.ky += Math.sin(a) * knockback;
+            addFloatingText(e.x + (Math.random()-0.5)*35, e.y - e.size*0.7, Math.ceil(dealt), item.color, 18);
+            createExplosion(e.x, e.y, item.color, item.id === 'common_old_boot' ? 10 : 5);
+        }
+
+        function fireCommonItemProjectile(item, x, y, target) {
+            const angle = Math.atan2(target.y - y, target.x - x);
+            const speedMap = {
+                common_glass_bottle: 880,
+                common_pocket_sand: 760,
+                common_slingshot: 1050,
+                common_plastic_straw: 1220,
+                common_rubber_ball: 900,
+                common_loose_brick: 720,
+                common_firecracker: 820
+            };
+            const speed = speedMap[item.id] || 900;
+            const bullet = {
+                x, y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                life: item.id === 'common_loose_brick' ? 1.4 : 1.9,
+                dmg: item.dmg,
+                isCommonItem: true,
+                commonItemId: item.id,
+                commonColor: item.color,
+                size: item.id === 'common_loose_brick' ? 13 : item.id === 'common_glass_bottle' ? 10 : 7,
+                knockback: item.knockback || 170
+            };
+            if (item.id === 'common_glass_bottle') bullet.shatter = true;
+            if (item.id === 'common_pocket_sand') bullet.blind = true;
+            if (item.id === 'common_rubber_ball') bullet.bounces = 1;
+            if (item.id === 'common_firecracker') bullet.explodeOnDeath = true;
+            bullets.push(bullet);
+        }
+
+        function updateCommonItems(dt, dmgMult = 1) {
+            if (player.hpRegen > 0 && player.hp < player.maxHp) {
+                player.regenTick = (player.regenTick || 0) + dt;
+                const healAmt = player.hpRegen * dt;
+                player.hp = Math.min(player.maxHp, player.hp + healAmt);
+                if (player.regenTick >= 1) {
+                    player.regenTick = 0;
+                    particles.push({ x: player.x + (Math.random()-0.5)*36, y: player.y - 28, vx: 0, vy: -35, life: 0.55, color: '#f0d8c0', size: 3 });
+                }
+            }
+
+            player.commonItems.forEach((ci, idx) => {
+                const item = ci.config;
+                ci.angle += dt * (item.id === 'common_bike_chain' ? 2.4 : 1.15 + idx * 0.03);
+                ci.timer += dt;
+                ci.attackAnim = Math.max(0, ci.attackAnim - dt * 4);
+                const ix = player.x + Math.cos(ci.angle) * ci.orbitRadius;
+                const iy = player.y + Math.sin(ci.angle) * ci.orbitRadius;
+                const target = nearestEnemyFrom(ix, iy, item.melee ? (item.range || 120) + 60 : 900);
+                ci.lookAngle = target ? Math.atan2(target.y - iy, target.x - ix) : ci.angle + Math.PI / 2;
+                const cd = (item.cooldown || 1.5) * (player.cooldownMult || 1);
+                if (!target || ci.timer < cd) return;
+                ci.timer = 0;
+                ci.attackAnim = 1;
+
+                if (item.id === 'common_broken_remote') {
+                    damageEnemyWithCommonItem(target, item, ix, iy, item.dmg * dmgMult, 90);
+                    for (let s = 0; s < 9; s++) {
+                        const f = s / 8;
+                        particles.push({ x: ix + (target.x - ix)*f + (Math.random()-0.5)*18, y: iy + (target.y - iy)*f + (Math.random()-0.5)*18, vx:(Math.random()-0.5)*50, vy:(Math.random()-0.5)*50, life:0.18, color:'#f9ca24', size:2+Math.random()*3 });
+                    }
+                    return;
+                }
+
+                if (item.melee) {
+                    damageEnemyWithCommonItem(target, item, ix, iy, item.dmg * dmgMult, item.knockback || 190);
+                    return;
+                }
+
+                if (item.id === 'common_firecracker') {
+                    const fuseX = target.x + (Math.random()-0.5)*20;
+                    const fuseY = target.y + (Math.random()-0.5)*20;
+                    setTimeout(() => {
+                        const R = 105;
+                        enemies.forEach(e => {
+                            const d = Math.sqrt((e.x - fuseX)**2 + (e.y - fuseY)**2);
+                            if (d < R + e.size) damageEnemyWithCommonItem(e, item, fuseX, fuseY, item.dmg * dmgMult, 260);
+                        });
+                        triggerShake(6, 0.18);
+                        createExplosion(fuseX, fuseY, '#e74c3c', 24);
+                    }, 420);
+                    particles.push({ x: fuseX, y: fuseY, vx: 0, vy: -60, life: 0.45, color: '#f1c40f', size: 5 });
+                    return;
+                }
+
+                fireCommonItemProjectile(item, ix, iy, target);
+            });
+        }
+
+        function drawCommonItemWorld(ctx, item, pulse = 0) {
+            const c = item.color || '#bdc3c7';
+            ctx.save();
+            ctx.shadowColor = c;
+            ctx.shadowBlur = 8 + pulse * 12;
+            ctx.strokeStyle = '#0a0906';
+            ctx.lineWidth = 2.2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            const s = 1 + pulse * 0.18;
+            ctx.scale(s, s);
+            if (item.id === 'common_glass_bottle') {
+                ctx.fillStyle = 'rgba(80,190,110,0.58)';
+                ctx.beginPath(); ctx.roundRect(-7, -18, 14, 30, 4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#caffd6'; ctx.fillRect(-3, -23, 6, 8);
+            } else if (item.id === 'common_rusty_knife') {
+                ctx.fillStyle = '#b46a38'; ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-5, -7); ctx.lineTo(-12, 0); ctx.lineTo(-5, 7); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#3a2618'; ctx.fillRect(-18, -5, 10, 10);
+            } else if (item.id === 'common_old_boot') {
+                ctx.fillStyle = '#8b5a2b'; ctx.beginPath(); ctx.moveTo(-14,-14); ctx.lineTo(4,-14); ctx.lineTo(8,5); ctx.lineTo(22,8); ctx.lineTo(18,16); ctx.lineTo(-12,15); ctx.closePath(); ctx.fill(); ctx.stroke();
+            } else if (item.id === 'common_pocket_sand') {
+                ctx.fillStyle = '#d8c07a'; ctx.beginPath(); ctx.ellipse(0, 3, 16, 10, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                for (let i=0;i<4;i++){ctx.beginPath();ctx.arc(-12+i*8,-8+Math.sin(Date.now()*0.006+i)*3,2,0,Math.PI*2);ctx.fill();}
+            } else if (item.id === 'common_slingshot') {
+                ctx.strokeStyle = '#9a6b3d'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-10,18); ctx.lineTo(0,0); ctx.lineTo(-13,-17); ctx.moveTo(0,0); ctx.lineTo(14,-17); ctx.stroke();
+                ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-13,-17); ctx.quadraticCurveTo(0,-6,14,-17); ctx.stroke();
+            } else if (item.id === 'common_broken_remote') {
+                ctx.fillStyle = '#555b66'; ctx.beginPath(); ctx.roundRect(-8,-20,16,38,4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(0,-10,4,0,Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#111'; ctx.fillRect(-4,1,8,10);
+            } else if (item.id === 'common_plastic_straw') {
+                ctx.strokeStyle = '#e9eef2'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-18,10); ctx.lineTo(12,-14); ctx.lineTo(20,-18); ctx.stroke();
+                ctx.strokeStyle = '#0a0906'; ctx.lineWidth = 1.2; ctx.stroke();
+            } else if (item.id === 'common_mop_handle') {
+                ctx.strokeStyle = '#b88448'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-18,18); ctx.lineTo(18,-18); ctx.stroke();
+                ctx.strokeStyle = '#d8d0bd'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-23,17); ctx.quadraticCurveTo(-14,26,-4,20); ctx.stroke();
+            } else if (item.id === 'common_rubber_ball') {
+                ctx.fillStyle = '#d22f45'; ctx.beginPath(); ctx.arc(0,0,13,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-3,-3,7,0.2,2.4); ctx.stroke();
+            } else if (item.id === 'common_loose_brick') {
+                ctx.fillStyle = '#a44a32'; ctx.beginPath(); ctx.roundRect(-16,-10,32,20,2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#552316'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-14,0); ctx.lineTo(14,0); ctx.moveTo(0,-9); ctx.lineTo(0,9); ctx.stroke();
+            } else if (item.id === 'common_bike_chain') {
+                ctx.strokeStyle = '#7f8c8d'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(0,0,18,11,0,0,Math.PI*2); ctx.stroke();
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-12,-7); ctx.lineTo(12,7); ctx.moveTo(12,-7); ctx.lineTo(-12,7); ctx.stroke();
+            } else if (item.id === 'common_firecracker') {
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.roundRect(-6,-17,12,30,3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-17); ctx.quadraticCurveTo(7,-25,15,-20); ctx.stroke();
+            } else {
+                ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill(); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
         function closeLevelUp() { 
             levelUpOverlay.style.display = 'none'; 
             if (!inventoryOpen) {
@@ -4662,6 +4918,7 @@
             // Dealer's Deck defense: 30% reduction
             const dealerDefenseBonus = (player.dealersDeck && player.dealersDeckBuff === 'spade') ? 0 : 0; // spade is damage, not defense
             let reduction = player.armor ? (player.armor.dr || 0) : 0;
+            reduction = Math.min(0.75, reduction + (player.flatArmor || 0) * 0.02);
             let finalDmg = amount * (1 - reduction);
             // Housebreaker Charm: fatal damage protection
             if (player.housebreakerCharm && player.housebreakerFatalCD <= 0 && player.hp - finalDmg <= 0) {
@@ -4954,6 +5211,7 @@
 
             let damageMultiplier = 1;
             let cooldownMultiplier = 1;
+            if (player.cooldownMult) cooldownMultiplier *= player.cooldownMult;
 
             if (player.armor) {
                 if (player.armor.shield) {
@@ -4995,6 +5253,8 @@
                     addFloatingText(player.x, player.y - 80, '⚡ LUCKY SHOT READY!', '#f1c40f', 16);
                 }
             }
+
+            updateCommonItems(deltaTime, damageMultiplier);
 
             let dx = 0, dy = 0;
             if (!collectorIntro.active) {
@@ -6245,6 +6505,45 @@
                                 burnZones.push({ x: b.x, y: b.y, life: 1.5, maxLife: 1.5, r: 28, dmgTimer: 0 });
                                 createExplosion(b.x, b.y, '#e17055', 6);
                             }
+                            if (b.blind && !e.isBoss) {
+                                e.frozenTimer = Math.max(e.frozenTimer || 0, 0.5);
+                                createExplosion(b.x, b.y, '#d8c07a', 7);
+                            }
+                            if (b.shatter) {
+                                for (let sh = 0; sh < 7; sh++) {
+                                    const sa = (sh / 7) * Math.PI * 2 + Math.random() * 0.25;
+                                    bullets.push({
+                                        x: b.x,
+                                        y: b.y,
+                                        vx: Math.cos(sa) * (520 + Math.random()*220),
+                                        vy: Math.sin(sa) * (520 + Math.random()*220),
+                                        life: 0.36,
+                                        dmg: 3,
+                                        isCommonItem: true,
+                                        commonItemId: 'common_glass_shard',
+                                        commonColor: '#70c878',
+                                        size: 4,
+                                        pierce: 0
+                                    });
+                                }
+                                createExplosion(b.x, b.y, '#70c878', 12);
+                            }
+                            if (b.explodeOnDeath) {
+                                const R = 95;
+                                enemies.forEach(en => {
+                                    if (en === e) return;
+                                    const ed = Math.sqrt((en.x - b.x)**2 + (en.y - b.y)**2);
+                                    if (ed < R + en.size) {
+                                        en.hp -= (b.dmg || 10) * 0.65;
+                                        en.hitTimer = 0.15;
+                                        const aa = Math.atan2(en.y - b.y, en.x - b.x);
+                                        en.kx += Math.cos(aa) * 220;
+                                        en.ky += Math.sin(aa) * 220;
+                                    }
+                                });
+                                triggerShake(5, 0.15);
+                                createExplosion(b.x, b.y, '#e74c3c', 20);
+                            }
                             // Floating damage number
                             addFloatingText(e.x + (Math.random()-0.5)*40, e.y - e.size*0.8,
                                 b.isCrit ? '✦ ' + Math.ceil(dmgDealt) : Math.ceil(dmgDealt),
@@ -6254,6 +6553,25 @@
                             const bSpeed = Math.sqrt(b.vx * b.vx + b.vy * b.vy); const kForce = b.knockback || 160;
                             e.kx += (b.vx / bSpeed) * kForce; e.ky += (b.vy / bSpeed) * kForce;
                             if (b.isCrit) createExplosion(b.x, b.y, '#f1c40f', 8); else createExplosion(b.x, b.y, '#ffffff', 3);
+                            if (b.bounces && b.bounces > 0) {
+                                b.bounces--;
+                                b.hitIds = b.hitIds || new Set();
+                                b.hitIds.add(e);
+                                let next = null, nextD = 420;
+                                enemies.forEach(en => {
+                                    if (en === e || b.hitIds.has(en) || en.introHidden) return;
+                                    const bd = Math.sqrt((en.x - b.x)**2 + (en.y - b.y)**2);
+                                    if (bd < nextD) { nextD = bd; next = en; }
+                                });
+                                if (next) {
+                                    const ba = Math.atan2(next.y - b.y, next.x - b.x);
+                                    b.vx = Math.cos(ba) * 900;
+                                    b.vy = Math.sin(ba) * 900;
+                                    b.life = Math.max(b.life, 0.65);
+                                    createExplosion(b.x, b.y, '#d22f45', 5);
+                                    break;
+                                }
+                            }
                             if (!b.pierce || b.pierce <= 0) b.life = 0; else b.pierce--; break;
                         }
                     }
@@ -10600,6 +10918,49 @@
                 ctx.restore();
             });
             bullets.forEach(b => {
+                if (b.isCommonItem) {
+                    ctx.save();
+                    ctx.translate(b.x, b.y);
+                    ctx.rotate(Math.atan2(b.vy, b.vx) + Date.now() * 0.006);
+                    const col = b.commonColor || '#bdc3c7';
+                    ctx.shadowColor = col;
+                    ctx.shadowBlur = 8;
+                    ctx.strokeStyle = '#0a0906';
+                    ctx.lineWidth = 1.5;
+                    if (b.commonItemId === 'common_glass_bottle') {
+                        ctx.fillStyle = 'rgba(80,190,110,0.65)';
+                        ctx.beginPath(); ctx.roundRect(-5, -12, 10, 22, 3); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#d9ffe3'; ctx.fillRect(-2, -15, 4, 6);
+                    } else if (b.commonItemId === 'common_glass_shard') {
+                        ctx.fillStyle = 'rgba(170,255,190,0.7)';
+                        ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -4); ctx.lineTo(-2, 5); ctx.closePath(); ctx.fill(); ctx.stroke();
+                    } else if (b.commonItemId === 'common_pocket_sand') {
+                        for (let si = 0; si < 5; si++) {
+                            ctx.fillStyle = `rgba(216,192,122,${0.45 + si*0.08})`;
+                            ctx.beginPath(); ctx.arc((Math.random()-0.5)*14, (Math.random()-0.5)*10, 2, 0, Math.PI*2); ctx.fill();
+                        }
+                    } else if (b.commonItemId === 'common_loose_brick') {
+                        ctx.fillStyle = '#a44a32';
+                        ctx.beginPath(); ctx.roundRect(-12, -8, 24, 16, 2); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = '#552316'; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(10, 0); ctx.moveTo(0, -7); ctx.lineTo(0, 7); ctx.stroke();
+                    } else if (b.commonItemId === 'common_rubber_ball') {
+                        ctx.fillStyle = '#d22f45';
+                        ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-2, -2, 5, 0.2, 2.4); ctx.stroke();
+                    } else if (b.commonItemId === 'common_firecracker') {
+                        ctx.fillStyle = '#e74c3c';
+                        ctx.beginPath(); ctx.roundRect(-4, -12, 8, 24, 2); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(0, -12); ctx.quadraticCurveTo(8, -19, 14, -15); ctx.stroke();
+                    } else if (b.commonItemId === 'common_plastic_straw') {
+                        ctx.strokeStyle = '#e9eef2'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.stroke();
+                        ctx.strokeStyle = '#0a0906'; ctx.lineWidth = 1; ctx.stroke();
+                    } else {
+                        ctx.fillStyle = col;
+                        ctx.beginPath(); ctx.arc(0, 0, b.size || 7, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                    }
+                    ctx.restore();
+                    return;
+                }
                 // Trait-colored bullet tint — base is dark grey/black
                 let bColor = b.isCrit ? '#555555' : '#222222';
                 let bGlow  = b.isCrit ? '#888888' : '#444444';
@@ -11019,6 +11380,23 @@
                     ctx.stroke();
                 }
                 ctx.globalAlpha = 1;
+                ctx.restore();
+            });
+
+            player.commonItems.forEach((ci) => {
+                const ix = player.x + Math.cos(ci.angle) * ci.orbitRadius;
+                const iy = player.y + Math.sin(ci.angle) * ci.orbitRadius;
+                ctx.save();
+                ctx.globalAlpha = 0.22;
+                ctx.strokeStyle = ci.config.color;
+                ctx.setLineDash([4, 7]);
+                ctx.beginPath(); ctx.arc(player.x, player.y, ci.orbitRadius, 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.globalAlpha = 1;
+                ctx.translate(ix, iy);
+                ctx.rotate(ci.lookAngle || ci.angle);
+                if (ci.attackAnim > 0) ctx.translate(18 * ci.attackAnim, 0);
+                drawCommonItemWorld(ctx, ci.config, ci.attackAnim);
                 ctx.restore();
             });
 
