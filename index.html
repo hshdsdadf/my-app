@@ -2196,7 +2196,7 @@
         let roomKey = null;        // { x, y, animTimer, collected } — dropped by last enemy
         let roomDoor = null;       // { cx, cy, open, dir, pulse } — exit door
         let roomEntranceDoor = null; // { cx, cy, dir } — where player entered
-        const trapdoor = { active: false, timer: 0, duration: 0.82, spawnAt: 0.34, spawned: false, dust: [] };
+        const trapdoor = { active: false, timer: 0, duration: 0.82, spawnAt: 0.34, spawned: false, batch: 1, dust: [] };
 
         const raritySettings = [
             { id: 'rifle_common', name: 'Rifle', type: 'rifle', chance: 0.55, color: '#bdc3c7', effect: 'Standard semi-auto rifle.', cooldown: 0.85, dmg: 14, stats: { dmg: 30, fire: 30, range: 60 } },
@@ -2287,6 +2287,29 @@
             { id: 'common_bandage_roll', name: 'Bandage Roll', type: 'common_item', mode: 'passive', chance: 0.055, color: '#f0d8c0', effect: '+1 HP regeneration.', regen: 1, stats: { heal: 34, util: 34 } },
             { id: 'common_bike_chain', name: 'Bike Chain', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#7f8c8d', effect: 'Circles around the player and swings at enemies.', cooldown: 0.9, dmg: 10, melee: true, range: 135, stats: { dmg: 36, fire: 58, range: 34 } },
             { id: 'common_firecracker', name: 'Firecracker', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#e74c3c', effect: 'Small explosion every few seconds.', cooldown: 3.6, dmg: 22, stats: { dmg: 55, area: 62, fire: 16 } }
+        ];
+
+        const uncommonItemSettings = [
+            { id: 'uncommon_barbed_bat', name: 'Barbed Bat', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#2ecc71', effect: 'Melee swings cause bleed.', cooldown: 1.05, dmg: 18, melee: true, bleed: true, range: 135, stats: { dmg: 58, fire: 45, bleed: 70 } },
+            { id: 'uncommon_nail_gun', name: 'Nail Gun', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#2ecc71', effect: 'Rapidly shoots nails.', cooldown: 0.22, dmg: 6, pierce: 0, stats: { dmg: 22, fire: 95, range: 54 } },
+            { id: 'uncommon_hot_sauce', name: 'Hot Sauce', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#ff6b35', effect: '+10% damage, -3 max HP.', damageMultBonus: 1.10, hpBonus: -3, stats: { dmg: 64, risk: 35 } },
+            { id: 'uncommon_grease_shoes', name: 'Grease Shoes', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#8ecae6', effect: '+5 speed but harder to stop.', speedFlat: 5, slippery: true, stats: { speed: 74, risk: 28 } },
+            { id: 'uncommon_car_battery', name: 'Car Battery', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#f9ca24', effect: 'Chains lightning to nearby enemies.', cooldown: 2.3, dmg: 24, chainLightning: true, stats: { dmg: 62, range: 72, magic: 52 } },
+            { id: 'uncommon_pizza_cutter', name: 'Pizza Cutter', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#dfe6e9', effect: 'Large spinning blade circles the player.', cooldown: 0.34, dmg: 9, melee: true, range: 125, spinningBlade: true, stats: { dmg: 40, fire: 88, range: 30 } },
+            { id: 'uncommon_bug_spray', name: 'Bug Spray', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#55efc4', effect: 'Sprays poison cloud forward.', cooldown: 1.4, dmg: 4, poisonCloud: true, stats: { area: 76, util: 54, fire: 42 } },
+            { id: 'uncommon_weighted_gloves', name: 'Weighted Gloves', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#636e72', effect: '+8 melee damage, -5% attack speed.', meleeBonus: 8, cooldownMult: 1.05, stats: { dmg: 76, risk: 25 } },
+            { id: 'uncommon_energy_drink', name: 'Energy Drink', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#74b9ff', effect: '+10% attack speed, -1 armor.', cooldownMult: 0.90, armorFlat: -1, stats: { fire: 72, risk: 24 } },
+            { id: 'uncommon_magnet_charm', name: 'Magnet Charm', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#3498db', effect: '+25% pickup range.', pickupMod: 1.25, stats: { reach: 80, util: 45 } },
+            { id: 'uncommon_trash_lid_shield', name: 'Trash Lid Shield', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#95a5a6', effect: '+10 armor. Wears a trash lid on your head.', armorFlat: 10, trashLid: true, stats: { def: 100, style: 45 } },
+            { id: 'uncommon_boomerang_wrench', name: 'Boomerang Wrench', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#b2bec3', effect: 'Throws a wrench that returns.', cooldown: 1.6, dmg: 16, returning: true, pierce: 1, stats: { dmg: 50, range: 68, util: 46 } },
+            { id: 'uncommon_molotov_jar', name: 'Molotov Jar', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#e17055', effect: 'Throws fire puddles.', cooldown: 2.7, dmg: 13, firePuddle: true, stats: { dmg: 45, area: 82, fire: 28 } },
+            { id: 'uncommon_needle_pack', name: 'Needle Pack', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#dfe6e9', effect: 'Projectiles pierce 1 enemy.', projectilePierceBonus: 1, stats: { range: 58, util: 68 } },
+            { id: 'uncommon_angry_toaster', name: 'Angry Toaster', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#fdcb6e', effect: 'Shoots burning toast.', cooldown: 1.1, dmg: 12, burningToast: true, stats: { dmg: 42, fire: 56, burn: 58 } },
+            { id: 'uncommon_razor_yoyo', name: 'Razor Yo-Yo', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#fd79a8', effect: 'Hits enemies while extending and returning.', cooldown: 1.25, dmg: 14, returning: true, pierce: 2, razor: true, stats: { dmg: 48, range: 72, fire: 44 } },
+            { id: 'uncommon_spiked_backpack', name: 'Spiked Backpack', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#7f8c8d', effect: 'Enemies take damage when touching you. Adds a backpack.', contactDmg: 18, spikedBackpack: true, stats: { def: 50, dmg: 46 } },
+            { id: 'uncommon_lottery_ticket', name: 'Lottery Ticket', type: 'common_item', tier: 'uncommon', mode: 'passive', color: '#f1c40f', effect: '+8 luck.', luck: 8, stats: { luck: 80, util: 35 } },
+            { id: 'uncommon_copper_pipe', name: 'Copper Pipe', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#c07820', effect: 'Heavy melee swing with knockback.', cooldown: 1.55, dmg: 23, melee: true, range: 155, knockback: 520, stats: { dmg: 72, force: 82, fire: 26 } },
+            { id: 'uncommon_homemade_crossbow', name: 'Homemade Crossbow', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#8b5a2b', effect: 'Slow but high-damage bolts.', cooldown: 1.9, dmg: 36, pierce: 1, crossbow: true, stats: { dmg: 90, range: 82, fire: 18 } }
         ];
 
         const armorSettings = [
@@ -2533,7 +2556,11 @@
             critMultiplier: 2.0,
             commonItems: [],
             commonMeleeBonus: 0,
+            commonDamageMult: 1,
+            commonProjectilePierce: 0,
             flatArmor: 0,
+            luck: 0,
+            contactDmg: 0,
             hpRegen: 0,
             regenTick: 0,
             hasEcho: false,
@@ -2662,6 +2689,7 @@
             trapdoor.active = false;
             trapdoor.timer = 0;
             trapdoor.spawned = false;
+            trapdoor.batch = 1;
             trapdoor.dust.length = 0;
             enemies.length = 0;
             enemyBullets.length = 0;
@@ -2696,12 +2724,17 @@
 
         function triggerTrapdoorSpawn() {
             if (!currentRoom || trapdoor.active || game.spawnPending || game.roomEnemiesSpawned >= game.roomEnemiesTotal) return;
+            const remaining = game.roomEnemiesTotal - game.roomEnemiesSpawned;
+            const swarmMax = game.wave >= 9 ? 5 : (game.wave >= 7 ? 4 : (game.wave >= 6 ? 3 : 1));
+            const swarmMin = game.wave >= 6 ? 2 : 1;
+            const desired = game.wave >= 6 ? (swarmMin + Math.floor(Math.random() * (swarmMax - swarmMin + 1))) : 1;
+            trapdoor.batch = Math.max(1, Math.min(remaining, desired));
             trapdoor.active = true;
             trapdoor.timer = 0;
             trapdoor.spawned = false;
             trapdoor.dust.length = 0;
             game.spawnPending = true;
-            game.roomEnemiesSpawned++;
+            game.roomEnemiesSpawned += trapdoor.batch;
             triggerShake(3, 0.12);
         }
 
@@ -2816,11 +2849,16 @@
             if (!trapdoor.spawned && trapdoor.timer >= trapdoor.spawnAt) {
                 trapdoor.spawned = true;
                 game.spawnPending = false;
-                const ex = currentRoom.cx + (Math.random() - 0.5) * 52;
-                const ey = currentRoom.cy + (Math.random() - 0.5) * 34;
-                spawnEnemyAt(ex, ey);
-                triggerShake(9, 0.22);
-                for (let i = 0; i < 28; i++) {
+                const batch = trapdoor.batch || 1;
+                for (let bi = 0; bi < batch; bi++) {
+                    const a = (bi / batch) * Math.PI * 2 + Math.random() * 0.4;
+                    const rr = batch === 1 ? Math.random() * 22 : 28 + Math.random() * 38;
+                    const ex = currentRoom.cx + Math.cos(a) * rr;
+                    const ey = currentRoom.cy + Math.sin(a) * rr * 0.65;
+                    spawnEnemyAt(ex, ey);
+                }
+                triggerShake(7 + batch * 2, 0.22);
+                for (let i = 0; i < 22 + batch * 10; i++) {
                     const a = Math.random() * Math.PI * 2;
                     const sp = 90 + Math.random() * 260;
                     particles.push({
@@ -2992,8 +3030,11 @@
             
             const getRandomItemSlot = () => {
                 const typeRoll = Math.random();
-                if (typeRoll < 0.65) {
+                if (typeRoll < 0.42) {
                     return commonItemSettings[Math.floor(Math.random() * commonItemSettings.length)];
+                }
+                if (typeRoll < 0.66) {
+                    return uncommonItemSettings[Math.floor(Math.random() * uncommonItemSettings.length)];
                 }
                 // 8% chance of an ability card
                 if (typeRoll < 0.73) {
@@ -3004,7 +3045,7 @@
                     return abilitiesSettings[0];
                 }
                 // 10% powerfuls
-                if (typeRoll < 0.83) {
+                if (typeRoll < 0.81) {
                     const roll = Math.random();
                     let cumulative = 0;
                     const sortedPowerfuls = [...powerfulsSettings].sort((a,b) => a.chance - b.chance);
@@ -3014,7 +3055,7 @@
                     }
                     return powerfulsSettings[0];
                 }
-                if (typeRoll < 0.91) {
+                if (typeRoll < 0.87) {
                     const roll = Math.random();
                     let cumulative = 0;
                     const sortedMedkits = [...medkitSettings].sort((a,b) => a.chance - b.chance);
@@ -3426,8 +3467,8 @@
                 };
                 cardContainer.appendChild(btn);
             } else {
-                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'common_item' ? (item.mode === 'passive' ? 'Common Passive' : 'Common Scrap') : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
-                const getCardGlow = (item) => item.glowClass || (item.type === 'common_item' ? 'glow-common' : item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
+                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'common_item' ? (item.tier === 'uncommon' ? (item.mode === 'passive' ? 'Uncommon Passive' : 'Uncommon Scrap') : (item.mode === 'passive' ? 'Common Passive' : 'Common Scrap')) : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
+                const getCardGlow = (item) => item.glowClass || (item.type === 'common_item' ? (item.tier === 'uncommon' ? 'glow-uncommon' : 'glow-common') : item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
                 const applyCard = (item) => {
                     if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + item.heal); createExplosion(player.x, player.y, '#ff4757', 20); closeLevelUp(); }
                     else if (item.type === 'common_item') applyCommonItem(item);
@@ -3542,6 +3583,17 @@
             const c = color || '#bdc3c7';
             const glow = `<circle cx="35" cy="35" r="31" fill="${c}" opacity="0.08"/><circle cx="35" cy="35" r="25" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.32" stroke-dasharray="4 5"/>`;
             const wrap = (body) => `<svg width="70" height="70" viewBox="0 0 70 70"><defs><linearGradient id="${id}g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="rgba(255,255,255,0.38)"/><stop offset="45%" stop-color="${c}"/><stop offset="100%" stop-color="rgba(0,0,0,0.72)"/></linearGradient></defs>${glow}<g stroke="#0a0906" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</g></svg>`;
+            if (id.startsWith('uncommon_')) {
+                const symMap = {
+                    uncommon_barbed_bat:'BAT', uncommon_nail_gun:'NAIL', uncommon_hot_sauce:'HOT', uncommon_grease_shoes:'SLIP',
+                    uncommon_car_battery:'ZAP', uncommon_pizza_cutter:'CUT', uncommon_bug_spray:'TOX', uncommon_weighted_gloves:'FIST',
+                    uncommon_energy_drink:'FAST', uncommon_magnet_charm:'MAG', uncommon_trash_lid_shield:'LID', uncommon_boomerang_wrench:'WRCH',
+                    uncommon_molotov_jar:'FIRE', uncommon_needle_pack:'PIN', uncommon_angry_toaster:'TOST', uncommon_razor_yoyo:'YOYO',
+                    uncommon_spiked_backpack:'SPIK', uncommon_lottery_ticket:'LUCK', uncommon_copper_pipe:'PIPE', uncommon_homemade_crossbow:'BOLT'
+                };
+                const label = symMap[id] || 'UN';
+                return wrap(`<path d="M18 48 L35 10 L52 48 Q35 62 18 48 Z" fill="url(#${id}g)"/><path d="M22 47 Q35 39 48 47" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/><circle cx="35" cy="35" r="18" fill="rgba(0,0,0,0.28)" stroke="${c}" stroke-width="2"/><text x="35" y="39" text-anchor="middle" fill="#fff" font-size="${label.length > 3 ? 8 : 11}" font-weight="900" font-family="monospace" stroke="none">${label}</text>`);
+            }
             if (id === 'common_sock') return wrap(`<path d="M26 11 L43 11 L43 38 Q43 52 31 56 Q18 59 14 49 Q11 41 20 37 L26 34 Z" fill="url(#${id}g)"/><path d="M20 37 Q30 40 43 38" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>`);
             if (id === 'common_glass_bottle') return wrap(`<path d="M30 8 L41 8 L40 23 Q48 29 47 48 Q46 58 35 59 Q24 58 23 48 Q22 29 30 23 Z" fill="rgba(80,190,110,0.48)"/><path d="M30 8 L41 8 L40 18 L30 18 Z" fill="url(#${id}g)"/><path d="M28 31 Q35 27 43 32" fill="none" stroke="#d9ffe3" stroke-width="1.5" opacity="0.55"/><path d="M22 58 L17 63 M47 57 L54 62 M36 59 L36 66" fill="none" stroke="${c}" opacity="0.65"/>`);
             if (id === 'common_rusty_knife') return wrap(`<path d="M16 55 L42 17 Q49 9 55 12 Q50 24 41 31 L24 59 Z" fill="url(#${id}g)"/><path d="M13 57 L25 45 L31 51 L19 63 Z" fill="#3a2618"/><path d="M38 23 L49 13" stroke="#e6d1aa" stroke-width="1.2" opacity="0.45"/>`);
@@ -4767,15 +4819,24 @@
             if (item.mode === 'passive') {
                 if (item.speedFlat) player.speed += item.speedFlat;
                 if (item.cooldownMult) player.cooldownMult = (player.cooldownMult || 1) * item.cooldownMult;
+                if (item.damageMultBonus) player.commonDamageMult = (player.commonDamageMult || 1) * item.damageMultBonus;
                 if (item.meleeBonus) player.commonMeleeBonus = (player.commonMeleeBonus || 0) + item.meleeBonus;
                 if (item.hpBonus) {
                     player.maxHp += item.hpBonus;
                     player.baseHp += item.hpBonus;
-                    player.hp = Math.min(player.maxHp, player.hp + item.hpBonus);
+                    if (item.hpBonus > 0) player.hp = Math.min(player.maxHp, player.hp + item.hpBonus);
+                    else player.hp = Math.min(player.hp, player.maxHp);
                 }
                 if (item.critChance) player.critChance += item.critChance;
                 if (item.armorFlat) player.flatArmor = (player.flatArmor || 0) + item.armorFlat;
                 if (item.regen) player.hpRegen = (player.hpRegen || 0) + item.regen;
+                if (item.pickupMod) player.pickupRange *= item.pickupMod;
+                if (item.projectilePierceBonus) player.commonProjectilePierce = (player.commonProjectilePierce || 0) + item.projectilePierceBonus;
+                if (item.contactDmg) player.contactDmg = (player.contactDmg || 0) + item.contactDmg;
+                if (item.luck) player.luck = (player.luck || 0) + item.luck;
+                if (item.trashLid) player.hasTrashLid = true;
+                if (item.spikedBackpack) player.hasSpikedBackpack = true;
+                if (item.slippery) player.hasGreaseShoes = true;
                 createExplosion(player.x, player.y, item.color, 14);
                 addFloatingText(player.x, player.y - 55, item.name, item.color, 16);
                 closeLevelUp();
@@ -4825,7 +4886,14 @@
                 common_plastic_straw: 1220,
                 common_rubber_ball: 900,
                 common_loose_brick: 720,
-                common_firecracker: 820
+                common_firecracker: 820,
+                uncommon_nail_gun: 1350,
+                uncommon_boomerang_wrench: 900,
+                uncommon_molotov_jar: 720,
+                uncommon_angry_toaster: 980,
+                uncommon_razor_yoyo: 1050,
+                uncommon_homemade_crossbow: 1250,
+                uncommon_bug_spray: 620
             };
             const speed = speedMap[item.id] || 900;
             const bullet = {
@@ -4838,12 +4906,19 @@
                 commonItemId: item.id,
                 commonColor: item.color,
                 size: item.id === 'common_loose_brick' ? 13 : item.id === 'common_glass_bottle' ? 10 : 7,
-                knockback: item.knockback || 170
+                knockback: item.knockback || 170,
+                pierce: (item.pierce || 0) + (player.commonProjectilePierce || 0)
             };
             if (item.id === 'common_glass_bottle') bullet.shatter = true;
             if (item.id === 'common_pocket_sand') bullet.blind = true;
             if (item.id === 'common_rubber_ball') bullet.bounces = 1;
             if (item.id === 'common_firecracker') bullet.explodeOnDeath = true;
+            if (item.bleed) bullet.bleed = true;
+            if (item.poisonCloud) bullet.poisonCloud = true;
+            if (item.firePuddle || item.burningToast) bullet.firePuddle = true;
+            if (item.returning) bullet.returning = true;
+            if (item.chainLightning) bullet.chainLightning = true;
+            if (item.crossbow) { bullet.size = 9; bullet.life = 2.4; }
             bullets.push(bullet);
         }
 
@@ -4954,6 +5029,44 @@
             } else if (item.id === 'common_firecracker') {
                 ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.roundRect(-6,-17,12,30,3); ctx.fill(); ctx.stroke();
                 ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-17); ctx.quadraticCurveTo(7,-25,15,-20); ctx.stroke();
+            } else if (item.id === 'uncommon_barbed_bat') {
+                ctx.strokeStyle = '#6b3f22'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-18,10); ctx.lineTo(19,-12); ctx.stroke();
+                ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 2; for(let k=-7;k<14;k+=7){ctx.beginPath();ctx.moveTo(k,-11);ctx.lineTo(k+5,-19);ctx.stroke();}
+            } else if (item.id === 'uncommon_nail_gun') {
+                ctx.fillStyle = '#52606a'; ctx.beginPath(); ctx.roundRect(-16,-10,28,18,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(6,-5,18,8,2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.fillRect(-8,8,8,14);
+            } else if (item.id === 'uncommon_car_battery') {
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(-16,-13,32,26,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#f9ca24'; ctx.fillRect(-10,-18,6,6); ctx.fillStyle = '#e74c3c'; ctx.fillRect(4,-18,6,6);
+                ctx.strokeStyle = '#f9ca24'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5,0); ctx.lineTo(2,-7); ctx.lineTo(0,2); ctx.lineTo(7,-5); ctx.stroke();
+            } else if (item.id === 'uncommon_pizza_cutter') {
+                ctx.fillStyle = '#dfe6e9'; ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#777'; ctx.lineWidth = 2; for(let a=0;a<Math.PI*2;a+=Math.PI/4){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*18,Math.sin(a)*18);ctx.stroke();}
+                ctx.strokeStyle = '#6b3f22'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-3,17); ctx.lineTo(-8,31); ctx.stroke();
+            } else if (item.id === 'uncommon_bug_spray') {
+                ctx.fillStyle = '#55efc4'; ctx.beginPath(); ctx.roundRect(-10,-17,20,32,5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.fillRect(-8,-23,16,7); ctx.strokeRect(-8,-23,16,7);
+                ctx.strokeStyle = '#55efc4'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(10,-14); ctx.lineTo(22,-18); ctx.stroke();
+            } else if (item.id === 'uncommon_boomerang_wrench') {
+                ctx.strokeStyle = '#b2bec3'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-18,-8); ctx.lineTo(0,2); ctx.lineTo(18,-8); ctx.stroke();
+                ctx.fillStyle = '#777'; ctx.beginPath(); ctx.arc(-20,-9,6,0,Math.PI*2); ctx.arc(20,-9,6,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'uncommon_molotov_jar') {
+                ctx.fillStyle = 'rgba(225,112,85,0.65)'; ctx.beginPath(); ctx.roundRect(-10,-18,20,32,5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(0,-18); ctx.quadraticCurveTo(8,-32,16,-20); ctx.quadraticCurveTo(7,-21,0,-18); ctx.fill();
+            } else if (item.id === 'uncommon_angry_toaster') {
+                ctx.fillStyle = '#777'; ctx.beginPath(); ctx.roundRect(-18,-13,36,26,5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#f6d58b'; ctx.beginPath(); ctx.roundRect(-8,-22,16,12,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(10,2,4,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'uncommon_razor_yoyo') {
+                ctx.fillStyle = '#fd79a8'; ctx.beginPath(); ctx.arc(0,0,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-18,0); ctx.lineTo(18,0); ctx.moveTo(0,-18); ctx.lineTo(0,18); ctx.stroke();
+            } else if (item.id === 'uncommon_copper_pipe') {
+                ctx.strokeStyle = '#c07820'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-21,15); ctx.lineTo(21,-15); ctx.stroke();
+                ctx.strokeStyle = '#5a2b08'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-8,6); ctx.lineTo(8,-6); ctx.stroke();
+            } else if (item.id === 'uncommon_homemade_crossbow') {
+                ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-18,0); ctx.lineTo(16,0); ctx.moveTo(0,-16); ctx.quadraticCurveTo(18,0,0,16); ctx.stroke();
+                ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(0,16); ctx.stroke();
             } else {
                 ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill(); ctx.stroke();
             }
@@ -5068,6 +5181,41 @@
                 ctx.restore();
             }
 
+            ctx.restore();
+        }
+
+        function drawCommonWearables(ctx, p) {
+            if (!p.hasTrashLid && !p.hasSpikedBackpack) return;
+            ctx.save();
+            ctx.strokeStyle = '#0a0906';
+            ctx.lineJoin = 'round';
+            if (p.hasSpikedBackpack) {
+                ctx.save();
+                ctx.translate(p.facingRight ? -24 : 24, 8);
+                ctx.scale(p.facingRight ? 1 : -1, 1);
+                ctx.fillStyle = '#3a3328';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.roundRect(-12, -22, 20, 38, 5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#7f8c8d';
+                for (let i = 0; i < 5; i++) {
+                    const sy = -18 + i * 8;
+                    ctx.beginPath(); ctx.moveTo(-12, sy); ctx.lineTo(-24, sy + 4); ctx.lineTo(-12, sy + 8); ctx.closePath(); ctx.fill(); ctx.stroke();
+                }
+                ctx.restore();
+            }
+            if (p.hasTrashLid) {
+                ctx.save();
+                ctx.translate(0, -42);
+                ctx.fillStyle = '#7f8c8d';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#aab2b8';
+                ctx.beginPath(); ctx.ellipse(0, -3, 16, 5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath(); ctx.arc(-5, -3, 12, Math.PI*1.05, Math.PI*1.85); ctx.stroke();
+                ctx.restore();
+            }
             ctx.restore();
         }
 
@@ -5384,6 +5532,7 @@
 
             let damageMultiplier = 1;
             let cooldownMultiplier = 1;
+            if (player.commonDamageMult) damageMultiplier *= player.commonDamageMult;
             if (player.cooldownMult) cooldownMultiplier *= player.cooldownMult;
 
             if (player.armor) {
@@ -5605,6 +5754,19 @@
                 const angleToPlayer = Math.atan2(player.y - e.y, player.x - e.x); 
                 e.animTimer += deltaTime; e.x += e.kx * deltaTime; e.y += e.ky * deltaTime; e.kx *= 0.85; e.ky *= 0.85; e.facing = angleToPlayer;
                 if (e.hitTimer > 0) e.hitTimer -= deltaTime;
+                if (e.bleedTimer > 0) {
+                    e.bleedTimer -= deltaTime;
+                    const bleedDmg = (e.bleedDps || 0) * deltaTime;
+                    e.hp -= bleedDmg;
+                    totalDamageDealt += bleedDmg;
+                    if (Math.random() < 0.12) particles.push({ x:e.x+(Math.random()-0.5)*e.size, y:e.y+(Math.random()-0.5)*e.size, vx:(Math.random()-0.5)*40, vy:-25-Math.random()*25, life:0.28, color:'#b03020', size:2+Math.random()*3 });
+                }
+                if (player.contactDmg && distToPlayer < e.size + 32 && !e.introHidden) {
+                    const thornDmg = player.contactDmg * deltaTime;
+                    e.hp -= thornDmg;
+                    totalDamageDealt += thornDmg;
+                    if (Math.random() < 0.18) particles.push({ x:e.x+(Math.random()-0.5)*e.size, y:e.y+(Math.random()-0.5)*e.size, vx:(Math.random()-0.5)*60, vy:-30-Math.random()*40, life:0.25, color:'#7f8c8d', size:2+Math.random()*3 });
+                }
 
                 if (e.isBoss && e.type === 'collector') {
                     if (!collectorIntro.active) updateCollectorBoss(e, deltaTime, distToPlayer, angleToPlayer);
@@ -5772,11 +5934,11 @@
                     bz.dmgTimer = 0;
                     enemies.forEach(e => {
                         const d = Math.sqrt((e.x - bz.x)**2 + (e.y - bz.y)**2);
-                        if (d < bz.r + e.size) { e.hp -= 4; e.hitTimer = 0.05; if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r, y: bz.y+(Math.random()-0.5)*bz.r, vx:(Math.random()-0.5)*40, vy:-30-Math.random()*40, life:0.3+Math.random()*0.2, color:'#e17055', size:Math.random()*5+2 }); }
+                        if (d < bz.r + e.size) { e.hp -= bz.poison ? 3 : 4; e.hitTimer = 0.05; if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r, y: bz.y+(Math.random()-0.5)*bz.r, vx:(Math.random()-0.5)*40, vy:-30-Math.random()*40, life:0.3+Math.random()*0.2, color:bz.poison ? '#55efc4' : '#e17055', size:Math.random()*5+2 }); }
                     });
                 }
                 // Ember rising particles
-                if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: Math.random()<0.5?'#e17055':'#f9ca24', size:Math.random()*3+1 });
+                if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: bz.poison ? (Math.random()<0.5?'#55efc4':'#2ecc71') : (Math.random()<0.5?'#e17055':'#f9ca24'), size:Math.random()*3+1 });
                 if (bz.life <= 0) burnZones.splice(i, 1);
             }
 
@@ -6526,6 +6688,7 @@
                 }, 50);
             }
             let finalDmg = isCrit ? dmg * player.critMultiplier * dealerMult : dmg * dealerMult;
+            if (player.commonProjectilePierce) config.pierce = (config.pierce || 0) + player.commonProjectilePierce;
             bullets.push({ x, y, vx, vy, life, dmg: finalDmg, isCrit, ...config });
         }
 
@@ -6717,6 +6880,37 @@
                                 });
                                 triggerShake(5, 0.15);
                                 createExplosion(b.x, b.y, '#e74c3c', 20);
+                            }
+                            if (b.bleed && !e.isBoss) {
+                                e.bleedTimer = Math.max(e.bleedTimer || 0, 3.0);
+                                e.bleedDps = Math.max(e.bleedDps || 0, 8);
+                                createExplosion(b.x, b.y, '#b03020', 5);
+                            }
+                            if (b.poisonCloud) {
+                                burnZones.push({ x: b.x, y: b.y, life: 2.2, maxLife: 2.2, r: 54, dmgTimer: 0, poison: true });
+                                createExplosion(b.x, b.y, '#55efc4', 12);
+                            }
+                            if (b.firePuddle) {
+                                burnZones.push({ x: b.x, y: b.y, life: 2.6, maxLife: 2.6, r: 48, dmgTimer: 0 });
+                                createExplosion(b.x, b.y, '#e17055', 14);
+                            }
+                            if (b.chainLightning) {
+                                const chainTargets = enemies.filter(en => en !== e && !en.introHidden)
+                                    .sort((a,b2) => Math.sqrt((a.x-e.x)**2+(a.y-e.y)**2) - Math.sqrt((b2.x-e.x)**2+(b2.y-e.y)**2))
+                                    .slice(0, 3);
+                                let prev = e;
+                                chainTargets.forEach((en, idx) => {
+                                    const cdmg = Math.max(6, (b.dmg || 16) * (0.7 - idx*0.14));
+                                    en.hp -= cdmg;
+                                    en.hitTimer = 0.18;
+                                    totalDamageDealt += cdmg;
+                                    for (let li=0; li<7; li++) {
+                                        const f=li/6;
+                                        particles.push({ x:prev.x+(en.x-prev.x)*f+(Math.random()-0.5)*16, y:prev.y+(en.y-prev.y)*f+(Math.random()-0.5)*16, vx:(Math.random()-0.5)*60, vy:(Math.random()-0.5)*60, life:0.16, color:'#f9ca24', size:2+Math.random()*3 });
+                                    }
+                                    prev = en;
+                                });
+                                createExplosion(e.x, e.y, '#f9ca24', 8);
                             }
                             // Floating damage number
                             addFloatingText(e.x + (Math.random()-0.5)*40, e.y - e.size*0.8,
@@ -11127,6 +11321,26 @@
                         ctx.fillStyle = '#e74c3c';
                         ctx.beginPath(); ctx.roundRect(-4, -12, 8, 24, 2); ctx.fill(); ctx.stroke();
                         ctx.strokeStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(0, -12); ctx.quadraticCurveTo(8, -19, 14, -15); ctx.stroke();
+                    } else if (b.commonItemId === 'uncommon_nail_gun') {
+                        ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-11,0); ctx.lineTo(12,0); ctx.stroke();
+                        ctx.fillStyle = '#888'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(7,-4); ctx.lineTo(7,4); ctx.closePath(); ctx.fill();
+                    } else if (b.commonItemId === 'uncommon_boomerang_wrench') {
+                        ctx.strokeStyle = '#b2bec3'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-13,-8); ctx.lineTo(0,0); ctx.lineTo(13,-8); ctx.stroke();
+                        ctx.fillStyle = '#666'; ctx.beginPath(); ctx.arc(-15,-9,5,0,Math.PI*2); ctx.arc(15,-9,5,0,Math.PI*2); ctx.fill();
+                    } else if (b.commonItemId === 'uncommon_molotov_jar') {
+                        ctx.fillStyle = 'rgba(225,112,85,0.6)'; ctx.beginPath(); ctx.roundRect(-7,-12,14,22,4); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(0,-13); ctx.quadraticCurveTo(5,-23,11,-16); ctx.quadraticCurveTo(5,-17,0,-13); ctx.fill();
+                    } else if (b.commonItemId === 'uncommon_angry_toaster') {
+                        ctx.fillStyle = '#f6d58b'; ctx.beginPath(); ctx.roundRect(-10,-7,20,14,3); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#e17055'; ctx.beginPath(); ctx.arc(5,-8,4,0,Math.PI*2); ctx.fill();
+                    } else if (b.commonItemId === 'uncommon_razor_yoyo') {
+                        ctx.fillStyle = '#fd79a8'; ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-12,0); ctx.lineTo(12,0); ctx.moveTo(0,-12); ctx.lineTo(0,12); ctx.stroke();
+                    } else if (b.commonItemId === 'uncommon_homemade_crossbow') {
+                        ctx.fillStyle = '#8b5a2b'; ctx.beginPath(); ctx.moveTo(15,0); ctx.lineTo(-12,-5); ctx.lineTo(-12,5); ctx.closePath(); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(16,0); ctx.stroke();
+                    } else if (b.commonItemId === 'uncommon_bug_spray') {
+                        for (let pi=0; pi<7; pi++) { ctx.fillStyle = `rgba(85,239,196,${0.22+pi*0.06})`; ctx.beginPath(); ctx.arc((Math.random()-0.5)*22, (Math.random()-0.5)*14, 3+Math.random()*3, 0, Math.PI*2); ctx.fill(); }
                     } else if (b.commonItemId === 'common_plastic_straw') {
                         ctx.strokeStyle = '#e9eef2'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.stroke();
                         ctx.strokeStyle = '#0a0906'; ctx.lineWidth = 1; ctx.stroke();
@@ -11168,15 +11382,21 @@
             burnZones.forEach(bz => {
                 const alpha = (bz.life / bz.maxLife) * 0.55;
                 const grd = ctx.createRadialGradient(bz.x, bz.y, 0, bz.x, bz.y, bz.r * 1.5);
-                grd.addColorStop(0, `rgba(225, 112, 85, ${alpha + 0.1})`);
-                grd.addColorStop(0.5, `rgba(225, 112, 85, ${alpha * 0.6})`);
-                grd.addColorStop(1, `rgba(225, 112, 85, 0)`);
+                if (bz.poison) {
+                    grd.addColorStop(0, `rgba(85, 239, 196, ${alpha + 0.08})`);
+                    grd.addColorStop(0.5, `rgba(46, 204, 113, ${alpha * 0.55})`);
+                    grd.addColorStop(1, 'rgba(85, 239, 196, 0)');
+                } else {
+                    grd.addColorStop(0, `rgba(225, 112, 85, ${alpha + 0.1})`);
+                    grd.addColorStop(0.5, `rgba(225, 112, 85, ${alpha * 0.6})`);
+                    grd.addColorStop(1, `rgba(225, 112, 85, 0)`);
+                }
                 ctx.save();
                 ctx.globalCompositeOperation = 'screen';
                 ctx.fillStyle = grd;
                 ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 1.5, 0, Math.PI * 2); ctx.fill();
                 ctx.restore();
-                ctx.strokeStyle = `rgba(241, 196, 15, ${alpha * 0.7})`;
+                ctx.strokeStyle = bz.poison ? `rgba(85, 239, 196, ${alpha * 0.7})` : `rgba(241, 196, 15, ${alpha * 0.7})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, Math.PI * 2); ctx.stroke();
             });
@@ -12103,7 +12323,7 @@
                 ctx.restore();
             }
 
-            ctx.save(); ctx.translate(player.x, player.y); drawPlayer(ctx, player); ctx.restore(); ctx.restore();
+            ctx.save(); ctx.translate(player.x, player.y); drawPlayer(ctx, player); drawCommonWearables(ctx, player); ctx.restore(); ctx.restore();
 
             // ── Ambient room atmosphere: vignette + torch warmth ──
             if (currentRoom) {
@@ -13036,7 +13256,9 @@
             cx.translate(cx2, cy2);
             const scale = 2.2;
             cx.scale(scale, scale);
-            drawPlayer(cx, { ...player, animTimer: 0, isMoving: false, facingRight: true });
+            const previewPlayer = { ...player, animTimer: 0, isMoving: false, facingRight: true };
+            drawPlayer(cx, previewPlayer);
+            drawCommonWearables(cx, previewPlayer);
             cx.restore();
 
             // Armor badge if equipped
