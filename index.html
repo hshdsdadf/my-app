@@ -2267,6 +2267,17 @@
             { id: 'medkit_minor', name: 'Minor Medkit', type: 'heal', chance: 0.33, color: '#ff6b81', effect: 'Instantly restore 50 Health.', heal: 50, stats: { heal: 50, util: 20 } }
         ];
 
+        const RARITY_WEIGHTS = { common: 50, uncommon: 50, rare: 30, epic: 20, legendary: 10 };
+        function rollRarityTier() {
+            const total = RARITY_WEIGHTS.common + RARITY_WEIGHTS.uncommon + RARITY_WEIGHTS.rare + RARITY_WEIGHTS.epic + RARITY_WEIGHTS.legendary;
+            let roll = Math.random() * total;
+            for (const tier of ['common', 'uncommon', 'rare', 'epic', 'legendary']) {
+                roll -= RARITY_WEIGHTS[tier];
+                if (roll <= 0) return tier;
+            }
+            return 'common';
+        }
+
         const commonItemSettings = [
             { id: 'common_sock', name: 'Sock', type: 'common_item', mode: 'passive', chance: 0.055, color: '#bdc3c7', effect: '+1 player speed.', speedFlat: 1, stats: { speed: 15, util: 25 } },
             { id: 'common_glass_bottle', name: 'Glass Bottle', type: 'common_item', mode: 'orbit', chance: 0.055, color: '#70c878', effect: 'Throws a bottle that shatters into small shards.', cooldown: 2.6, dmg: 16, stats: { dmg: 42, range: 58, util: 44 } },
@@ -3029,64 +3040,40 @@
             const isRouletteChest = chestType === 'rouletteKing';
             
             const getRandomItemSlot = () => {
-                const typeRoll = Math.random();
-                if (typeRoll < 0.42) {
+                const tier = rollRarityTier();
+                if (tier === 'common') {
                     return commonItemSettings[Math.floor(Math.random() * commonItemSettings.length)];
                 }
-                if (typeRoll < 0.66) {
+                if (tier === 'uncommon') {
                     return uncommonItemSettings[Math.floor(Math.random() * uncommonItemSettings.length)];
                 }
-                // 8% chance of an ability card
-                if (typeRoll < 0.73) {
-                    const roll = Math.random();
-                    let cumulative = 0;
-                    const sorted = [...abilitiesSettings].sort((a,b) => a.chance - b.chance);
-                    for (const a of sorted) { cumulative += a.chance; if (roll <= cumulative) return a; }
-                    return abilitiesSettings[0];
+                if (tier === 'rare') {
+                    if (Math.random() < 0.35) {
+                        const rareAbility = abilitiesSettings.find(a => a.rarity === 'rare');
+                        if (rareAbility) return rareAbility;
+                    }
+                    const selectedType = ['rifle', 'shotgun', 'smg'][Math.floor(Math.random() * 3)];
+                    return raritySettings.find(r => r.type === selectedType && r.id.includes('_rare')) || raritySettings.find(r => r.type === selectedType);
                 }
-                // 10% powerfuls
-                if (typeRoll < 0.81) {
+                if (tier === 'epic') {
                     const roll = Math.random();
                     let cumulative = 0;
-                    const sortedPowerfuls = [...powerfulsSettings].sort((a,b) => a.chance - b.chance);
+                    const sortedPowerfuls = [...powerfulsSettings].filter(p => p.color === '#9b59b6' || p.id === 'powerful_collector').sort((a,b) => a.chance - b.chance);
                     for (const p of sortedPowerfuls) {
                         cumulative += p.chance;
                         if (roll <= cumulative) return p;
                     }
-                    return powerfulsSettings[0];
+                    const selectedType = ['rifle', 'shotgun', 'smg'][Math.floor(Math.random() * 3)];
+                    return raritySettings.find(r => r.type === selectedType && r.id.includes('_epic')) || powerfulsSettings[2];
                 }
-                if (typeRoll < 0.87) {
-                    const roll = Math.random();
-                    let cumulative = 0;
-                    const sortedMedkits = [...medkitSettings].sort((a,b) => a.chance - b.chance);
-                    for (const m of sortedMedkits) {
-                        cumulative += m.chance;
-                        if (roll <= cumulative) return m;
-                    }
-                    return medkitSettings[1]; 
+                // Legendary tier
+                if (Math.random() < 0.25) {
+                    const legendaryAbility = abilitiesSettings.find(a => a.rarity === 'legendary');
+                    if (legendaryAbility) return legendaryAbility;
                 }
                 const types = ['rifle', 'shotgun', 'smg'];
                 const selectedType = types[Math.floor(Math.random() * types.length)];
-                const typePool = raritySettings.filter(r => r.type === selectedType);
-                const roll = Math.random();
-                let cumulative = 0;
-                const sortedPool = [...typePool].sort((a,b) => a.chance - b.chance);
-                for (const r of sortedPool) { cumulative += r.chance; if (roll <= cumulative) { 
-                    // Roll for trait: uncommon checked first (50%), then common (70%)
-                    if (Math.random() < UNCOMMON_TRAIT_CHANCE) {
-                        const trait = uncommonTraits[Math.floor(Math.random() * uncommonTraits.length)];
-                        return applyTraitToWeapon(r, trait);
-                    } else if (Math.random() < COMMON_TRAIT_CHANCE) {
-                        const trait = commonTraits[Math.floor(Math.random() * commonTraits.length)];
-                        return applyTraitToWeapon(r, trait);
-                    }
-                    return r;
-                }}
-                // Fallback
-                const base = typePool[0];
-                if (Math.random() < UNCOMMON_TRAIT_CHANCE) return applyTraitToWeapon(base, uncommonTraits[Math.floor(Math.random() * uncommonTraits.length)]);
-                if (Math.random() < COMMON_TRAIT_CHANCE) return applyTraitToWeapon(base, commonTraits[Math.floor(Math.random() * commonTraits.length)]);
-                return base;
+                return raritySettings.find(r => r.type === selectedType && r.id.includes('_legendary')) || powerfulsSettings[3];
             };
             
             if (isRouletteChest) {
@@ -3478,11 +3465,8 @@
                     else selectWeapon(item);
                 };
                 const getRandomArmor = () => {
-                    const roll = Math.random();
-                    let cumulative = 0;
-                    const sortedPool = [...armorSettings].sort((a,b) => a.chance - b.chance);
-                    for (const r of sortedPool) { cumulative += r.chance; if (roll <= cumulative) return r; }
-                    return armorSettings[0];
+                    const tier = rollRarityTier();
+                    return armorSettings.find(a => a.id.includes(`_${tier}`)) || armorSettings[0];
                 };
 
                 // Build 3 cards that are all different "category" types
@@ -3583,17 +3567,26 @@
             const c = color || '#bdc3c7';
             const glow = `<circle cx="35" cy="35" r="31" fill="${c}" opacity="0.08"/><circle cx="35" cy="35" r="25" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.32" stroke-dasharray="4 5"/>`;
             const wrap = (body) => `<svg width="70" height="70" viewBox="0 0 70 70"><defs><linearGradient id="${id}g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="rgba(255,255,255,0.38)"/><stop offset="45%" stop-color="${c}"/><stop offset="100%" stop-color="rgba(0,0,0,0.72)"/></linearGradient></defs>${glow}<g stroke="#0a0906" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</g></svg>`;
-            if (id.startsWith('uncommon_')) {
-                const symMap = {
-                    uncommon_barbed_bat:'BAT', uncommon_nail_gun:'NAIL', uncommon_hot_sauce:'HOT', uncommon_grease_shoes:'SLIP',
-                    uncommon_car_battery:'ZAP', uncommon_pizza_cutter:'CUT', uncommon_bug_spray:'TOX', uncommon_weighted_gloves:'FIST',
-                    uncommon_energy_drink:'FAST', uncommon_magnet_charm:'MAG', uncommon_trash_lid_shield:'LID', uncommon_boomerang_wrench:'WRCH',
-                    uncommon_molotov_jar:'FIRE', uncommon_needle_pack:'PIN', uncommon_angry_toaster:'TOST', uncommon_razor_yoyo:'YOYO',
-                    uncommon_spiked_backpack:'SPIK', uncommon_lottery_ticket:'LUCK', uncommon_copper_pipe:'PIPE', uncommon_homemade_crossbow:'BOLT'
-                };
-                const label = symMap[id] || 'UN';
-                return wrap(`<path d="M18 48 L35 10 L52 48 Q35 62 18 48 Z" fill="url(#${id}g)"/><path d="M22 47 Q35 39 48 47" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/><circle cx="35" cy="35" r="18" fill="rgba(0,0,0,0.28)" stroke="${c}" stroke-width="2"/><text x="35" y="39" text-anchor="middle" fill="#fff" font-size="${label.length > 3 ? 8 : 11}" font-weight="900" font-family="monospace" stroke="none">${label}</text>`);
-            }
+            if (id === 'uncommon_barbed_bat') return wrap(`<path d="M16 55 L52 13" stroke="url(#${id}g)" stroke-width="9"/><path d="M36 24 L47 13 M40 29 L54 22 M30 31 L39 43" stroke="#222" stroke-width="2"/><path d="M14 57 L22 62" stroke="#5a2d15" stroke-width="7"/>`);
+            if (id === 'uncommon_nail_gun') return wrap(`<path d="M16 26 L44 18 Q51 18 52 25 L52 39 L22 42 Q16 40 16 34 Z" fill="url(#${id}g)"/><path d="M49 28 L63 28 L63 35 L49 35 Z" fill="#222"/><path d="M25 41 L25 58 L36 58 L34 41" fill="#333"/><path d="M58 22 L66 20 M58 30 L68 30 M58 38 L66 42" stroke="#dfe6e9" stroke-width="2"/>`);
+            if (id === 'uncommon_hot_sauce') return wrap(`<path d="M28 11 L43 11 L42 23 Q48 29 47 53 Q38 61 25 53 Q24 29 30 23 Z" fill="#e74c3c"/><path d="M30 11 L41 11 L40 20 L31 20 Z" fill="#111"/><path d="M29 34 Q35 25 42 34 Q39 47 35 51 Q30 45 29 34 Z" fill="#ffb000"/><text x="35" y="43" text-anchor="middle" fill="#5a0808" font-size="9" font-weight="900" font-family="monospace" stroke="none">HOT</text>`);
+            if (id === 'uncommon_grease_shoes') return wrap(`<path d="M16 44 Q30 40 36 49 L54 51 Q61 58 52 61 L18 60 Q10 55 16 44 Z" fill="url(#${id}g)"/><path d="M22 40 Q30 28 43 33 L36 49" fill="#222"/><path d="M15 30 Q28 22 40 26 M20 24 Q30 18 38 20" stroke="#8ecae6" opacity="0.65"/>`);
+            if (id === 'uncommon_car_battery') return wrap(`<rect x="17" y="20" width="36" height="34" rx="4" fill="#222"/><rect x="22" y="13" width="8" height="8" fill="#f9ca24"/><rect x="40" y="13" width="8" height="8" fill="#e74c3c"/><path d="M29 28 L39 28 L34 37 L43 37 L29 51 L34 40 L26 40 Z" fill="#f9ca24"/><path d="M17 31 L53 31" stroke="#444" stroke-width="2"/>`);
+            if (id === 'uncommon_pizza_cutter') return wrap(`<circle cx="35" cy="29" r="21" fill="url(#${id}g)"/><circle cx="35" cy="29" r="6" fill="#222"/><path d="M35 8 L35 50 M14 29 L56 29 M21 15 L49 43 M49 15 L21 43" stroke="#777" stroke-width="1.5"/><path d="M37 48 L32 64" stroke="#6b3f22" stroke-width="7"/>`);
+            if (id === 'uncommon_bug_spray') return wrap(`<rect x="25" y="21" width="22" height="36" rx="7" fill="url(#${id}g)"/><path d="M27 14 L45 14 L45 22 L27 22 Z" fill="#333"/><path d="M45 19 L60 15" stroke="#333" stroke-width="4"/><circle cx="59" cy="14" r="3" fill="#55efc4"/><circle cx="64" cy="11" r="2" fill="#55efc4"/><circle cx="63" cy="20" r="2.5" fill="#55efc4"/>`);
+            if (id === 'uncommon_weighted_gloves') return wrap(`<path d="M19 33 Q18 20 29 18 Q38 18 39 32 L38 48 Q35 57 25 56 Q17 53 19 33 Z" fill="url(#${id}g)"/><path d="M39 33 Q38 21 49 21 Q57 22 57 35 L54 50 Q48 57 40 52 Z" fill="#444"/><circle cx="28" cy="38" r="5" fill="#222"/><circle cx="48" cy="39" r="5" fill="#222"/>`);
+            if (id === 'uncommon_energy_drink') return wrap(`<rect x="25" y="10" width="22" height="50" rx="5" fill="url(#${id}g)"/><path d="M27 20 L45 20 L45 47 L27 47 Z" fill="#111" opacity="0.55"/><path d="M37 18 L29 36 L38 34 L32 53 L48 29 L39 31 Z" fill="#f9ca24"/><path d="M28 12 L44 12" stroke="#fff" opacity="0.25"/>`);
+            if (id === 'uncommon_magnet_charm') return wrap(`<path d="M18 18 Q18 8 28 8 L30 8 L30 35 L24 35 L24 18 Q24 15 28 15 M40 8 L42 8 Q52 8 52 18 L52 35 L46 35 L46 18 Q46 15 42 15" fill="none" stroke="url(#${id}g)" stroke-width="8"/><rect x="18" y="34" width="14" height="9" fill="#e74c3c"/><rect x="38" y="34" width="14" height="9" fill="#dfe6e9"/><circle cx="35" cy="55" r="7" fill="${c}"/>`);
+            if (id === 'uncommon_trash_lid_shield') return wrap(`<ellipse cx="35" cy="35" rx="27" ry="20" fill="url(#${id}g)"/><ellipse cx="35" cy="32" rx="15" ry="8" fill="#aab2b8"/><path d="M14 35 Q35 20 56 35 M18 46 Q35 53 52 46" fill="none" stroke="#555" stroke-width="2"/><circle cx="35" cy="34" r="5" fill="#333"/>`);
+            if (id === 'uncommon_boomerang_wrench') return wrap(`<path d="M14 24 L31 34 L48 20 L56 27 L38 43 L57 55 L50 63 L29 48 L18 55 L10 48 L21 39 L7 30 Z" fill="url(#${id}g)"/><circle cx="16" cy="26" r="5" fill="#222"/><circle cx="54" cy="27" r="5" fill="#222"/>`);
+            if (id === 'uncommon_molotov_jar') return wrap(`<path d="M27 14 L43 14 L42 25 Q51 34 47 54 Q36 63 23 54 Q19 34 28 25 Z" fill="rgba(225,112,85,0.65)"/><path d="M31 10 L40 10 L40 18 L31 18 Z" fill="#2a1a0a"/><path d="M36 9 Q47 0 52 12 Q45 9 40 18" fill="#f1c40f"/><path d="M28 42 Q36 34 44 42" stroke="#ffdd66" opacity="0.6"/>`);
+            if (id === 'uncommon_needle_pack') return wrap(`<rect x="16" y="25" width="38" height="28" rx="5" fill="url(#${id}g)"/><path d="M21 24 L24 12 M31 24 L34 10 M41 24 L44 12 M51 27 L61 17" stroke="#dfe6e9" stroke-width="3"/><path d="M20 38 L51 38" stroke="#777" stroke-width="2"/><text x="35" y="49" text-anchor="middle" fill="#111" font-size="8" font-weight="900" font-family="monospace" stroke="none">PIN</text>`);
+            if (id === 'uncommon_angry_toaster') return wrap(`<rect x="16" y="24" width="40" height="29" rx="6" fill="url(#${id}g)"/><path d="M25 16 L46 16 L48 24 L23 24 Z" fill="#222"/><rect x="28" y="10" width="14" height="12" rx="3" fill="#f6d58b"/><circle cx="28" cy="39" r="4" fill="#e74c3c"/><path d="M44 35 Q52 40 44 46" fill="none" stroke="#111" stroke-width="2"/>`);
+            if (id === 'uncommon_razor_yoyo') return wrap(`<circle cx="35" cy="35" r="22" fill="url(#${id}g)"/><circle cx="35" cy="35" r="8" fill="#222"/><path d="M35 8 L35 62 M8 35 L62 35 M16 16 L54 54 M54 16 L16 54" stroke="#fff" stroke-width="1.5" opacity="0.65"/><path d="M35 13 Q56 12 62 25" fill="none" stroke="#fd79a8" stroke-width="2"/>`);
+            if (id === 'uncommon_spiked_backpack') return wrap(`<rect x="24" y="16" width="25" height="42" rx="7" fill="url(#${id}g)"/><path d="M24 24 L12 28 L24 33 M24 37 L10 43 L24 49 M49 24 L60 29 L49 34 M49 39 L61 45 L49 51" fill="#7f8c8d"/><path d="M29 16 Q35 8 43 16" fill="none" stroke="#333" stroke-width="4"/>`);
+            if (id === 'uncommon_lottery_ticket') return wrap(`<path d="M16 21 Q22 17 27 21 Q32 25 37 21 Q42 17 47 21 Q52 25 57 21 L54 52 Q48 48 43 52 Q38 56 33 52 Q28 48 23 52 Q18 56 13 52 Z" fill="url(#${id}g)"/><text x="35" y="36" text-anchor="middle" fill="#271900" font-size="13" font-weight="900" font-family="monospace" stroke="none">777</text><path d="M21 44 L49 44" stroke="#271900" stroke-width="1.5"/>`);
+            if (id === 'uncommon_copper_pipe') return wrap(`<path d="M14 55 L53 16" stroke="url(#${id}g)" stroke-width="10"/><path d="M43 13 L57 27 M10 51 L23 64" stroke="#5a2b08" stroke-width="6"/><path d="M22 47 L48 21" stroke="#ffd199" stroke-width="1.4" opacity="0.35"/>`);
+            if (id === 'uncommon_homemade_crossbow') return wrap(`<path d="M15 35 L58 35" stroke="#8b5a2b" stroke-width="6"/><path d="M31 15 Q59 35 31 55" fill="none" stroke="#6b3f22" stroke-width="6"/><path d="M31 15 L31 55" stroke="#dfe6e9" stroke-width="2"/><path d="M14 35 L4 29 M14 35 L4 41" stroke="#8b5a2b" stroke-width="4"/><path d="M37 35 L64 35" stroke="#dfe6e9" stroke-width="3"/>`);
             if (id === 'common_sock') return wrap(`<path d="M26 11 L43 11 L43 38 Q43 52 31 56 Q18 59 14 49 Q11 41 20 37 L26 34 Z" fill="url(#${id}g)"/><path d="M20 37 Q30 40 43 38" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="1.4"/>`);
             if (id === 'common_glass_bottle') return wrap(`<path d="M30 8 L41 8 L40 23 Q48 29 47 48 Q46 58 35 59 Q24 58 23 48 Q22 29 30 23 Z" fill="rgba(80,190,110,0.48)"/><path d="M30 8 L41 8 L40 18 L30 18 Z" fill="url(#${id}g)"/><path d="M28 31 Q35 27 43 32" fill="none" stroke="#d9ffe3" stroke-width="1.5" opacity="0.55"/><path d="M22 58 L17 63 M47 57 L54 62 M36 59 L36 66" fill="none" stroke="${c}" opacity="0.65"/>`);
             if (id === 'common_rusty_knife') return wrap(`<path d="M16 55 L42 17 Q49 9 55 12 Q50 24 41 31 L24 59 Z" fill="url(#${id}g)"/><path d="M13 57 L25 45 L31 51 L19 63 Z" fill="#3a2618"/><path d="M38 23 L49 13" stroke="#e6d1aa" stroke-width="1.2" opacity="0.45"/>`);
