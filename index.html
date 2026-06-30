@@ -2323,6 +2323,75 @@
             { id: 'uncommon_homemade_crossbow', name: 'Homemade Crossbow', type: 'common_item', tier: 'uncommon', mode: 'orbit', color: '#8b5a2b', effect: 'Slow but high-damage bolts.', cooldown: 1.9, dmg: 36, pierce: 1, crossbow: true, stats: { dmg: 90, range: 82, fire: 18 } }
         ];
 
+        const rareItemSettings = [
+            { id: 'rare_chainsaw_rake', name: 'Chainsaw Rake', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#3498db', effect: 'Wide melee attack that bleeds enemies.', cooldown: 1.25, dmg: 30, melee: true, bleed: true, range: 170, knockback: 360, wideSwing: true, stats: { dmg: 82, range: 64, bleed: 90 } },
+            { id: 'rare_shock_collar', name: 'Shock Collar', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#74b9ff', effect: 'Every few seconds, releases electric burst.', cooldown: 3.1, dmg: 26, shockBurst: true, stats: { dmg: 70, area: 86, magic: 76 } },
+            { id: 'rare_acid_flask', name: 'Acid Flask', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#7bed9f', effect: 'Throws acid that melts armor and deals damage over time.', cooldown: 2.2, dmg: 20, acid: true, stats: { dmg: 62, area: 74, util: 86 } },
+            { id: 'rare_brass_knuckles', name: 'Brass Knuckles', type: 'common_item', tier: 'rare', mode: 'passive', color: '#d4a017', effect: '+15 melee damage, +5% crit chance.', meleeBonus: 15, critChance: 0.05, stats: { dmg: 95, crit: 55 } },
+            { id: 'rare_twin_pistols', name: 'Twin Pistols', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#4dabf7', effect: 'Shoots two bullets at once.', cooldown: 0.62, dmg: 12, twinShot: true, stats: { dmg: 58, fire: 88, range: 70 } },
+            { id: 'rare_bear_trap_bag', name: 'Bear Trap Bag', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#8d6e63', effect: 'Drops traps behind you.', cooldown: 2.4, dmg: 34, trapDrop: true, stats: { dmg: 72, area: 62, util: 76 } },
+            { id: 'rare_vampire_tooth', name: 'Vampire Tooth', type: 'common_item', tier: 'rare', mode: 'passive', color: '#c0392b', effect: 'Heal 1 HP every 15 kills.', vampireKills: 15, stats: { heal: 66, util: 54 } },
+            { id: 'rare_rocket_skates', name: 'Rocket Skates', type: 'common_item', tier: 'rare', mode: 'passive', color: '#ff7675', effect: '+12 speed, leaves fire trail when dashing.', speedFlat: 12, rocketSkates: true, stats: { speed: 94, fire: 52 } },
+            { id: 'rare_dice_of_violence', name: 'Dice of Violence', type: 'common_item', tier: 'rare', mode: 'passive', color: '#f1c40f', effect: 'Randomly boosts damage, speed, or crit each wave.', diceViolence: true, stats: { luck: 70, dmg: 56, crit: 56 } },
+            { id: 'rare_cursed_coin', name: 'Cursed Coin', type: 'common_item', tier: 'rare', mode: 'passive', color: '#8e44ad', effect: '+20 luck, enemies spawn 10% faster.', luck: 20, spawnRateMult: 0.90, stats: { luck: 100, risk: 54 } },
+            { id: 'rare_sawblade_launcher', name: 'Sawblade Launcher', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#b2bec3', effect: 'Shoots bouncing sawblades.', cooldown: 1.35, dmg: 22, sawblade: true, bounces: 2, stats: { dmg: 78, range: 76, fire: 48 } },
+            { id: 'rare_siren_speaker', name: 'Siren Speaker', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#a29bfe', effect: 'Damages all nearby enemies with sound waves.', cooldown: 2.0, dmg: 15, siren: true, stats: { area: 92, fire: 48, util: 58 } },
+            { id: 'rare_poison_fang', name: 'Poison Fang', type: 'common_item', tier: 'rare', mode: 'passive', color: '#2ecc71', effect: 'All attacks have a chance to poison.', poisonChance: 0.18, stats: { util: 84, dmg: 52 } },
+            { id: 'rare_reinforced_hoodie', name: 'Reinforced Hoodie', type: 'common_item', tier: 'rare', mode: 'passive', color: '#34495e', effect: '+12 max HP, +2 armor.', hpBonus: 12, armorFlat: 2, stats: { vit: 72, def: 50 } },
+            { id: 'rare_glass_cannon', name: 'Glass Cannon', type: 'common_item', tier: 'rare', mode: 'passive', color: '#74f2ff', effect: '+35% damage, -15 max HP.', damageMultBonus: 1.35, hpBonus: -15, stats: { dmg: 100, risk: 78 } },
+            { id: 'rare_homing_pebbles', name: 'Homing Pebbles', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#95a5a6', effect: 'Small projectiles curve toward enemies.', cooldown: 0.55, dmg: 8, homingPebble: true, stats: { fire: 86, range: 74, util: 60 } },
+            { id: 'rare_crowbar', name: 'Crowbar', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#5dade2', effect: 'High knockback melee weapon.', cooldown: 1.35, dmg: 26, melee: true, range: 155, knockback: 820, stats: { dmg: 68, force: 100, range: 46 } },
+            { id: 'rare_medical_backpack', name: 'Medical Backpack', type: 'common_item', tier: 'rare', mode: 'passive', color: '#ff6b81', effect: '+3 HP regeneration, -5% damage.', regen: 3, damageMultBonus: 0.95, medicalBackpack: true, stats: { heal: 100, risk: 34 } },
+            { id: 'rare_electric_guitar', name: 'Electric Guitar', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#9b59b6', effect: 'Sends music shockwaves in all directions.', cooldown: 2.6, dmg: 18, guitarWave: true, stats: { area: 88, magic: 78, fire: 42 } },
+            { id: 'rare_angry_drone', name: 'Angry Drone', type: 'common_item', tier: 'rare', mode: 'orbit', color: '#00cec9', effect: 'A drone follows you and shoots enemies.', cooldown: 0.74, dmg: 10, drone: true, stats: { fire: 82, range: 88, util: 70 } }
+        ];
+
+        const epicItemSettings = [
+            { id: 'epic_mini_turret', name: 'Mini Turret', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#9b59b6', effect: 'Places a turret that shoots nearby enemies.', cooldown: 5.0, dmg: 10, turretDrop: true, stats: { fire: 78, range: 88, util: 82 } },
+            { id: 'epic_flame_orbiters', name: 'Flame Orbiters', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#e17055', effect: 'Three fireballs spin around you.', cooldown: 0.22, dmg: 8, flameOrbiters: true, stats: { area: 90, fire: 82, dmg: 54 } },
+            { id: 'epic_bone_cannon', name: 'Bone Cannon', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#f1e4c8', effect: 'Shoots bones that split on impact.', cooldown: 1.25, dmg: 26, boneSplit: true, stats: { dmg: 82, range: 78, area: 70 } },
+            { id: 'epic_shadow_sneakers', name: 'Shadow Sneakers', type: 'common_item', tier: 'epic', mode: 'passive', color: '#6c5ce7', effect: '+15 speed and chance to dodge attacks.', speedFlat: 15, dodgeChance: 0.12, stats: { speed: 100, def: 52, luck: 48 } },
+            { id: 'epic_explosive_teddy', name: 'Explosive Teddy Bear', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#c08a5a', effect: 'Summons teddy bombs that walk into enemies.', cooldown: 3.4, dmg: 34, teddyBomb: true, stats: { dmg: 80, area: 84, util: 56 } },
+            { id: 'epic_golden_tooth', name: 'Golden Tooth', type: 'common_item', tier: 'epic', mode: 'passive', color: '#f1c40f', effect: 'Gain extra XP from elite enemies.', goldenTooth: true, stats: { luck: 92, util: 62 } },
+            { id: 'epic_blood_syringe', name: 'Blood Syringe', type: 'common_item', tier: 'epic', mode: 'passive', color: '#d63031', effect: '+40% damage, lose 1 HP every few seconds.', damageMultBonus: 1.40, bloodSyringe: true, stats: { dmg: 100, risk: 82 } },
+            { id: 'epic_storm_jar', name: 'Storm Jar', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#74b9ff', effect: 'Lightning strikes random enemies.', cooldown: 2.6, dmg: 42, stormJar: true, stats: { dmg: 86, range: 100, magic: 82 } },
+            { id: 'epic_spiked_crown', name: 'Spiked Crown', type: 'common_item', tier: 'epic', mode: 'passive', color: '#fdcb6e', effect: '+20% damage for every boss/elite killed.', spikedCrown: true, stats: { dmg: 90, luck: 58 } },
+            { id: 'epic_mutant_arm', name: 'Mutant Arm', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#00b894', effect: 'Extra melee arm attacks nearby enemies.', cooldown: 0.72, dmg: 20, melee: true, range: 145, knockback: 360, mutantArm: true, stats: { dmg: 74, fire: 80, range: 50 } },
+            { id: 'epic_frost_blaster', name: 'Frost Blaster', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#74f2ff', effect: 'Shoots ice blasts that slow enemies.', cooldown: 1.05, dmg: 18, frostBlast: true, stats: { dmg: 62, range: 76, util: 92 } },
+            { id: 'epic_chaos_dice', name: 'Chaos Dice', type: 'common_item', tier: 'epic', mode: 'passive', color: '#fd79a8', effect: 'Every wave gives one huge stat boost and one stat penalty.', chaosDice: true, stats: { luck: 100, dmg: 70, risk: 70 } },
+            { id: 'epic_laser_pointer', name: 'Laser Pointer', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#ff4757', effect: 'A laser locks onto the strongest enemy.', cooldown: 0.28, dmg: 6, laserPointer: true, stats: { range: 100, fire: 80, dmg: 60 } },
+            { id: 'epic_soul_magnet', name: 'Soul Magnet', type: 'common_item', tier: 'epic', mode: 'passive', color: '#a29bfe', effect: 'Enemies drop healing souls sometimes.', soulMagnet: true, stats: { heal: 90, util: 76 } },
+            { id: 'epic_boomerang_axe', name: 'Boomerang Axe', type: 'common_item', tier: 'epic', mode: 'orbit', color: '#b2bec3', effect: 'Throws axes that return and pierce.', cooldown: 1.35, dmg: 28, returning: true, pierce: 3, boomerangAxe: true, stats: { dmg: 84, range: 82, fire: 48 } },
+            { id: 'epic_toxic_lunchbox', name: 'Toxic Lunchbox', type: 'common_item', tier: 'epic', mode: 'passive', color: '#55efc4', effect: 'Poison cloud surrounds the player.', toxicAura: true, stats: { area: 92, util: 84 } },
+            { id: 'epic_panic_button', name: 'Panic Button', type: 'common_item', tier: 'epic', mode: 'passive', color: '#ff6b6b', effect: 'When low HP, creates a massive explosion.', panicButton: true, stats: { area: 100, def: 64 } },
+            { id: 'epic_iron_lungs', name: 'Iron Lungs', type: 'common_item', tier: 'epic', mode: 'passive', color: '#636e72', effect: '+20 max HP and immunity to poison.', hpBonus: 20, poisonImmune: true, stats: { vit: 100, def: 74 } },
+            { id: 'epic_bullet_hive', name: 'Bullet Hive', type: 'common_item', tier: 'epic', mode: 'passive', color: '#f6d365', effect: 'Every shot has a chance to split into smaller bullets.', bulletHive: true, stats: { fire: 92, area: 72 } },
+            { id: 'epic_rage_mask', name: 'Rage Mask', type: 'common_item', tier: 'epic', mode: 'passive', color: '#e84393', effect: 'The lower your HP, the faster you attack.', rageMask: true, stats: { fire: 100, risk: 65 } }
+        ];
+
+        const legendaryItemSettings = [
+            { id: 'legendary_meat_grinder', name: 'The Meat Grinder', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#f1c40f', effect: 'A huge spinning blade circles you and shreds enemies.', cooldown: 0.18, dmg: 16, melee: true, range: 185, meatGrinder: true, stats: { dmg: 100, area: 95, fire: 88 } },
+            { id: 'legendary_gods_stapler', name: "God's Stapler", type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#ffeaa7', effect: 'Shoots massive staples that pin enemies in place.', cooldown: 0.9, dmg: 30, staplePin: true, pierce: 1, stats: { dmg: 86, util: 95, range: 80 } },
+            { id: 'legendary_dragon_breath', name: 'Dragon Breath Canister', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#ff6b35', effect: 'Constant flamethrower attack.', cooldown: 0.12, dmg: 7, dragonBreath: true, stats: { fire: 100, area: 94, dmg: 70 } },
+            { id: 'legendary_refund_policy', name: 'The Refund Policy', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#00cec9', effect: 'Every time you take damage, damage is reflected back harder.', refundPolicy: true, stats: { def: 90, dmg: 88 } },
+            { id: 'legendary_crown_of_teeth', name: 'Crown of Teeth', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#f8efba', effect: 'Enemies killed near you explode into bone shards.', crownOfTeeth: true, stats: { area: 92, dmg: 84 } },
+            { id: 'legendary_black_hole_marble', name: 'Black Hole Marble', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#6c5ce7', effect: 'Creates small black holes that pull enemies in.', cooldown: 4.5, dmg: 8, blackHoleMarble: true, stats: { area: 100, magic: 95 } },
+            { id: 'legendary_angel_battery', name: 'Angel Battery', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#fff3b0', effect: 'Lightning heals you when it kills enemies.', cooldown: 1.8, dmg: 38, angelBattery: true, chainLightning: true, stats: { dmg: 92, heal: 84, magic: 94 } },
+            { id: 'legendary_lawnmower', name: 'The Lawnmower', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#2ecc71', effect: 'A lawnmower companion drives around killing enemies.', cooldown: 0.2, dmg: 18, lawnmower: true, melee: true, range: 130, stats: { dmg: 94, area: 78, speed: 70 } },
+            { id: 'legendary_living_backpack', name: 'Living Backpack', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#a0522d', effect: 'Stores loot, then spits it out as projectiles.', cooldown: 0.55, dmg: 14, livingBackpack: true, stats: { fire: 90, util: 92, range: 80 } },
+            { id: 'legendary_infinite_soda', name: 'Infinite Soda', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#74b9ff', effect: '+30% attack speed and +10 speed.', cooldownMult: 0.70, speedFlat: 10, stats: { fire: 100, speed: 80 } },
+            { id: 'legendary_devil_contract', name: 'Devil Contract', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#c0392b', effect: '+100% damage, max HP cut in half.', damageMultBonus: 2.0, hpMult: 0.5, devilContract: true, stats: { dmg: 100, risk: 100 } },
+            { id: 'legendary_blender', name: 'The Blender', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#dfe6e9', effect: 'All orbiting weapons spin twice as fast.', blender: true, stats: { fire: 90, area: 88 } },
+            { id: 'legendary_moon_boots', name: 'Moon Boots', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#a29bfe', effect: 'Huge speed boost and shockwave when landing after dash.', speedFlat: 35, moonBoots: true, stats: { speed: 100, area: 82 } },
+            { id: 'legendary_halo_of_knives', name: 'Halo of Knives', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#f5f6fa', effect: 'Knives constantly orbit and shoot outward.', cooldown: 0.45, dmg: 16, haloKnives: true, pierce: 1, stats: { fire: 100, area: 92, dmg: 76 } },
+            { id: 'legendary_golden_chainsaw', name: 'Golden Chainsaw', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#f1c40f', effect: 'Melee kills give extra XP.', cooldown: 0.55, dmg: 32, melee: true, range: 145, bleed: true, goldenChainsaw: true, stats: { dmg: 100, luck: 90 } },
+            { id: 'legendary_nuke_lunchbox', name: 'Nuke Lunchbox', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#badc58', effect: 'Every 20 seconds, drops a massive explosion.', nukeLunchbox: true, stats: { area: 100, dmg: 100 } },
+            { id: 'legendary_possessed_remote', name: 'Possessed Remote', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#8e44ad', effect: 'Controls random enemies and makes them fight for you.', cooldown: 3.8, dmg: 10, possessedRemote: true, stats: { util: 100, magic: 88 } },
+            { id: 'legendary_bell', name: 'The Bell', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#fdcb6e', effect: 'Rings every few seconds, stunning all enemies nearby.', cooldown: 3.2, dmg: 10, bellRing: true, stats: { area: 92, util: 100 } },
+            { id: 'legendary_meteor_magnet', name: 'Meteor Magnet', type: 'common_item', tier: 'legendary', mode: 'orbit', color: '#e17055', effect: 'Meteors fall near enemies.', cooldown: 2.4, dmg: 64, meteorMagnet: true, stats: { dmg: 100, area: 90 } },
+            { id: 'legendary_blood_crown', name: 'Blood Crown', type: 'common_item', tier: 'legendary', mode: 'passive', color: '#e84393', effect: 'Kills increase damage for the rest of the wave.', bloodCrown: true, stats: { dmg: 100, fire: 70 } }
+        ];
+
         const armorSettings = [
             { id: 'armor_common', name: 'Scrap Vest', chance: 0.70, color: '#95a5a6', effect: '+5% dmg reduction, +20 Health.', dr: 0.05, hpBonus: 20, stats: { def: 20, vit: 40 } },
             { id: 'armor_uncommon', name: 'Reinforced Plates', chance: 0.20, color: '#7f8c8d', effect: '+16% dmg reduction, -5% Move Speed.', dr: 0.16, speedMod: 0.95, stats: { def: 60, vit: 30 } },
@@ -2566,6 +2635,7 @@
             critChance: 0,
             critMultiplier: 2.0,
             commonItems: [],
+            passiveItems: [],
             commonMeleeBonus: 0,
             commonDamageMult: 1,
             commonProjectilePierce: 0,
@@ -2574,6 +2644,46 @@
             contactDmg: 0,
             hpRegen: 0,
             regenTick: 0,
+            poisonChance: 0,
+            dodgeChance: 0,
+            spawnRateMult: 1,
+            vampireKills: 0,
+            vampireKillCounter: 0,
+            rocketSkates: false,
+            rocketSkateTrailTimer: 0,
+            diceViolence: false,
+            diceBuff: null,
+            chaosDice: false,
+            chaosBuff: null,
+            chaosPenalty: null,
+            turrets: [],
+            bloodSyringe: false,
+            bloodSyringeTimer: 0,
+            goldenTooth: false,
+            spikedCrown: false,
+            spikedCrownStacks: 0,
+            soulMagnet: false,
+            toxicAura: false,
+            toxicAuraTimer: 0,
+            panicButton: false,
+            panicButtonCooldown: 0,
+            poisonImmune: false,
+            bulletHive: false,
+            rageMask: false,
+            refundPolicy: false,
+            crownOfTeeth: false,
+            angelBattery: false,
+            lawnmower: false,
+            lawnmowerState: null,
+            livingBackpack: false,
+            blender: false,
+            moonBoots: false,
+            moonBootShockReady: false,
+            goldenChainsaw: false,
+            nukeLunchbox: false,
+            nukeLunchboxTimer: 20,
+            bloodCrown: false,
+            bloodCrownStacks: 0,
             hasEcho: false,
             echoTimer: 0,
             echoNextReady: false,
@@ -2694,6 +2804,10 @@
             game.roomCleared = false;
             game.spawnTimer = 0;
             game.spawnRate = (wave === 5 || wave === 10 || wave === 15) ? 0 : Math.max(0.6, 1.8 - wave * 0.08 - (wave > 5 ? (wave-5)*0.06 : 0));
+            game.spawnRate *= (player.spawnRateMult || 1);
+            if (player.diceViolence) rollDiceOfViolence();
+            if (player.chaosDice) rollChaosDice();
+            if (player.bloodCrown) player.bloodCrownStacks = 0;
             game.bossSpawned = false;
             game.spawnPending = false;
             game.emberlingSpawnedThisWave = 0;
@@ -3069,32 +3183,12 @@
                     return uncommonItemSettings[Math.floor(Math.random() * uncommonItemSettings.length)];
                 }
                 if (tier === 'rare') {
-                    if (Math.random() < 0.35) {
-                        const rareAbility = abilitiesSettings.find(a => a.rarity === 'rare');
-                        if (rareAbility) return rareAbility;
-                    }
-                    const selectedType = ['rifle', 'shotgun', 'smg'][Math.floor(Math.random() * 3)];
-                    return raritySettings.find(r => r.type === selectedType && r.id.includes('_rare')) || raritySettings.find(r => r.type === selectedType);
+                    return rareItemSettings[Math.floor(Math.random() * rareItemSettings.length)];
                 }
                 if (tier === 'epic') {
-                    const roll = Math.random();
-                    let cumulative = 0;
-                    const sortedPowerfuls = [...powerfulsSettings].filter(p => p.color === '#9b59b6' || p.id === 'powerful_collector').sort((a,b) => a.chance - b.chance);
-                    for (const p of sortedPowerfuls) {
-                        cumulative += p.chance;
-                        if (roll <= cumulative) return p;
-                    }
-                    const selectedType = ['rifle', 'shotgun', 'smg'][Math.floor(Math.random() * 3)];
-                    return raritySettings.find(r => r.type === selectedType && r.id.includes('_epic')) || powerfulsSettings[2];
+                    return epicItemSettings[Math.floor(Math.random() * epicItemSettings.length)];
                 }
-                // Legendary tier
-                if (Math.random() < 0.25) {
-                    const legendaryAbility = abilitiesSettings.find(a => a.rarity === 'legendary');
-                    if (legendaryAbility) return legendaryAbility;
-                }
-                const types = ['rifle', 'shotgun', 'smg'];
-                const selectedType = types[Math.floor(Math.random() * types.length)];
-                return raritySettings.find(r => r.type === selectedType && r.id.includes('_legendary')) || powerfulsSettings[3];
+                return legendaryItemSettings[Math.floor(Math.random() * legendaryItemSettings.length)];
             };
             
             if (isRouletteChest) {
@@ -3475,8 +3569,8 @@
                 };
                 cardContainer.appendChild(btn);
             } else {
-                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'common_item' ? (item.tier === 'uncommon' ? (item.mode === 'passive' ? 'Uncommon Passive' : 'Uncommon Scrap') : (item.mode === 'passive' ? 'Common Passive' : 'Common Scrap')) : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
-                const getCardGlow = (item) => item.glowClass || (item.type === 'common_item' ? (item.tier === 'uncommon' ? 'glow-uncommon' : 'glow-common') : item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
+                const getCardLabel = (item) => item.type === 'heal' ? 'Utility' : item.type === 'common_item' ? (item.tier === 'legendary' ? (item.mode === 'passive' ? 'Legendary Passive' : 'Legendary Scrap') : item.tier === 'epic' ? (item.mode === 'passive' ? 'Epic Passive' : 'Epic Scrap') : item.tier === 'rare' ? (item.mode === 'passive' ? 'Rare Passive' : 'Rare Scrap') : item.tier === 'uncommon' ? (item.mode === 'passive' ? 'Uncommon Passive' : 'Uncommon Scrap') : (item.mode === 'passive' ? 'Common Passive' : 'Common Scrap')) : item.type === 'powerful' ? 'Passive' : item.type === 'ability' ? 'Ability' : item.id && item.id.startsWith('armor') ? 'Armor' : 'Weapon';
+                const getCardGlow = (item) => item.glowClass || (item.type === 'common_item' ? (item.tier === 'legendary' ? 'glow-legendary' : item.tier === 'epic' ? 'glow-epic' : item.tier === 'rare' ? 'glow-rare' : item.tier === 'uncommon' ? 'glow-uncommon' : 'glow-common') : item.type === 'powerful' ? 'glow-powerful' : item.type === 'heal' ? 'glow-heal' : item.id === 'armor_legendary' ? 'glow-void' : item.id && item.id.startsWith('armor') ? `glow-${item.id.split('_')[1]}` : `glow-${item.id.split('_')[1]}`);
                 const applyCard = (item) => {
                     if (item.type === 'heal') { player.hp = Math.min(player.maxHp, player.hp + item.heal); createExplosion(player.x, player.y, '#ff4757', 20); closeLevelUp(); }
                     else if (item.type === 'common_item') applyCommonItem(item);
@@ -3588,6 +3682,53 @@
             const c = color || '#bdc3c7';
             const glow = `<circle cx="35" cy="35" r="31" fill="${c}" opacity="0.08"/><circle cx="35" cy="35" r="25" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.32" stroke-dasharray="4 5"/>`;
             const wrap = (body) => `<svg width="70" height="70" viewBox="0 0 70 70"><defs><linearGradient id="${id}g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="rgba(255,255,255,0.38)"/><stop offset="45%" stop-color="${c}"/><stop offset="100%" stop-color="rgba(0,0,0,0.72)"/></linearGradient></defs>${glow}<g stroke="#0a0906" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</g></svg>`;
+            const rareBodies = {
+                rare_chainsaw_rake: `<path d="M15 57 L52 18" stroke="url(#${id}g)" stroke-width="8"/><path d="M31 28 L56 18 L59 27 L37 39 Z" fill="#333"/><path d="M35 25 L38 20 M40 26 L44 21 M45 27 L50 23 M50 28 L56 25" stroke="#dfe6e9" stroke-width="2"/><path d="M46 41 L58 53 M41 45 L50 58" stroke="${c}" stroke-width="4"/>`,
+                rare_shock_collar: `<ellipse cx="35" cy="36" rx="24" ry="15" fill="none" stroke="url(#${id}g)" stroke-width="8"/><rect x="28" y="20" width="15" height="17" rx="3" fill="#222"/><path d="M35 11 L29 27 L38 25 L31 42" stroke="#f9ca24" stroke-width="3"/>`,
+                rare_acid_flask: `<path d="M28 10 L43 10 L42 24 Q52 35 46 55 Q35 63 24 55 Q18 35 29 24 Z" fill="rgba(123,237,159,0.65)"/><path d="M25 41 Q35 34 46 42" stroke="#eaffd0" opacity="0.7"/><circle cx="50" cy="53" r="4" fill="#7bed9f"/><circle cx="18" cy="55" r="3" fill="#7bed9f"/>`,
+                rare_brass_knuckles: `<path d="M15 34 Q18 20 29 22 Q35 13 42 22 Q55 20 57 34 L51 49 L22 49 Z" fill="url(#${id}g)"/><circle cx="27" cy="34" r="6" fill="#111"/><circle cx="39" cy="34" r="6" fill="#111"/><circle cx="51" cy="34" r="6" fill="#111"/>`,
+                rare_twin_pistols: `<path d="M15 29 L39 22 L44 31 L24 40 Z" fill="url(#${id}g)"/><path d="M55 29 L31 22 L26 31 L46 40 Z" fill="url(#${id}g)"/><path d="M25 39 L22 55 M45 39 L48 55" stroke="#333" stroke-width="5"/>`,
+                rare_bear_trap_bag: `<rect x="20" y="18" width="30" height="38" rx="6" fill="#7b5740"/><path d="M22 18 Q35 8 48 18" fill="none" stroke="#3a2618" stroke-width="4"/><path d="M14 43 L28 35 L42 43 L56 35 M14 49 L28 57 L42 49 L56 57" stroke="#b2bec3" stroke-width="3"/>`,
+                rare_vampire_tooth: `<path d="M24 10 Q36 31 29 61 Q17 37 24 10 Z" fill="#f4f4f4"/><path d="M45 10 Q52 37 40 61 Q34 31 45 10 Z" fill="#f4f4f4"/><path d="M28 49 Q35 56 43 49" stroke="#c0392b" stroke-width="3"/>`,
+                rare_rocket_skates: `<path d="M18 40 Q31 33 43 43 L58 45 Q62 54 52 57 L18 56 Q9 50 18 40 Z" fill="url(#${id}g)"/><path d="M21 37 L41 23 L44 42" fill="#222"/><path d="M14 55 Q6 61 8 66 Q17 63 23 56" fill="#ff7675"/>`,
+                rare_dice_of_violence: `<rect x="18" y="18" width="34" height="34" rx="5" fill="url(#${id}g)" transform="rotate(10 35 35)"/><circle cx="27" cy="28" r="3" fill="#111"/><circle cx="42" cy="35" r="3" fill="#111"/><circle cx="30" cy="45" r="3" fill="#111"/><path d="M54 13 L61 6 M55 22 L66 21" stroke="#ff7675" stroke-width="2"/>`,
+                rare_cursed_coin: `<circle cx="35" cy="35" r="24" fill="url(#${id}g)"/><path d="M27 28 Q35 20 43 28 M25 42 Q35 51 45 42" fill="none" stroke="#17051e" stroke-width="3"/><circle cx="28" cy="34" r="3" fill="#17051e"/><circle cx="42" cy="34" r="3" fill="#17051e"/>`,
+                rare_sawblade_launcher: `<rect x="14" y="31" width="34" height="15" rx="4" fill="#333"/><circle cx="51" cy="33" r="14" fill="url(#${id}g)"/><path d="M51 16 L55 29 L68 33 L55 37 L51 50 L47 37 L34 33 L47 29 Z" fill="#dfe6e9"/>`,
+                rare_siren_speaker: `<path d="M15 29 L29 29 L49 15 L49 55 L29 41 L15 41 Z" fill="url(#${id}g)"/><path d="M52 24 Q61 35 52 46 M58 18 Q70 35 58 52" fill="none" stroke="${c}" stroke-width="3"/>`,
+                rare_poison_fang: `<path d="M25 10 Q39 30 30 62 Q14 35 25 10 Z" fill="#eaffd0"/><path d="M45 13 Q52 39 39 61 Q36 33 45 13 Z" fill="#eaffd0"/><circle cx="49" cy="54" r="4" fill="#2ecc71"/><path d="M27 50 Q34 55 42 50" stroke="#2ecc71" stroke-width="3"/>`,
+                rare_reinforced_hoodie: `<path d="M20 25 Q27 10 43 10 Q51 18 53 29 L48 59 L22 59 L17 29 Z" fill="url(#${id}g)"/><path d="M26 24 Q35 15 45 24 L42 37 L29 37 Z" fill="#111"/><path d="M23 44 L49 44" stroke="#7f8c8d" stroke-width="3"/>`,
+                rare_glass_cannon: `<path d="M13 38 L52 22 L59 34 L20 50 Z" fill="rgba(116,242,255,0.45)"/><path d="M49 21 L63 15 M54 29 L68 28 M49 37 L63 45" stroke="#74f2ff" stroke-width="2"/><path d="M27 47 L20 60" stroke="#333" stroke-width="5"/>`,
+                rare_homing_pebbles: `<circle cx="30" cy="35" r="8" fill="#95a5a6"/><circle cx="47" cy="28" r="5" fill="#bdc3c7"/><circle cx="44" cy="49" r="6" fill="#7f8c8d"/><path d="M14 52 Q18 18 54 15" fill="none" stroke="${c}" stroke-dasharray="4 4" stroke-width="3"/><path d="M54 15 L47 12 L50 22" fill="none" stroke="${c}" stroke-width="3"/>`,
+                rare_crowbar: `<path d="M18 58 L52 15" stroke="url(#${id}g)" stroke-width="8"/><path d="M48 16 Q59 11 61 21 Q55 20 52 26" fill="none" stroke="${c}" stroke-width="7"/><path d="M18 58 Q12 52 17 46" fill="none" stroke="${c}" stroke-width="7"/>`,
+                rare_medical_backpack: `<rect x="22" y="15" width="29" height="44" rx="7" fill="url(#${id}g)"/><path d="M26 15 Q35 6 46 15" fill="none" stroke="#333" stroke-width="4"/><path d="M36 28 L36 47 M27 37 L45 37" stroke="#fff" stroke-width="5"/><path d="M36 28 L36 47 M27 37 L45 37" stroke="#c0392b" stroke-width="3"/>`,
+                rare_electric_guitar: `<path d="M23 42 Q11 36 21 26 Q31 17 37 29 Q49 22 55 32 Q61 44 47 48 Q37 55 30 46 Z" fill="url(#${id}g)"/><path d="M42 30 L61 12" stroke="#333" stroke-width="7"/><path d="M27 37 L55 20 M30 42 L58 24" stroke="#f9ca24" stroke-width="1.5"/>`,
+                rare_angry_drone: `<ellipse cx="35" cy="35" rx="18" ry="12" fill="url(#${id}g)"/><circle cx="16" cy="28" r="8" fill="#333"/><circle cx="54" cy="28" r="8" fill="#333"/><path d="M22 27 L48 27 M29 38 L41 38" stroke="#111" stroke-width="3"/><circle cx="35" cy="34" r="4" fill="#ff4757"/>`
+            };
+            if (rareBodies[id]) return wrap(rareBodies[id]);
+            const epicBodies = {
+                epic_mini_turret: `<rect x="20" y="30" width="30" height="22" rx="5" fill="url(#${id}g)"/><path d="M35 30 L54 18" stroke="${c}" stroke-width="7"/><circle cx="35" cy="41" r="6" fill="#111"/>`,
+                epic_flame_orbiters: `<circle cx="35" cy="35" r="8" fill="#f1c40f"/><path d="M35 7 Q45 19 35 27 Q25 18 35 7Z M10 49 Q25 47 27 35 Q13 36 10 49Z M60 49 Q45 47 43 35 Q57 36 60 49Z" fill="#e17055"/>`,
+                epic_bone_cannon: `<path d="M14 39 L54 24 L58 38 L20 52 Z" fill="url(#${id}g)"/><path d="M24 18 L45 54" stroke="#f1e4c8" stroke-width="7"/><circle cx="21" cy="19" r="5" fill="#f1e4c8"/><circle cx="47" cy="53" r="5" fill="#f1e4c8"/>`,
+                epic_shadow_sneakers: `<path d="M15 46 Q28 36 42 46 L59 49 Q63 57 51 60 L18 59 Q8 54 15 46Z" fill="url(#${id}g)"/><path d="M22 38 Q34 21 48 31" stroke="#111" stroke-width="6"/><path d="M8 31 Q24 24 37 27" stroke="${c}" opacity="0.65"/>`,
+                epic_explosive_teddy: `<circle cx="35" cy="38" r="18" fill="#c08a5a"/><circle cx="22" cy="24" r="8" fill="#c08a5a"/><circle cx="48" cy="24" r="8" fill="#c08a5a"/><circle cx="35" cy="40" r="5" fill="#e74c3c"/><path d="M50 15 Q61 4 65 16" stroke="#f1c40f" stroke-width="3"/>`,
+                epic_golden_tooth: `<path d="M25 10 Q42 29 32 61 Q14 36 25 10Z" fill="url(#${id}g)"/><path d="M45 10 Q54 37 38 61 Q35 30 45 10Z" fill="url(#${id}g)"/>`,
+                epic_blood_syringe: `<path d="M16 52 L50 18" stroke="url(#${id}g)" stroke-width="9"/><path d="M48 12 L58 22 M12 48 L22 58" stroke="#dfe6e9" stroke-width="5"/>`,
+                epic_storm_jar: `<path d="M25 13 L45 13 L43 25 Q52 35 47 55 Q35 63 23 55 Q18 35 27 25Z" fill="rgba(116,185,255,0.55)"/><path d="M36 18 L28 37 L38 34 L31 55 L48 29 L38 32Z" fill="#f9ca24"/>`,
+                epic_spiked_crown: `<path d="M12 49 L18 22 L29 42 L35 16 L42 42 L53 22 L59 49 Z" fill="url(#${id}g)"/>`,
+                epic_mutant_arm: `<path d="M16 54 Q25 25 48 20 Q61 22 52 36 Q37 36 32 58Z" fill="url(#${id}g)"/><circle cx="52" cy="31" r="7" fill="#00b894"/>`,
+                epic_frost_blaster: `<rect x="14" y="29" width="37" height="16" rx="4" fill="url(#${id}g)"/><path d="M51 37 L65 29 M51 37 L66 37 M51 37 L65 45" stroke="#eaffff" stroke-width="3"/>`,
+                epic_chaos_dice: `<rect x="18" y="18" width="34" height="34" rx="5" fill="url(#${id}g)" transform="rotate(-12 35 35)"/><circle cx="29" cy="29" r="3" fill="#111"/><circle cx="41" cy="35" r="3" fill="#111"/><circle cx="31" cy="45" r="3" fill="#111"/>`,
+                epic_laser_pointer: `<rect x="14" y="30" width="40" height="12" rx="5" fill="url(#${id}g)"/><path d="M54 36 L68 36" stroke="#ff4757" stroke-width="4"/>`,
+                epic_soul_magnet: `<path d="M18 18 Q18 8 28 8 L30 8 L30 36 L23 36 L23 18 M40 8 L42 8 Q52 8 52 18 L52 36 L45 36 L45 18" fill="none" stroke="url(#${id}g)" stroke-width="8"/><circle cx="35" cy="52" r="10" fill="#a29bfe"/>`,
+                epic_boomerang_axe: `<path d="M18 57 L46 18" stroke="#8b5a2b" stroke-width="7"/><path d="M41 14 Q64 13 55 36 Q42 31 41 14Z" fill="url(#${id}g)"/>`,
+                epic_toxic_lunchbox: `<rect x="17" y="25" width="38" height="29" rx="5" fill="url(#${id}g)"/><path d="M25 25 Q35 14 45 25" stroke="#333" stroke-width="5"/><circle cx="35" cy="40" r="8" fill="#55efc4"/>`,
+                epic_panic_button: `<circle cx="35" cy="35" r="25" fill="#222"/><circle cx="35" cy="35" r="16" fill="url(#${id}g)"/><path d="M35 10 L35 2 M35 68 L35 60 M10 35 L2 35 M68 35 L60 35" stroke="#ff6b6b" stroke-width="3"/>`,
+                epic_iron_lungs: `<path d="M31 18 Q16 25 18 49 Q25 58 32 48 Z" fill="url(#${id}g)"/><path d="M39 18 Q54 25 52 49 Q45 58 38 48 Z" fill="url(#${id}g)"/><path d="M35 14 L35 39" stroke="#333" stroke-width="5"/>`,
+                epic_bullet_hive: `<path d="M20 18 L50 18 L60 35 L50 52 L20 52 L10 35 Z" fill="url(#${id}g)"/><circle cx="27" cy="31" r="4" fill="#111"/><circle cx="43" cy="31" r="4" fill="#111"/><circle cx="35" cy="44" r="4" fill="#111"/>`,
+                epic_rage_mask: `<path d="M20 16 Q35 8 50 16 L55 39 Q48 58 35 62 Q22 58 15 39 Z" fill="url(#${id}g)"/><path d="M25 34 L32 31 M45 34 L38 31" stroke="#111" stroke-width="4"/><path d="M28 47 Q35 53 43 47" stroke="#111" stroke-width="3"/>`
+            };
+            if (epicBodies[id]) return wrap(epicBodies[id]);
+            if (id && id.startsWith('legendary_')) return wrap(`<circle cx="35" cy="35" r="23" fill="url(#${id}g)"/><path d="M35 9 L42 28 L62 28 L46 40 L52 60 L35 48 L18 60 L24 40 L8 28 L28 28 Z" fill="${c}" opacity="0.86"/><circle cx="35" cy="35" r="8" fill="#111" opacity="0.55"/>`);
             if (id === 'uncommon_barbed_bat') return wrap(`<path d="M16 55 L52 13" stroke="url(#${id}g)" stroke-width="9"/><path d="M36 24 L47 13 M40 29 L54 22 M30 31 L39 43" stroke="#222" stroke-width="2"/><path d="M14 57 L22 62" stroke="#5a2d15" stroke-width="7"/>`);
             if (id === 'uncommon_nail_gun') return wrap(`<path d="M16 26 L44 18 Q51 18 52 25 L52 39 L22 42 Q16 40 16 34 Z" fill="url(#${id}g)"/><path d="M49 28 L63 28 L63 35 L49 35 Z" fill="#222"/><path d="M25 41 L25 58 L36 58 L34 41" fill="#333"/><path d="M58 22 L66 20 M58 30 L68 30 M58 38 L66 42" stroke="#dfe6e9" stroke-width="2"/>`);
             if (id === 'uncommon_hot_sauce') return wrap(`<path d="M28 11 L43 11 L42 23 Q48 29 47 53 Q38 61 25 53 Q24 29 30 23 Z" fill="#e74c3c"/><path d="M30 11 L41 11 L40 20 L31 20 Z" fill="#111"/><path d="M29 34 Q35 25 42 34 Q39 47 35 51 Q30 45 29 34 Z" fill="#ffb000"/><text x="35" y="43" text-anchor="middle" fill="#5a0808" font-size="9" font-weight="900" font-family="monospace" stroke="none">HOT</text>`);
@@ -4829,8 +4970,39 @@
             closeLevelUp();
         }
 
+        function rollDiceOfViolence() {
+            const options = [
+                { type: 'damage', label: '+18% damage', color: '#ff7675' },
+                { type: 'speed', label: '+18 speed', color: '#74b9ff' },
+                { type: 'crit', label: '+10% crit', color: '#f1c40f' }
+            ];
+            player.diceBuff = options[Math.floor(Math.random() * options.length)];
+            addFloatingText(player.x, player.y - 80, `Dice: ${player.diceBuff.label}`, player.diceBuff.color, 18);
+            createExplosion(player.x, player.y, player.diceBuff.color, 12);
+        }
+
+        function rollChaosDice() {
+            const boosts = [
+                { type: 'damage', label: '+55% damage', color: '#ff7675' },
+                { type: 'speed', label: '+45 speed', color: '#74b9ff' },
+                { type: 'crit', label: '+22% crit', color: '#f1c40f' },
+                { type: 'regen', label: '+3 regen', color: '#55efc4' }
+            ];
+            const penalties = [
+                { type: 'damage', label: '-15% damage' },
+                { type: 'speed', label: '-25 speed' },
+                { type: 'armor', label: '-2 armor' },
+                { type: 'crit', label: '-8% crit' }
+            ];
+            player.chaosBuff = boosts[Math.floor(Math.random() * boosts.length)];
+            player.chaosPenalty = penalties[Math.floor(Math.random() * penalties.length)];
+            addFloatingText(player.x, player.y - 95, `Chaos: ${player.chaosBuff.label}, ${player.chaosPenalty.label}`, player.chaosBuff.color, 16);
+            createExplosion(player.x, player.y, player.chaosBuff.color, 16);
+        }
+
         function applyCommonItem(item) {
             if (item.mode === 'passive') {
+                player.passiveItems.push({ config: item, angle: Math.random() * Math.PI * 2 });
                 if (item.speedFlat) player.speed += item.speedFlat;
                 if (item.cooldownMult) player.cooldownMult = (player.cooldownMult || 1) * item.cooldownMult;
                 if (item.damageMultBonus) player.commonDamageMult = (player.commonDamageMult || 1) * item.damageMultBonus;
@@ -4841,6 +5013,11 @@
                     if (item.hpBonus > 0) player.hp = Math.min(player.maxHp, player.hp + item.hpBonus);
                     else player.hp = Math.min(player.hp, player.maxHp);
                 }
+                if (item.hpMult) {
+                    player.maxHp = Math.max(1, Math.floor(player.maxHp * item.hpMult));
+                    player.baseHp = Math.max(1, Math.floor(player.baseHp * item.hpMult));
+                    player.hp = Math.min(player.hp, player.maxHp);
+                }
                 if (item.critChance) player.critChance += item.critChance;
                 if (item.armorFlat) player.flatArmor = (player.flatArmor || 0) + item.armorFlat;
                 if (item.regen) player.hpRegen = (player.hpRegen || 0) + item.regen;
@@ -4848,9 +5025,39 @@
                 if (item.projectilePierceBonus) player.commonProjectilePierce = (player.commonProjectilePierce || 0) + item.projectilePierceBonus;
                 if (item.contactDmg) player.contactDmg = (player.contactDmg || 0) + item.contactDmg;
                 if (item.luck) player.luck = (player.luck || 0) + item.luck;
+                if (item.poisonChance) player.poisonChance = (player.poisonChance || 0) + item.poisonChance;
+                if (item.dodgeChance) player.dodgeChance = (player.dodgeChance || 0) + item.dodgeChance;
+                if (item.spawnRateMult) player.spawnRateMult = (player.spawnRateMult || 1) * item.spawnRateMult;
+                if (item.vampireKills) player.vampireKills = Math.max(player.vampireKills || 0, item.vampireKills);
                 if (item.trashLid) player.hasTrashLid = true;
                 if (item.spikedBackpack) player.hasSpikedBackpack = true;
                 if (item.slippery) player.hasGreaseShoes = true;
+                if (item.rocketSkates) player.rocketSkates = true;
+                if (item.diceViolence) { player.diceViolence = true; rollDiceOfViolence(); }
+                if (item.chaosDice) { player.chaosDice = true; rollChaosDice(); }
+                if (item.medicalBackpack) player.hasMedicalBackpack = true;
+                if (item.bloodSyringe) player.bloodSyringe = true;
+                if (item.goldenTooth) player.goldenTooth = true;
+                if (item.spikedCrown) player.spikedCrown = true;
+                if (item.soulMagnet) player.soulMagnet = true;
+                if (item.toxicAura) player.toxicAura = true;
+                if (item.panicButton) player.panicButton = true;
+                if (item.poisonImmune) player.poisonImmune = true;
+                if (item.bulletHive) player.bulletHive = true;
+                if (item.rageMask) player.rageMask = true;
+                if (item.refundPolicy) player.refundPolicy = true;
+                if (item.crownOfTeeth) player.crownOfTeeth = true;
+                if (item.angelBattery) player.angelBattery = true;
+                if (item.lawnmower) {
+                    player.lawnmower = true;
+                    player.lawnmowerState = player.lawnmowerState || { angle: 0, x: player.x + 80, y: player.y, timer: 0 };
+                }
+                if (item.livingBackpack) player.livingBackpack = true;
+                if (item.blender) player.blender = true;
+                if (item.moonBoots) player.moonBoots = true;
+                if (item.goldenChainsaw) player.goldenChainsaw = true;
+                if (item.nukeLunchbox) { player.nukeLunchbox = true; player.nukeLunchboxTimer = 20; }
+                if (item.bloodCrown) player.bloodCrown = true;
                 createExplosion(player.x, player.y, item.color, 14);
                 addFloatingText(player.x, player.y - 55, item.name, item.color, 16);
                 closeLevelUp();
@@ -4884,6 +5091,14 @@
             e.hp -= dealt;
             e.hitTimer = 0.15;
             totalDamageDealt += dealt;
+            if ((item.bleed || item.id === 'rare_chainsaw_rake') && !e.isBoss) {
+                e.bleedTimer = Math.max(e.bleedTimer || 0, item.id === 'rare_chainsaw_rake' ? 4.0 : 3.0);
+                e.bleedDps = Math.max(e.bleedDps || 0, item.id === 'rare_chainsaw_rake' ? 13 : 8);
+            }
+            if (player.poisonChance && Math.random() < player.poisonChance && !e.isBoss) {
+                e.poisonTimer = Math.max(e.poisonTimer || 0, 3.2);
+                e.poisonDps = Math.max(e.poisonDps || 0, 6);
+            }
             const a = Math.atan2(e.y - y, e.x - x);
             e.kx += Math.cos(a) * knockback;
             e.ky += Math.sin(a) * knockback;
@@ -4907,9 +5122,42 @@
                 uncommon_angry_toaster: 980,
                 uncommon_razor_yoyo: 1050,
                 uncommon_homemade_crossbow: 1250,
-                uncommon_bug_spray: 620
+                uncommon_bug_spray: 620,
+                rare_acid_flask: 760,
+                rare_twin_pistols: 1250,
+                rare_sawblade_launcher: 980,
+                rare_homing_pebbles: 920,
+                rare_angry_drone: 1180,
+                epic_bone_cannon: 940,
+                epic_explosive_teddy: 430,
+                epic_frost_blaster: 850,
+                epic_boomerang_axe: 900,
+                epic_mini_turret_shot: 1200,
+                legendary_gods_stapler: 980,
+                legendary_angel_battery: 1100,
+                legendary_living_backpack: 980,
+                legendary_halo_of_knives: 1150
             };
             const speed = speedMap[item.id] || 900;
+            if (item.twinShot) {
+                [-0.12, 0.12].forEach(offset => {
+                    const a = angle + offset;
+                    bullets.push({
+                        x, y,
+                        vx: Math.cos(a) * speed,
+                        vy: Math.sin(a) * speed,
+                        life: 1.7,
+                        dmg: item.dmg,
+                        isCommonItem: true,
+                        commonItemId: item.id,
+                        commonColor: item.color,
+                        size: 6,
+                        knockback: item.knockback || 170,
+                        pierce: (item.pierce || 0) + (player.commonProjectilePierce || 0)
+                    });
+                });
+                return;
+            }
             const bullet = {
                 x, y,
                 vx: Math.cos(angle) * speed,
@@ -4932,14 +5180,26 @@
             if (item.firePuddle || item.burningToast) bullet.firePuddle = true;
             if (item.returning) bullet.returning = true;
             if (item.chainLightning) bullet.chainLightning = true;
+            if (item.acid) bullet.acid = true;
+            if (item.sawblade) { bullet.bounces = item.bounces || 2; bullet.size = 12; bullet.life = 2.4; }
+            if (item.homingPebble) { bullet.homingEnemy = true; bullet.size = 5; bullet.life = 2.1; }
+            if (item.boneSplit) { bullet.boneSplit = true; bullet.size = 10; bullet.life = 2.0; }
+            if (item.teddyBomb) { bullet.homingEnemy = true; bullet.teddyBomb = true; bullet.explodeOnDeath = true; bullet.size = 14; bullet.life = 2.8; }
+            if (item.frostBlast) { bullet.frostBlast = true; bullet.size = 13; bullet.life = 1.8; }
+            if (item.boomerangAxe) { bullet.returning = true; bullet.bleed = true; bullet.size = 13; bullet.life = 2.5; }
+            if (item.staplePin) { bullet.staplePin = true; bullet.size = 15; bullet.life = 2.2; }
+            if (item.angelBattery) { bullet.chainLightning = true; bullet.angelBattery = true; bullet.size = 11; bullet.life = 2.0; }
+            if (item.livingBackpack) { bullet.bounces = 2; bullet.size = 8 + Math.random()*5; bullet.life = 1.8; }
+            if (item.haloKnives) { bullet.bleed = true; bullet.size = 7; bullet.life = 1.15; }
             if (item.crossbow) { bullet.size = 9; bullet.life = 2.4; }
             bullets.push(bullet);
         }
 
         function updateCommonItems(dt, dmgMult = 1) {
-            if (player.hpRegen > 0 && player.hp < player.maxHp) {
+            if (((player.hpRegen || 0) > 0 || (player.chaosBuff && player.chaosBuff.type === 'regen')) && player.hp < player.maxHp) {
                 player.regenTick = (player.regenTick || 0) + dt;
-                const healAmt = player.hpRegen * dt;
+                const chaosRegen = player.chaosBuff && player.chaosBuff.type === 'regen' ? 3 : 0;
+                const healAmt = (player.hpRegen + chaosRegen) * dt;
                 player.hp = Math.min(player.maxHp, player.hp + healAmt);
                 if (player.regenTick >= 1) {
                     player.regenTick = 0;
@@ -4947,9 +5207,96 @@
                 }
             }
 
+            if (player.bloodSyringe && player.hp > 1) {
+                player.bloodSyringeTimer = (player.bloodSyringeTimer || 0) + dt;
+                if (player.bloodSyringeTimer >= 3.0) {
+                    player.bloodSyringeTimer = 0;
+                    player.hp = Math.max(1, player.hp - 1);
+                    addFloatingText(player.x, player.y - 48, '-1', '#d63031', 14);
+                }
+            }
+
+            if (player.toxicAura) {
+                player.toxicAuraTimer = (player.toxicAuraTimer || 0) + dt;
+                const R = 135;
+                enemies.forEach(e => {
+                    if (e.introHidden) return;
+                    const d = Math.sqrt((e.x-player.x)**2 + (e.y-player.y)**2);
+                    if (d < R + e.size && !e.isBoss) {
+                        e.poisonTimer = Math.max(e.poisonTimer || 0, 1.2);
+                        e.poisonDps = Math.max(e.poisonDps || 0, 7);
+                        if (Math.random() < 0.08) particles.push({ x:e.x+(Math.random()-0.5)*e.size, y:e.y+(Math.random()-0.5)*e.size, vx:(Math.random()-0.5)*40, vy:-25-Math.random()*30, life:0.35, color:'#55efc4', size:3 });
+                    }
+                });
+                if (player.toxicAuraTimer >= 0.18) {
+                    player.toxicAuraTimer = 0;
+                    particles.push({ x: player.x + (Math.random()-0.5)*R*1.7, y: player.y + (Math.random()-0.5)*R*1.1, vx:(Math.random()-0.5)*25, vy:-20-Math.random()*20, life:0.45, color:'#55efc4', size:2+Math.random()*3 });
+                }
+            }
+
+            if (player.panicButton) {
+                if (player.panicButtonCooldown > 0) player.panicButtonCooldown -= dt;
+                if (player.hp <= player.maxHp * 0.25 && player.panicButtonCooldown <= 0) {
+                    player.panicButtonCooldown = 22;
+                    enemies.forEach(e => {
+                        const d = Math.sqrt((e.x-player.x)**2 + (e.y-player.y)**2);
+                        if (d < 430 + e.size) damageEnemyWithCommonItem(e, { id:'epic_panic_button', color:'#ff6b6b', melee:false }, player.x, player.y, 120, 650);
+                    });
+                    triggerShake(28, 0.75);
+                    createExplosion(player.x, player.y, '#ff6b6b', 80);
+                    addFloatingText(player.x, player.y - 95, 'PANIC!', '#ff6b6b', 26);
+                }
+            }
+
+            if (player.nukeLunchbox) {
+                player.nukeLunchboxTimer = (player.nukeLunchboxTimer || 20) - dt;
+                if (player.nukeLunchboxTimer <= 0) {
+                    player.nukeLunchboxTimer = 20;
+                    const target = enemies.filter(e => !e.introHidden).sort(() => Math.random() - 0.5)[0];
+                    const nx = target ? target.x : player.x + (Math.random()-0.5)*260;
+                    const ny = target ? target.y : player.y + (Math.random()-0.5)*260;
+                    enemies.forEach(e => {
+                        const d = Math.sqrt((e.x-nx)**2 + (e.y-ny)**2);
+                        if (d < 520 + e.size) damageEnemyWithCommonItem(e, { id:'legendary_nuke_lunchbox', color:'#badc58' }, nx, ny, 210, 900);
+                    });
+                    triggerShake(36, 0.95);
+                    createExplosion(nx, ny, '#badc58', 100);
+                    addFloatingText(nx, ny - 80, 'NUKE!', '#badc58', 30);
+                }
+            }
+
+            if (player.lawnmower) {
+                const lm = player.lawnmowerState || (player.lawnmowerState = { angle:0, x:player.x+90, y:player.y, timer:0 });
+                lm.timer += dt;
+                const target = nearestEnemyFrom(lm.x, lm.y, 520);
+                const desired = target ? Math.atan2(target.y-lm.y, target.x-lm.x) : lm.angle + dt * 1.4;
+                lm.angle += Math.atan2(Math.sin(desired-lm.angle), Math.cos(desired-lm.angle)) * 0.08;
+                lm.x += Math.cos(lm.angle) * 320 * dt;
+                lm.y += Math.sin(lm.angle) * 320 * dt;
+                const leash = Math.sqrt((lm.x-player.x)**2 + (lm.y-player.y)**2);
+                if (leash > 420) { lm.x = player.x + Math.cos(lm.angle) * 110; lm.y = player.y + Math.sin(lm.angle) * 110; }
+                enemies.forEach(e => {
+                    const d = Math.sqrt((e.x-lm.x)**2 + (e.y-lm.y)**2);
+                    if (d < e.size + 32 && !e.introHidden) damageEnemyWithCommonItem(e, { id:'legendary_lawnmower', color:'#2ecc71', melee:true }, lm.x, lm.y, 24 * dt * 8, 240);
+                });
+            }
+
+            for (let ti = (player.turrets || []).length - 1; ti >= 0; ti--) {
+                const turret = player.turrets[ti];
+                turret.life -= dt;
+                turret.timer += dt;
+                if (turret.life <= 0) { player.turrets.splice(ti, 1); continue; }
+                const target = nearestEnemyFrom(turret.x, turret.y, 620);
+                if (target && turret.timer >= 0.42) {
+                    turret.timer = 0;
+                    fireCommonItemProjectile({ id:'epic_mini_turret_shot', color:'#9b59b6', dmg:turret.dmg || 10, pierce:0 }, turret.x, turret.y, target);
+                    turret.angle = Math.atan2(target.y-turret.y, target.x-turret.x);
+                }
+            }
+
             player.commonItems.forEach((ci, idx) => {
                 const item = ci.config;
-                ci.angle += dt * (item.id === 'common_bike_chain' ? 2.4 : 1.15 + idx * 0.03);
+                ci.angle += dt * (item.id === 'common_bike_chain' || item.drone || item.meatGrinder || item.haloKnives ? 2.4 : 1.15 + idx * 0.03) * (player.blender ? 2 : 1);
                 ci.timer += dt;
                 ci.attackAnim = Math.max(0, ci.attackAnim - dt * 4);
                 const ix = player.x + Math.cos(ci.angle) * ci.orbitRadius;
@@ -4957,9 +5304,163 @@
                 const target = nearestEnemyFrom(ix, iy, item.melee ? (item.range || 120) + 60 : 900);
                 ci.lookAngle = target ? Math.atan2(target.y - iy, target.x - ix) : ci.angle + Math.PI / 2;
                 const cd = (item.cooldown || 1.5) * (player.cooldownMult || 1);
+                if (item.flameOrbiters) {
+                    for (let f = 0; f < 3; f++) {
+                        const a = ci.angle * 1.9 + f * Math.PI * 2 / 3;
+                        const fx = player.x + Math.cos(a) * 92;
+                        const fy = player.y + Math.sin(a) * 92;
+                        enemies.forEach(e => {
+                            if (e.introHidden) return;
+                            const d = Math.sqrt((e.x-fx)**2 + (e.y-fy)**2);
+                            if (d < e.size + 30) {
+                                e.hp -= item.dmg * dmgMult * dt * 3;
+                                e.hitTimer = 0.06;
+                                totalDamageDealt += item.dmg * dmgMult * dt * 3;
+                            }
+                        });
+                        if (Math.random() < 0.18) particles.push({ x:fx, y:fy, vx:(Math.random()-0.5)*30, vy:-40-Math.random()*35, life:0.25, color:'#e17055', size:4 });
+                    }
+                    return;
+                }
+                if (item.dragonBreath) {
+                    const aim = target ? Math.atan2(target.y-player.y, target.x-player.x) : ci.lookAngle;
+                    enemies.forEach(e => {
+                        if (e.introHidden) return;
+                        const dx = e.x - ix, dy = e.y - iy;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        let diff = Math.atan2(dy, dx) - aim; while(diff > Math.PI) diff -= Math.PI*2; while(diff < -Math.PI) diff += Math.PI*2;
+                        if (dist < 260 + e.size && Math.abs(diff) < 0.5) {
+                            e.hp -= item.dmg * dmgMult * dt * 7;
+                            e.hitTimer = 0.06;
+                            totalDamageDealt += item.dmg * dmgMult * dt * 7;
+                        }
+                    });
+                    if (Math.random() < 0.7) particles.push({ x:ix+Math.cos(aim)*50, y:iy+Math.sin(aim)*50, vx:Math.cos(aim)*(180+Math.random()*160), vy:Math.sin(aim)*(180+Math.random()*160), life:0.25, color:Math.random()<0.5?'#ff6b35':'#f1c40f', size:5+Math.random()*5 });
+                    return;
+                }
+                if (ci.timer >= cd && item.turretDrop) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    player.turrets.push({ x: player.x + (Math.random()-0.5)*70, y: player.y + (Math.random()-0.5)*70, life: 11, timer: 0, dmg: item.dmg, angle: 0, color: item.color });
+                    createExplosion(player.x, player.y, item.color, 10);
+                    return;
+                }
+                if (ci.timer >= cd && item.trapDrop) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const backA = Math.atan2(player.dashVy || 0, player.dashVx || 1) + Math.PI;
+                    const tx = player.x + Math.cos(backA) * 36 + (Math.random()-0.5)*20;
+                    const ty = player.y + Math.sin(backA) * 36 + (Math.random()-0.5)*20;
+                    burnZones.push({ x: tx, y: ty, r: 42, life: 6.0, maxLife: 6.0, dmgTimer: 0, trap: true, trapDmg: item.dmg });
+                    createExplosion(tx, ty, item.color, 6);
+                    return;
+                }
+                if (ci.timer >= cd && item.blackHoleMarble) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const hx = target ? target.x : player.x + Math.cos(ci.angle) * 220;
+                    const hy = target ? target.y : player.y + Math.sin(ci.angle) * 220;
+                    burnZones.push({ x:hx, y:hy, r:145, life:3.2, maxLife:3.2, dmgTimer:0, blackHole:true, trapDmg:item.dmg });
+                    createExplosion(hx, hy, item.color, 18);
+                    return;
+                }
+                if (ci.timer >= cd && item.possessedRemote) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const victim = enemies.filter(e => !e.introHidden && !e.isBoss).sort(() => Math.random()-0.5)[0];
+                    if (victim) {
+                        victim.controlledTimer = 4.5;
+                        victim.color = '#8e44ad';
+                        addFloatingText(victim.x, victim.y - 35, 'POSSESSED', '#8e44ad', 14);
+                    }
+                    return;
+                }
+                if (ci.timer >= cd && item.bellRing) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    enemies.forEach(e => {
+                        const d = Math.sqrt((e.x-player.x)**2 + (e.y-player.y)**2);
+                        if (d < 340 + e.size && !e.introHidden && !e.isBoss) {
+                            e.frozenTimer = Math.max(e.frozenTimer || 0, 1.6);
+                            damageEnemyWithCommonItem(e, item, player.x, player.y, item.dmg * dmgMult, 120);
+                        }
+                    });
+                    triggerShake(8, 0.25);
+                    for (let s=0;s<24;s++){const a=s/24*Math.PI*2;particles.push({x:player.x,y:player.y,vx:Math.cos(a)*520,vy:Math.sin(a)*520,life:0.35,color:item.color,size:3});}
+                    return;
+                }
+                if (ci.timer >= cd && item.meteorMagnet) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const mt = target || enemies.filter(e=>!e.introHidden)[0];
+                    if (mt) {
+                        const mx = mt.x + (Math.random()-0.5)*90;
+                        const my = mt.y + (Math.random()-0.5)*90;
+                        enemies.forEach(e => {
+                            const d = Math.sqrt((e.x-mx)**2 + (e.y-my)**2);
+                            if (d < 150 + e.size) damageEnemyWithCommonItem(e, item, mx, my, item.dmg * dmgMult, 520);
+                        });
+                        createExplosion(mx, my, '#e17055', 38);
+                        triggerShake(10, 0.3);
+                    }
+                    return;
+                }
+                if (ci.timer >= cd && item.stormJar) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const strikeTarget = enemies.filter(e => !e.introHidden).sort(() => Math.random() - 0.5)[0];
+                    if (strikeTarget) {
+                        damageEnemyWithCommonItem(strikeTarget, item, strikeTarget.x, strikeTarget.y - 120, item.dmg * dmgMult, 180);
+                        for (let li = 0; li < 12; li++) particles.push({ x: strikeTarget.x+(Math.random()-0.5)*22, y: strikeTarget.y-140+li*12, vx:(Math.random()-0.5)*40, vy:60, life:0.18, color:'#74b9ff', size:3 });
+                    }
+                    return;
+                }
+                if (ci.timer >= cd && item.laserPointer) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const strongest = enemies.filter(e => !e.introHidden).sort((a,b) => b.hp - a.hp)[0];
+                    if (strongest) {
+                        damageEnemyWithCommonItem(strongest, item, ix, iy, item.dmg * dmgMult, 45);
+                        for (let li=0; li<9; li++) {
+                            const f=li/8;
+                            particles.push({ x:ix+(strongest.x-ix)*f, y:iy+(strongest.y-iy)*f, vx:0, vy:0, life:0.08, color:'#ff4757', size:2.5 });
+                        }
+                    }
+                    return;
+                }
+                if (ci.timer >= cd && (item.shockBurst || item.siren || item.guitarWave)) {
+                    ci.timer = 0;
+                    ci.attackAnim = 1;
+                    const R = item.guitarWave ? 300 : item.siren ? 230 : 205;
+                    enemies.forEach(e => {
+                        if (e.introHidden) return;
+                        const d = Math.sqrt((e.x - player.x)**2 + (e.y - player.y)**2);
+                        if (d < R + e.size) {
+                            const pulseDmg = (item.dmg || 16) * dmgMult * (item.guitarWave ? 1.15 : 1);
+                            damageEnemyWithCommonItem(e, item, player.x, player.y, pulseDmg, item.shockBurst ? 260 : 120);
+                            if (item.shockBurst) e.frozenTimer = Math.max(e.frozenTimer || 0, 0.18);
+                        }
+                    });
+                    const rays = item.guitarWave ? 18 : 12;
+                    for (let s = 0; s < rays; s++) {
+                        const a = (s / rays) * Math.PI * 2;
+                        particles.push({ x: player.x, y: player.y, vx: Math.cos(a) * R * 1.8, vy: Math.sin(a) * R * 1.8, life: 0.28, color: item.color, size: item.guitarWave ? 5 : 3 });
+                    }
+                    triggerShake(item.guitarWave ? 9 : 5, 0.18);
+                    return;
+                }
                 if (!target || ci.timer < cd) return;
                 ci.timer = 0;
                 ci.attackAnim = 1;
+
+                if (item.haloKnives) {
+                    fireCommonItemProjectile(item, player.x, player.y, target);
+                    for (let k=0;k<2;k++) {
+                        const a = ci.angle + k * Math.PI;
+                        bullets.push({ x:player.x+Math.cos(a)*55, y:player.y+Math.sin(a)*55, vx:Math.cos(a)*950, vy:Math.sin(a)*950, life:0.75, dmg:item.dmg*0.7*dmgMult, isCommonItem:true, commonItemId:item.id, commonColor:item.color, size:6, pierce:1 });
+                    }
+                    return;
+                }
 
                 if (item.id === 'common_broken_remote') {
                     damageEnemyWithCommonItem(target, item, ix, iy, item.dmg * dmgMult, 90);
@@ -4972,6 +5473,13 @@
 
                 if (item.melee) {
                     damageEnemyWithCommonItem(target, item, ix, iy, item.dmg * dmgMult, item.knockback || 190);
+                    if (item.wideSwing) {
+                        enemies.forEach(e => {
+                            if (e === target || e.introHidden) return;
+                            const d = Math.sqrt((e.x - ix)**2 + (e.y - iy)**2);
+                            if (d < (item.range || 140)) damageEnemyWithCommonItem(e, item, ix, iy, item.dmg * 0.62 * dmgMult, item.knockback || 220);
+                        });
+                    }
                     return;
                 }
 
@@ -5081,6 +5589,103 @@
             } else if (item.id === 'uncommon_homemade_crossbow') {
                 ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-18,0); ctx.lineTo(16,0); ctx.moveTo(0,-16); ctx.quadraticCurveTo(18,0,0,16); ctx.stroke();
                 ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-16); ctx.lineTo(0,16); ctx.stroke();
+            } else if (item.id === 'rare_chainsaw_rake') {
+                ctx.strokeStyle = '#6b3f22'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-21,16); ctx.lineTo(12,-12); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.beginPath(); ctx.roundRect(4,-20,27,15,3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 1.5; for(let k=0;k<5;k++){ctx.beginPath();ctx.moveTo(8+k*5,-20);ctx.lineTo(11+k*5,-26);ctx.stroke();}
+            } else if (item.id === 'rare_shock_collar') {
+                ctx.strokeStyle = '#74b9ff'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0,0,19,12,0,0,Math.PI*2); ctx.stroke();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(-7,-18,14,14,3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#f9ca24'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-24);ctx.lineTo(-5,-12);ctx.lineTo(4,-14);ctx.lineTo(-2,0);ctx.stroke();
+            } else if (item.id === 'rare_acid_flask') {
+                ctx.fillStyle = 'rgba(123,237,159,0.7)'; ctx.beginPath(); ctx.roundRect(-9,-18,18,31,5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#dfffe8'; ctx.fillRect(-4,-24,8,8);
+                ctx.fillStyle = '#7bed9f'; ctx.beginPath(); ctx.arc(15,11,4,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'rare_brass_knuckles') {
+                ctx.fillStyle = '#d4a017'; ctx.beginPath(); ctx.roundRect(-20,-9,40,20,8); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111'; for(let k=-12;k<=12;k+=12){ctx.beginPath();ctx.arc(k,0,5,0,Math.PI*2);ctx.fill();}
+            } else if (item.id === 'rare_twin_pistols') {
+                ctx.strokeStyle = '#4dabf7'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-20,-7);ctx.lineTo(4,-15);ctx.moveTo(-20,7);ctx.lineTo(4,15);ctx.stroke();
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-7,-3);ctx.lineTo(-12,12);ctx.moveTo(-7,3);ctx.lineTo(-12,-12);ctx.stroke();
+            } else if (item.id === 'rare_bear_trap_bag') {
+                ctx.fillStyle = '#7b5740'; ctx.beginPath(); ctx.roundRect(-13,-18,26,34,5); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#b2bec3'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-22,10);ctx.lineTo(-9,2);ctx.lineTo(4,10);ctx.lineTo(18,2);ctx.stroke();
+            } else if (item.id === 'rare_vampire_tooth' || item.id === 'rare_poison_fang') {
+                ctx.fillStyle = '#f4f4f4'; ctx.beginPath(); ctx.moveTo(-10,-21);ctx.quadraticCurveTo(0,4,-5,22);ctx.quadraticCurveTo(-20,0,-10,-21);ctx.fill();ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(10,-21);ctx.quadraticCurveTo(20,0,5,22);ctx.quadraticCurveTo(0,4,10,-21);ctx.fill();ctx.stroke();
+                ctx.fillStyle = item.id === 'rare_poison_fang' ? '#2ecc71' : '#c0392b'; ctx.beginPath(); ctx.arc(0,16,4,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'rare_rocket_skates') {
+                ctx.fillStyle = '#ff7675'; ctx.beginPath(); ctx.moveTo(-18,-2);ctx.quadraticCurveTo(-1,-16,16,-1);ctx.lineTo(24,8);ctx.lineTo(-15,10);ctx.closePath();ctx.fill();ctx.stroke();
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(-20,8);ctx.lineTo(-33,15);ctx.lineTo(-22,0);ctx.fill();
+            } else if (item.id === 'rare_dice_of_violence') {
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.roundRect(-15,-15,30,30,4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111'; [[-7,-7],[7,0],[-4,8]].forEach(([x,y])=>{ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();});
+            } else if (item.id === 'rare_cursed_coin') {
+                ctx.fillStyle = '#8e44ad'; ctx.beginPath(); ctx.arc(0,0,17,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#17051e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,1,8,0.15,Math.PI-0.15); ctx.stroke();
+            } else if (item.id === 'rare_sawblade_launcher') {
+                ctx.fillStyle = '#333'; ctx.beginPath(); ctx.roundRect(-22,-6,28,13,3); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#b2bec3'; ctx.beginPath(); for(let k=0;k<8;k++){const a=k*Math.PI/4;ctx.lineTo(18+Math.cos(a)*16,Math.sin(a)*16);} ctx.closePath(); ctx.fill(); ctx.stroke();
+            } else if (item.id === 'rare_siren_speaker') {
+                ctx.fillStyle = '#a29bfe'; ctx.beginPath(); ctx.moveTo(-20,-10);ctx.lineTo(-6,-10);ctx.lineTo(13,-22);ctx.lineTo(13,22);ctx.lineTo(-6,10);ctx.lineTo(-20,10);ctx.closePath();ctx.fill();ctx.stroke();
+                ctx.strokeStyle = '#a29bfe'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(16,0,12,-0.7,0.7);ctx.arc(16,0,21,-0.7,0.7);ctx.stroke();
+            } else if (item.id === 'rare_reinforced_hoodie') {
+                ctx.fillStyle = '#34495e'; ctx.beginPath(); ctx.moveTo(-15,-12);ctx.quadraticCurveTo(0,-28,15,-12);ctx.lineTo(13,20);ctx.lineTo(-13,20);ctx.closePath();ctx.fill();ctx.stroke();
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(-9,-12,18,15,5); ctx.fill();
+            } else if (item.id === 'rare_glass_cannon') {
+                ctx.fillStyle = 'rgba(116,242,255,0.48)'; ctx.beginPath(); ctx.moveTo(-21,8);ctx.lineTo(14,-12);ctx.lineTo(23,-1);ctx.lineTo(-12,18);ctx.closePath();ctx.fill();ctx.stroke();
+            } else if (item.id === 'rare_homing_pebbles') {
+                ctx.fillStyle = '#95a5a6'; for(let k=0;k<3;k++){ctx.beginPath();ctx.arc(-9+k*9,Math.sin(Date.now()*0.004+k)*7,5+k,0,Math.PI*2);ctx.fill();ctx.stroke();}
+                ctx.strokeStyle = '#95a5a6'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,22,0.3,2.8); ctx.stroke();
+            } else if (item.id === 'rare_crowbar') {
+                ctx.strokeStyle = '#5dade2'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-18,18);ctx.lineTo(18,-18);ctx.quadraticCurveTo(28,-27,32,-14);ctx.stroke();
+            } else if (item.id === 'rare_medical_backpack') {
+                ctx.fillStyle = '#ff6b81'; ctx.beginPath(); ctx.roundRect(-13,-18,26,36,6); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0,-8);ctx.lineTo(0,8);ctx.moveTo(-8,0);ctx.lineTo(8,0);ctx.stroke();
+            } else if (item.id === 'rare_electric_guitar') {
+                ctx.fillStyle = '#9b59b6'; ctx.beginPath(); ctx.ellipse(-6,3,19,14,-0.4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(6,-4);ctx.lineTo(27,-22);ctx.stroke();
+                ctx.strokeStyle = '#f9ca24'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-14,2);ctx.lineTo(20,-17);ctx.stroke();
+            } else if (item.id === 'rare_angry_drone') {
+                ctx.fillStyle = '#00cec9'; ctx.beginPath(); ctx.ellipse(0,0,18,11,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#333'; [-22,22].forEach(x=>{ctx.beginPath();ctx.arc(x,-8,7,0,Math.PI*2);ctx.fill();ctx.stroke();});
+                ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+            } else if (item.turretDrop || item.id === 'epic_mini_turret') {
+                ctx.fillStyle = '#555'; ctx.beginPath(); ctx.roundRect(-14,-10,28,22,4); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = c; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(4,-3); ctx.lineTo(26,-10); ctx.stroke();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(0,0,5,0,Math.PI*2); ctx.fill();
+            } else if (item.flameOrbiters) {
+                ctx.fillStyle = '#e17055'; for(let k=0;k<3;k++){const a=k*Math.PI*2/3;ctx.beginPath();ctx.arc(Math.cos(a)*15,Math.sin(a)*15,8,0,Math.PI*2);ctx.fill();ctx.stroke();}
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
+            } else if (item.boneSplit) {
+                ctx.strokeStyle = '#f1e4c8'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-20,8);ctx.lineTo(20,-8);ctx.stroke();
+                ctx.fillStyle = '#f1e4c8'; [-22,22].forEach(x=>{ctx.beginPath();ctx.arc(x,x<0?9:-9,5,0,Math.PI*2);ctx.fill();ctx.stroke();});
+            } else if (item.teddyBomb) {
+                ctx.fillStyle = '#c08a5a'; ctx.beginPath(); ctx.arc(0,2,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                [-10,10].forEach(x=>{ctx.beginPath();ctx.arc(x,-13,7,0,Math.PI*2);ctx.fill();ctx.stroke();});
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(0,4,4,0,Math.PI*2); ctx.fill();
+            } else if (item.stormJar) {
+                ctx.fillStyle = 'rgba(116,185,255,0.55)'; ctx.beginPath(); ctx.roundRect(-11,-18,22,34,5); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#f9ca24'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0,-14);ctx.lineTo(-5,0);ctx.lineTo(5,-2);ctx.lineTo(-1,14);ctx.stroke();
+            } else if (item.mutantArm) {
+                ctx.strokeStyle = '#00b894'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(-17,15);ctx.quadraticCurveTo(4,-12,24,-2);ctx.stroke();
+                ctx.fillStyle = '#00b894'; ctx.beginPath(); ctx.arc(27,-1,8,0,Math.PI*2); ctx.fill(); ctx.stroke();
+            } else if (item.frostBlast) {
+                ctx.fillStyle = '#74f2ff'; ctx.beginPath(); ctx.roundRect(-18,-9,34,18,4); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#eaffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(15,0);ctx.lineTo(28,-8);ctx.moveTo(15,0);ctx.lineTo(30,0);ctx.moveTo(15,0);ctx.lineTo(28,8);ctx.stroke();
+            } else if (item.laserPointer) {
+                ctx.strokeStyle = '#ff4757'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(-18,0);ctx.lineTo(18,0);ctx.stroke();
+                ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(-20,-7,28,14,4); ctx.fill(); ctx.stroke();
+            } else if (item.boomerangAxe) {
+                ctx.strokeStyle = '#8b5a2b'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(-15,16);ctx.lineTo(12,-14);ctx.stroke();
+                ctx.fillStyle = '#b2bec3'; ctx.beginPath(); ctx.moveTo(8,-18);ctx.quadraticCurveTo(30,-16,22,5);ctx.quadraticCurveTo(9,-2,8,-18);ctx.fill();ctx.stroke();
+            } else if (item.id && item.id.startsWith('epic_')) {
+                ctx.fillStyle = c; ctx.beginPath(); ctx.roundRect(-14,-14,28,28,5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-5,-5,5,0,Math.PI*2); ctx.fill();
+            } else if (item.id && item.id.startsWith('legendary_')) {
+                ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-18,0);ctx.lineTo(18,0);ctx.moveTo(0,-18);ctx.lineTo(0,18);ctx.stroke();
             } else {
                 ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,12,0,Math.PI*2); ctx.fill(); ctx.stroke();
             }
@@ -5230,6 +5835,11 @@
         function takeDamage(amount) {
             if (rkIntro.active) return;  // invulnerable during RK cinematic
             if (player.armorState.isVoid) return;
+            if (player.dodgeChance && Math.random() < player.dodgeChance) {
+                addFloatingText(player.x, player.y - 52, 'DODGE', '#6c5ce7', 16);
+                createExplosion(player.x, player.y, '#6c5ce7', 5);
+                return;
+            }
             if (player.armor && player.armor.shield && player.armorState.shieldHits > 0) {
                 player.armorState.shieldHits--;
                 createExplosion(player.x, player.y, '#9b59b6', 10);
@@ -5239,7 +5849,8 @@
             // Dealer's Deck defense: 30% reduction
             const dealerDefenseBonus = (player.dealersDeck && player.dealersDeckBuff === 'spade') ? 0 : 0; // spade is damage, not defense
             let reduction = player.armor ? (player.armor.dr || 0) : 0;
-            reduction = Math.min(0.75, reduction + (player.flatArmor || 0) * 0.02);
+            const chaosArmorPenalty = player.chaosPenalty && player.chaosPenalty.type === 'armor' ? -2 : 0;
+            reduction = Math.min(0.75, reduction + ((player.flatArmor || 0) + chaosArmorPenalty) * 0.02);
             let finalDmg = amount * (1 - reduction);
             // Housebreaker Charm: fatal damage protection
             if (player.housebreakerCharm && player.housebreakerFatalCD <= 0 && player.hp - finalDmg <= 0) {
@@ -5254,6 +5865,13 @@
                 return;
             }
             player.hp -= finalDmg;
+            if (player.refundPolicy) {
+                enemies.forEach(e => {
+                    const d = Math.sqrt((e.x-player.x)**2 + (e.y-player.y)**2);
+                    if (d < 360 + e.size && !e.introHidden) damageEnemyWithCommonItem(e, { id:'legendary_refund_policy', color:'#00cec9' }, player.x, player.y, finalDmg * 1.75, 260);
+                });
+                createExplosion(player.x, player.y, '#00cec9', 12);
+            }
             triggerShake(10, 0.25);
             if (player.armor && player.armor.shock) {
                 enemies.forEach(e => {
@@ -5422,7 +6040,24 @@
                     player.x += player.dashVx * deltaTime;
                     player.y += player.dashVy * deltaTime;
                     if (Math.random() < 0.6) particles.push({ x: player.x + (Math.random()-0.5)*20, y: player.y + (Math.random()-0.5)*20, vx: -player.dashVx*0.05 + (Math.random()-0.5)*60, vy: -player.dashVy*0.05 + (Math.random()-0.5)*60, life: 0.25+Math.random()*0.15, color: '#bdc3c7', size: Math.random()*5+2 });
+                    if (player.rocketSkates) {
+                        player.rocketSkateTrailTimer = (player.rocketSkateTrailTimer || 0) - deltaTime;
+                        if (player.rocketSkateTrailTimer <= 0) {
+                            player.rocketSkateTrailTimer = 0.08;
+                            burnZones.push({ x: player.x, y: player.y, life: 1.8, maxLife: 1.8, r: 34, dmgTimer: 0 });
+                            particles.push({ x: player.x, y: player.y + 18, vx: -player.dashVx*0.04, vy: -player.dashVy*0.04, life: 0.35, color: '#ff7675', size: 7 });
+                        }
+                    }
                 } else {
+                    if (player.moonBoots && !player.moonBootShockReady) {
+                        player.moonBootShockReady = true;
+                        enemies.forEach(e => {
+                            const d = Math.sqrt((e.x-player.x)**2 + (e.y-player.y)**2);
+                            if (d < 280 + e.size) damageEnemyWithCommonItem(e, { id:'legendary_moon_boots', color:'#a29bfe' }, player.x, player.y, 46, 520);
+                        });
+                        triggerShake(10, 0.28);
+                        createExplosion(player.x, player.y, '#a29bfe', 26);
+                    }
                     player.isDashing = false;
                 }
             }
@@ -5534,6 +6169,15 @@
             let cooldownMultiplier = 1;
             if (player.commonDamageMult) damageMultiplier *= player.commonDamageMult;
             if (player.cooldownMult) cooldownMultiplier *= player.cooldownMult;
+            if (player.diceBuff && player.diceBuff.type === 'damage') damageMultiplier *= 1.18;
+            if (player.spikedCrownStacks) damageMultiplier *= (1 + player.spikedCrownStacks * 0.20);
+            if (player.bloodCrownStacks) damageMultiplier *= (1 + Math.min(1.5, player.bloodCrownStacks * 0.035));
+            if (player.chaosBuff && player.chaosBuff.type === 'damage') damageMultiplier *= 1.55;
+            if (player.chaosPenalty && player.chaosPenalty.type === 'damage') damageMultiplier *= 0.85;
+            if (player.rageMask) {
+                const missingHp = 1 - Math.max(0, player.hp / player.maxHp);
+                cooldownMultiplier *= Math.max(0.45, 1 - missingHp * 0.55);
+            }
 
             if (player.armor) {
                 if (player.armor.shield) {
@@ -5585,6 +6229,9 @@
             }
             let moveSpeed = player.speed;
             if (player.armor && player.armor.speedMod) moveSpeed *= player.armor.speedMod;
+            if (player.diceBuff && player.diceBuff.type === 'speed') moveSpeed += 18;
+            if (player.chaosBuff && player.chaosBuff.type === 'speed') moveSpeed += 45;
+            if (player.chaosPenalty && player.chaosPenalty.type === 'speed') moveSpeed -= 25;
             // Sum speed bonuses from weapon traits (Lightframe, Compact)
             floatingGuns.forEach(g => { if (g.config.traitSpeedBonus) moveSpeed *= (1 + g.config.traitSpeedBonus); });
             if (dx !== 0 || dy !== 0) { const length = Math.sqrt(dx * dx + dy * dy); player.x += (dx / length) * moveSpeed * deltaTime; player.y += (dy / length) * moveSpeed * deltaTime; player.isMoving = true; } else player.isMoving = false;
@@ -5763,6 +6410,26 @@
                     totalDamageDealt += bleedDmg;
                     if (Math.random() < 0.12) particles.push({ x:e.x+(Math.random()-0.5)*e.size, y:e.y+(Math.random()-0.5)*e.size, vx:(Math.random()-0.5)*40, vy:-25-Math.random()*25, life:0.28, color:'#b03020', size:2+Math.random()*3 });
                 }
+                if (e.poisonTimer > 0) {
+                    e.poisonTimer -= deltaTime;
+                    const poisonDmg = (e.poisonDps || 0) * deltaTime;
+                    e.hp -= poisonDmg;
+                    totalDamageDealt += poisonDmg;
+                    if (Math.random() < 0.14) particles.push({ x:e.x+(Math.random()-0.5)*e.size, y:e.y+(Math.random()-0.5)*e.size, vx:(Math.random()-0.5)*35, vy:-20-Math.random()*35, life:0.32, color:'#2ecc71', size:2+Math.random()*3 });
+                }
+                if (e.controlledTimer > 0) {
+                    e.controlledTimer -= deltaTime;
+                    const foe = enemies.find(en => en !== e && !en.introHidden);
+                    if (foe) {
+                        const ca = Math.atan2(foe.y-e.y, foe.x-e.x);
+                        e.x += Math.cos(ca) * e.speed * 1.25 * deltaTime;
+                        e.y += Math.sin(ca) * e.speed * 1.25 * deltaTime;
+                        if (Math.sqrt((foe.x-e.x)**2+(foe.y-e.y)**2) < foe.size + e.size + 20) {
+                            foe.hp -= 26 * deltaTime;
+                            foe.hitTimer = 0.1;
+                        }
+                    }
+                }
                 if (player.contactDmg && distToPlayer < e.size + 32 && !e.introHidden) {
                     const thornDmg = player.contactDmg * deltaTime;
                     e.hp -= thornDmg;
@@ -5846,7 +6513,54 @@
                         triggerShake(3, 0.15);
                     }
                     killCount++;
+                    const isEliteKill = e.isBoss || e.slotFiend || e.type === 'shielder' || e.type === 'tank';
+                    if (player.spikedCrown && isEliteKill) {
+                        player.spikedCrownStacks = (player.spikedCrownStacks || 0) + 1;
+                        addFloatingText(player.x, player.y - 72, `CROWN +${player.spikedCrownStacks}`, '#fdcb6e', 18);
+                        createExplosion(player.x, player.y, '#fdcb6e', 12);
+                    }
+                    if (player.bloodCrown) {
+                        player.bloodCrownStacks = (player.bloodCrownStacks || 0) + 1;
+                        if (player.bloodCrownStacks % 5 === 0) addFloatingText(player.x, player.y - 82, `BLOOD +${player.bloodCrownStacks}`, '#e84393', 18);
+                    }
+                    if (player.vampireKills) {
+                        player.vampireKillCounter = (player.vampireKillCounter || 0) + 1;
+                        if (player.vampireKillCounter >= player.vampireKills) {
+                            player.vampireKillCounter = 0;
+                            player.hp = Math.min(player.maxHp, player.hp + 1);
+                            addFloatingText(player.x, player.y - 46, '+1 HP', '#c0392b', 16);
+                            particles.push({ x: player.x, y: player.y - 28, vx: 0, vy: -45, life: 0.6, color: '#c0392b', size: 4 });
+                        }
+                    }
                     const deadX = e.x, deadY = e.y; // must be before lucky7 check
+                    if (player.crownOfTeeth) {
+                        const pd = Math.sqrt((player.x-deadX)**2 + (player.y-deadY)**2);
+                        if (pd < 260) {
+                            for (let sh=0; sh<10; sh++) {
+                                const a = sh / 10 * Math.PI * 2;
+                                bullets.push({ x:deadX, y:deadY, vx:Math.cos(a)*760, vy:Math.sin(a)*760, life:0.45, dmg:8, isCommonItem:true, commonItemId:'legendary_tooth_shard', commonColor:'#f8efba', size:4, pierce:0 });
+                            }
+                            createExplosion(deadX, deadY, '#f8efba', 16);
+                        }
+                    }
+                    if (player.goldenChainsaw) {
+                        const pd = Math.sqrt((player.x-deadX)**2 + (player.y-deadY)**2);
+                        if (pd < 220) {
+                            xpGems.push({ x: deadX - 20, y: deadY + 12, val: Math.max(50, Math.floor((e.xpVal || 60) * 0.55)), color: '#f1c40f', size: 15, animTimer: Math.random()*10 });
+                            addFloatingText(deadX, deadY - 48, 'CHAINSAW BONUS', '#f1c40f', 14);
+                        }
+                    }
+                    if (player.angelBattery && e._angelHit) {
+                        player.hp = Math.min(player.maxHp, player.hp + 4);
+                        addFloatingText(player.x, player.y - 48, '+4 HP', '#fff3b0', 16);
+                    }
+                    if (player.goldenTooth && isEliteKill) {
+                        xpGems.push({ x: deadX + 24, y: deadY - 12, val: Math.max(80, Math.floor((e.xpVal || 60) * 0.75)), color: '#f1c40f', size: 16, animTimer: Math.random()*10 });
+                        addFloatingText(deadX, deadY - 34, 'GOLD TOOTH', '#f1c40f', 15);
+                    }
+                    if (player.soulMagnet && Math.random() < 0.18) {
+                        xpGems.push({ x: deadX - 24, y: deadY - 8, val: 0, heal: 3, color: '#a29bfe', size: 14, animTimer: Math.random()*10 });
+                    }
                     // Lucky 7 SMG: 7% chance for bonus XP on kill
                     if (player.lucky7SMG && Math.random() < 0.07) {
                         xpGems.push({ x: deadX + (Math.random()-0.5)*40, y: deadY + (Math.random()-0.5)*40, val: 100, color: '#f1c40f', size: 18, animTimer: Math.random()*10 });
@@ -5877,7 +6591,13 @@
                     const attractSpeed = hasCollectorTrail ? 1300 : 950;
                     const angle = Math.atan2(player.y - gem.y, player.x - gem.x); gem.x += Math.cos(angle) * attractSpeed * deltaTime; gem.y += Math.sin(angle) * attractSpeed * deltaTime;
                     if (dist < 40) { 
-                        player.xp += gem.val; 
+                        if (gem.heal) {
+                            player.hp = Math.min(player.maxHp, player.hp + gem.heal);
+                            addFloatingText(player.x, player.y - 38, `+${gem.heal} HP`, '#a29bfe', 15);
+                            createExplosion(player.x, player.y, '#a29bfe', 5);
+                        } else {
+                            player.xp += gem.val; 
+                        }
                         if (hasCollectorTrail) {
                             player.collectorXpProgress += gem.val;
                             if (player.collectorXpProgress >= 50) {
@@ -5936,11 +6656,27 @@
                     bz.dmgTimer = 0;
                     enemies.forEach(e => {
                         const d = Math.sqrt((e.x - bz.x)**2 + (e.y - bz.y)**2);
-                        if (d < bz.r + e.size) { e.hp -= bz.poison ? 3 : 4; e.hitTimer = 0.05; if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r, y: bz.y+(Math.random()-0.5)*bz.r, vx:(Math.random()-0.5)*40, vy:-30-Math.random()*40, life:0.3+Math.random()*0.2, color:bz.poison ? '#55efc4' : '#e17055', size:Math.random()*5+2 }); }
+                        if (d < bz.r + e.size) {
+                            const zoneDmg = bz.trap ? (bz.trapDmg || 32) : bz.acid ? 6 : bz.poison ? 3 : 4;
+                            e.hp -= zoneDmg;
+                            e.hitTimer = 0.05;
+                            if (bz.blackHole) {
+                                const pull = Math.atan2(bz.y-e.y, bz.x-e.x);
+                                e.kx += Math.cos(pull) * 220;
+                                e.ky += Math.sin(pull) * 220;
+                            }
+                            if (bz.trap && !e.isBoss) {
+                                e.frozenTimer = Math.max(e.frozenTimer || 0, 0.7);
+                                bz.life = 0;
+                                createExplosion(bz.x, bz.y, '#8d6e63', 14);
+                            }
+                            if (bz.acid && e.shieldHP) e.shieldHP = Math.max(0, e.shieldHP - 18);
+                            if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r, y: bz.y+(Math.random()-0.5)*bz.r, vx:(Math.random()-0.5)*40, vy:-30-Math.random()*40, life:0.3+Math.random()*0.2, color:bz.trap ? '#8d6e63' : bz.poison ? '#55efc4' : '#e17055', size:Math.random()*5+2 });
+                        }
                     });
                 }
                 // Ember rising particles
-                if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: bz.poison ? (Math.random()<0.5?'#55efc4':'#2ecc71') : (Math.random()<0.5?'#e17055':'#f9ca24'), size:Math.random()*3+1 });
+                if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: bz.trap ? '#8d6e63' : bz.poison ? (Math.random()<0.5?'#55efc4':'#2ecc71') : (Math.random()<0.5?'#e17055':'#f9ca24'), size:Math.random()*3+1 });
                 if (bz.life <= 0) burnZones.splice(i, 1);
             }
 
@@ -6676,7 +7412,9 @@
             const dealerMult = (player.dealersDeck && player.dealersDeckBuff === 'spade') ? 1.4 : 1;
             // Dealer's Deck: diamond = +25% crit chance
             const dealerCritBonus = (player.dealersDeck && player.dealersDeckBuff === 'diamond') ? 0.25 : 0;
-            let isCrit = Math.random() < player.critChance + dealerCritBonus;
+            const diceCritBonus = (player.diceBuff && player.diceBuff.type === 'crit') ? 0.10 : 0;
+            const chaosCritBonus = player.chaosBuff && player.chaosBuff.type === 'crit' ? 0.22 : player.chaosPenalty && player.chaosPenalty.type === 'crit' ? -0.08 : 0;
+            let isCrit = Math.random() < player.critChance + dealerCritBonus + diceCritBonus + chaosCritBonus;
             // Housebreaker Charm: guaranteed crit + chain lightning
             if (player.housebreakerCharm && player.housebreakerNextReady && player.housebreakerCritQueued) {
                 isCrit = true;
@@ -6692,6 +7430,20 @@
             let finalDmg = isCrit ? dmg * player.critMultiplier * dealerMult : dmg * dealerMult;
             if (player.commonProjectilePierce) config.pierce = (config.pierce || 0) + player.commonProjectilePierce;
             bullets.push({ x, y, vx, vy, life, dmg: finalDmg, isCrit, ...config });
+            if (player.bulletHive && !config.hiveShard && Math.random() < 0.22) {
+                const baseA = Math.atan2(vy, vx);
+                const spd = Math.sqrt(vx*vx + vy*vy) * 0.85;
+                [-0.34, 0.34].forEach(off => bullets.push({
+                    x, y,
+                    vx: Math.cos(baseA + off) * spd,
+                    vy: Math.sin(baseA + off) * spd,
+                    life: Math.min(life, 0.9),
+                    dmg: finalDmg * 0.35,
+                    isCrit: false,
+                    hiveShard: true,
+                    size: 4
+                }));
+            }
         }
 
         function triggerGlobalEcho(dmgMult = 1) {
@@ -6810,6 +7562,17 @@
                         b.vx = Math.cos(newA)*spd; b.vy = Math.sin(newA)*spd;
                     }
                 }
+                if (isPlayer && b.homingEnemy) {
+                    const target = nearestEnemyFrom(b.x, b.y, 520);
+                    if (target) {
+                        const ha = Math.atan2(target.y-b.y, target.x-b.x);
+                        const curA = Math.atan2(b.vy, b.vx);
+                        let diff = ha - curA; while(diff > Math.PI) diff -= Math.PI*2; while(diff < -Math.PI) diff += Math.PI*2;
+                        const spd = Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+                        const newA = curA + Math.min(0.12, Math.abs(diff)) * Math.sign(diff);
+                        b.vx = Math.cos(newA)*spd; b.vy = Math.sin(newA)*spd;
+                    }
+                }
                 // Cards just fly and spin — standard movement
                 if (!isPlayer && b.isCard) b.cardAngle += (b.spinSpeed || 6) * dt;
                 b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
@@ -6848,6 +7611,11 @@
                                 e.frozenTimer = Math.max(e.frozenTimer || 0, 0.5);
                                 createExplosion(b.x, b.y, '#d8c07a', 7);
                             }
+                            if (player.poisonChance && Math.random() < player.poisonChance && !e.isBoss) {
+                                e.poisonTimer = Math.max(e.poisonTimer || 0, 3.2);
+                                e.poisonDps = Math.max(e.poisonDps || 0, 6);
+                                createExplosion(b.x, b.y, '#2ecc71', 5);
+                            }
                             if (b.shatter) {
                                 for (let sh = 0; sh < 7; sh++) {
                                     const sa = (sh / 7) * Math.PI * 2 + Math.random() * 0.25;
@@ -6881,8 +7649,35 @@
                                     }
                                 });
                                 triggerShake(5, 0.15);
-                                createExplosion(b.x, b.y, '#e74c3c', 20);
+                                createExplosion(b.x, b.y, b.teddyBomb ? '#c08a5a' : '#e74c3c', b.teddyBomb ? 26 : 20);
                             }
+                            if (b.boneSplit) {
+                                for (let sp = -1; sp <= 1; sp++) {
+                                    const sa = Math.atan2(b.vy, b.vx) + sp * 0.55;
+                                    bullets.push({
+                                        x: b.x, y: b.y,
+                                        vx: Math.cos(sa) * 680,
+                                        vy: Math.sin(sa) * 680,
+                                        life: 0.8,
+                                        dmg: Math.max(5, b.dmg * 0.42),
+                                        isCommonItem: true,
+                                        commonItemId: 'epic_bone_shard',
+                                        commonColor: '#f1e4c8',
+                                        size: 5,
+                                        pierce: 0
+                                    });
+                                }
+                                createExplosion(b.x, b.y, '#f1e4c8', 10);
+                            }
+                            if (b.frostBlast && !e.isBoss) {
+                                e.frozenTimer = Math.max(e.frozenTimer || 0, 1.5);
+                                createExplosion(b.x, b.y, '#74f2ff', 10);
+                            }
+                            if (b.staplePin && !e.isBoss) {
+                                e.frozenTimer = Math.max(e.frozenTimer || 0, 2.0);
+                                createExplosion(b.x, b.y, '#ffeaa7', 8);
+                            }
+                            if (b.angelBattery) e._angelHit = true;
                             if (b.bleed && !e.isBoss) {
                                 e.bleedTimer = Math.max(e.bleedTimer || 0, 3.0);
                                 e.bleedDps = Math.max(e.bleedDps || 0, 8);
@@ -6891,6 +7686,13 @@
                             if (b.poisonCloud) {
                                 burnZones.push({ x: b.x, y: b.y, life: 2.2, maxLife: 2.2, r: 54, dmgTimer: 0, poison: true });
                                 createExplosion(b.x, b.y, '#55efc4', 12);
+                            }
+                            if (b.acid) {
+                                burnZones.push({ x: b.x, y: b.y, life: 3.4, maxLife: 3.4, r: 58, dmgTimer: 0, poison: true, acid: true });
+                                if (e.shieldHP) e.shieldHP = Math.max(0, e.shieldHP - 45);
+                                e.poisonTimer = Math.max(e.poisonTimer || 0, 4.0);
+                                e.poisonDps = Math.max(e.poisonDps || 0, 9);
+                                createExplosion(b.x, b.y, '#7bed9f', 16);
                             }
                             if (b.firePuddle) {
                                 burnZones.push({ x: b.x, y: b.y, life: 2.6, maxLife: 2.6, r: 48, dmgTimer: 0 });
@@ -11343,6 +12145,18 @@
                         ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10,0); ctx.lineTo(16,0); ctx.stroke();
                     } else if (b.commonItemId === 'uncommon_bug_spray') {
                         for (let pi=0; pi<7; pi++) { ctx.fillStyle = `rgba(85,239,196,${0.22+pi*0.06})`; ctx.beginPath(); ctx.arc((Math.random()-0.5)*22, (Math.random()-0.5)*14, 3+Math.random()*3, 0, Math.PI*2); ctx.fill(); }
+                    } else if (b.commonItemId === 'rare_acid_flask') {
+                        ctx.fillStyle = 'rgba(123,237,159,0.68)'; ctx.beginPath(); ctx.roundRect(-7,-12,14,22,4); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#dfffe8'; ctx.fillRect(-3,-16,6,5);
+                    } else if (b.commonItemId === 'rare_twin_pistols' || b.commonItemId === 'rare_angry_drone') {
+                        ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(0,0,10,4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6,0,2,0,Math.PI*2); ctx.fill();
+                    } else if (b.commonItemId === 'rare_sawblade_launcher') {
+                        ctx.fillStyle = '#b2bec3'; ctx.beginPath(); for(let k=0;k<10;k++){const a=k*Math.PI/5;ctx.lineTo(Math.cos(a)*(k%2?8:13),Math.sin(a)*(k%2?8:13));} ctx.closePath(); ctx.fill(); ctx.stroke();
+                        ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+                    } else if (b.commonItemId === 'rare_homing_pebbles') {
+                        ctx.fillStyle = '#95a5a6'; ctx.beginPath(); ctx.arc(0,0,5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                        ctx.strokeStyle = '#dfe6e9'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0,0,9,0.5,3.6); ctx.stroke();
                     } else if (b.commonItemId === 'common_plastic_straw') {
                         ctx.strokeStyle = '#e9eef2'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(11, 0); ctx.stroke();
                         ctx.strokeStyle = '#0a0906'; ctx.lineWidth = 1; ctx.stroke();
@@ -11384,9 +12198,13 @@
             burnZones.forEach(bz => {
                 const alpha = (bz.life / bz.maxLife) * 0.55;
                 const grd = ctx.createRadialGradient(bz.x, bz.y, 0, bz.x, bz.y, bz.r * 1.5);
-                if (bz.poison) {
-                    grd.addColorStop(0, `rgba(85, 239, 196, ${alpha + 0.08})`);
-                    grd.addColorStop(0.5, `rgba(46, 204, 113, ${alpha * 0.55})`);
+                if (bz.trap) {
+                    grd.addColorStop(0, `rgba(141, 110, 99, ${alpha + 0.08})`);
+                    grd.addColorStop(0.5, `rgba(70, 48, 35, ${alpha * 0.55})`);
+                    grd.addColorStop(1, 'rgba(141, 110, 99, 0)');
+                } else if (bz.poison) {
+                    grd.addColorStop(0, bz.acid ? `rgba(190, 255, 120, ${alpha + 0.12})` : `rgba(85, 239, 196, ${alpha + 0.08})`);
+                    grd.addColorStop(0.5, bz.acid ? `rgba(123, 237, 159, ${alpha * 0.65})` : `rgba(46, 204, 113, ${alpha * 0.55})`);
                     grd.addColorStop(1, 'rgba(85, 239, 196, 0)');
                 } else {
                     grd.addColorStop(0, `rgba(225, 112, 85, ${alpha + 0.1})`);
@@ -11398,9 +12216,22 @@
                 ctx.fillStyle = grd;
                 ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 1.5, 0, Math.PI * 2); ctx.fill();
                 ctx.restore();
-                ctx.strokeStyle = bz.poison ? `rgba(85, 239, 196, ${alpha * 0.7})` : `rgba(241, 196, 15, ${alpha * 0.7})`;
+                ctx.strokeStyle = bz.trap ? `rgba(178, 190, 195, ${alpha * 0.9})` : bz.poison ? `rgba(85, 239, 196, ${alpha * 0.7})` : `rgba(241, 196, 15, ${alpha * 0.7})`;
                 ctx.lineWidth = 2;
                 ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r, 0, Math.PI * 2); ctx.stroke();
+                if (bz.trap) {
+                    ctx.strokeStyle = `rgba(220, 220, 220, ${alpha})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    for (let k = 0; k < 10; k++) {
+                        const a = (k / 10) * Math.PI * 2;
+                        const r1 = bz.r * 0.45;
+                        const r2 = bz.r * 0.82;
+                        ctx.moveTo(bz.x + Math.cos(a) * r1, bz.y + Math.sin(a) * r1);
+                        ctx.lineTo(bz.x + Math.cos(a) * r2, bz.y + Math.sin(a) * r2);
+                    }
+                    ctx.stroke();
+                }
             });
             // Enemy bullets — boss orbs glow with rich texture, regular bullets stay plain
             enemyBullets.forEach(b => {
@@ -11781,6 +12612,43 @@
                 ctx.restore();
             });
 
+            (player.turrets || []).forEach(turret => {
+                ctx.save();
+                ctx.translate(turret.x, turret.y);
+                ctx.shadowColor = turret.color || '#9b59b6';
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = '#28242f';
+                ctx.strokeStyle = '#0a0906';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(-16, -12, 32, 24, 5); ctx.fill(); ctx.stroke();
+                ctx.rotate(turret.angle || 0);
+                ctx.strokeStyle = turret.color || '#9b59b6';
+                ctx.lineWidth = 7;
+                ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(30, 0); ctx.stroke();
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            });
+
+            if (player.lawnmower && player.lawnmowerState) {
+                const lm = player.lawnmowerState;
+                ctx.save();
+                ctx.translate(lm.x, lm.y);
+                ctx.rotate(lm.angle || 0);
+                ctx.shadowColor = '#2ecc71';
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = '#2ecc71';
+                ctx.strokeStyle = '#0a0906';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.roundRect(-22, -14, 44, 28, 5); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111';
+                ctx.beginPath(); ctx.arc(-12, 14, 5, 0, Math.PI*2); ctx.arc(12, 14, 5, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#dfe6e9';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(20, 0); ctx.moveTo(5, -10); ctx.lineTo(5, 10); ctx.stroke();
+                ctx.restore();
+            }
+
             player.commonItems.forEach((ci) => {
                 const ix = player.x + Math.cos(ci.angle) * ci.orbitRadius;
                 const iy = player.y + Math.sin(ci.angle) * ci.orbitRadius;
@@ -11797,6 +12665,24 @@
                 drawCommonItemWorld(ctx, ci.config, ci.attackAnim);
                 ctx.restore();
             });
+
+            if (player.passiveItems && player.passiveItems.length) {
+                const t = Date.now() * 0.001;
+                player.passiveItems.forEach((pi, idx) => {
+                    const total = player.passiveItems.length;
+                    const ring = 58 + Math.floor(idx / 8) * 20;
+                    const a = t * 0.45 + (idx % 8) / Math.min(8, total) * Math.PI * 2;
+                    const px = player.x + Math.cos(a) * ring;
+                    const py = player.y + Math.sin(a) * ring;
+                    ctx.save();
+                    ctx.globalAlpha = 0.82;
+                    ctx.translate(px, py);
+                    ctx.rotate(Math.sin(t + idx) * 0.18);
+                    ctx.scale(0.48, 0.48);
+                    drawCommonItemWorld(ctx, pi.config, 0);
+                    ctx.restore();
+                });
+            }
 
             // ── Lucky 7 SMG orbit ring ────────────────────────────────────────
             const _l7 = floatingGuns.find(g => g.isLucky7);
@@ -12972,11 +13858,20 @@
             return 60;
         }
 
+        function getArsenalEntries() {
+            const weapons = floatingGuns.map((gun, weaponIndex) => ({ kind: 'weapon', weaponIndex, config: gun.config, ref: gun }));
+            const activeItems = (player.commonItems || []).map((ci, itemIndex) => ({ kind: 'item', itemIndex, config: ci.config, ref: ci }));
+            const passiveItems = (player.passiveItems || []).map((pi, itemIndex) => ({ kind: 'item', itemIndex, config: pi.config, ref: pi }));
+            return [...weapons, ...activeItems, ...passiveItems];
+        }
+
         function buildInventorySlots() {
             invGrid.innerHTML = '';
-            const count = floatingGuns.length;
+            const entries = getArsenalEntries();
+            const count = entries.length;
+            const slotTotal = Math.max(MAX_INVENTORY, count);
 
-            for (let i = 0; i < MAX_INVENTORY; i++) {
+            for (let i = 0; i < slotTotal; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'inv-slot';
 
@@ -12986,7 +13881,9 @@
                 slot.appendChild(numLabel);
 
                 if (i < count) {
-                    const gun = floatingGuns[i];
+                    const entry = entries[i];
+                    const gun = entry.ref;
+                    const config = entry.config;
                     slot.classList.add('has-item');
                     const rInfo = getRarityInfo(gun);
                     const rarityColor = rInfo.color;
@@ -13007,7 +13904,7 @@
                     // Icon
                     const iconWrap = document.createElement('div');
                     iconWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6));';
-                    iconWrap.innerHTML = getWeaponIconSVG(gun, 48);
+                    iconWrap.innerHTML = entry.kind === 'item' ? getCommonItemSVG(config.id, config.color).replace('width="70" height="70"', 'width="48" height="48"') : getWeaponIconSVG(gun, 48);
                     slot.appendChild(iconWrap);
 
                     // Rarity corner strip (top-left accent)
@@ -13025,7 +13922,7 @@
                     const tooltip = document.createElement('div');
                     tooltip.className = 'inv-tooltip';
 
-                    const stats = gun.config.stats || {};
+                    const stats = config.stats || {};
                     let statsHtml = '';
                     for (const [key, val] of Object.entries(stats)) {
                         statsHtml += `
@@ -13047,25 +13944,27 @@
                                 <span style="font-size:9px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:${rarityColor};">${rInfo.label}</span>
                                 <span style="font-size:10px;color:${rarityColor};letter-spacing:1px;">${stars}</span>
                             </div>
-                            <div style="font-size:14px;font-weight:900;color:#fff;margin-top:2px;">${gun.config.name}</div>
-                            <div style="font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:1px;">${gun.config.type?.toUpperCase()}</div>
+                            <div style="font-size:14px;font-weight:900;color:#fff;margin-top:2px;">${config.name}</div>
+                            <div style="font-size:9px;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:1px;">${entry.kind === 'item' ? `${(config.tier || 'common').toUpperCase()} ${config.mode === 'passive' ? 'PASSIVE' : 'ITEM'}` : config.type?.toUpperCase()}</div>
                         </div>
                         ${statsHtml}
-                        <div class="inv-tip-effect">${gun.config.effect || ''}</div>
-                        <button class="inv-sell-btn" data-index="${i}" style="--sell-color:${rarityColor};">
+                        <div class="inv-tip-effect">${config.effect || ''}</div>
+                        ${entry.kind === 'weapon' ? `<button class="inv-sell-btn" data-index="${entry.weaponIndex}" style="--sell-color:${rarityColor};">
                             <span class="sell-label">SELL</span>
                             <span class="sell-xp" style="color:${rarityColor};">+${sellXP} <span style="opacity:0.6;font-size:9px;">XP</span></span>
-                        </button>
+                        </button>` : `<div class="inv-tip-effect" style="margin-top:8px;color:${rarityColor};">Item card active in your build</div>`}
                     `;
 
                     slot.appendChild(tooltip);
 
                     const sellBtn = tooltip.querySelector('.inv-sell-btn');
-                    sellBtn.addEventListener('click', (ev) => {
-                        ev.stopPropagation();
-                        const idx = parseInt(sellBtn.getAttribute('data-index'));
-                        sellWeapon(idx);
-                    });
+                    if (sellBtn) {
+                        sellBtn.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            const idx = parseInt(sellBtn.getAttribute('data-index'));
+                            sellWeapon(idx);
+                        });
+                    }
 
                 } else {
                     // Empty slot
