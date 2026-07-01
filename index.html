@@ -3728,7 +3728,29 @@
                 epic_rage_mask: `<path d="M20 16 Q35 8 50 16 L55 39 Q48 58 35 62 Q22 58 15 39 Z" fill="url(#${id}g)"/><path d="M25 34 L32 31 M45 34 L38 31" stroke="#111" stroke-width="4"/><path d="M28 47 Q35 53 43 47" stroke="#111" stroke-width="3"/>`
             };
             if (epicBodies[id]) return wrap(epicBodies[id]);
-            if (id && id.startsWith('legendary_')) return wrap(`<circle cx="35" cy="35" r="23" fill="url(#${id}g)"/><path d="M35 9 L42 28 L62 28 L46 40 L52 60 L35 48 L18 60 L24 40 L8 28 L28 28 Z" fill="${c}" opacity="0.86"/><circle cx="35" cy="35" r="8" fill="#111" opacity="0.55"/>`);
+            const legendaryBodies = {
+                legendary_meat_grinder: `<circle cx="35" cy="35" r="27" fill="url(#${id}g)"/><circle cx="35" cy="35" r="7" fill="#111"/><path d="M35 8 L43 30 L65 35 L43 40 L35 62 L27 40 L5 35 L27 30 Z" fill="#dfe6e9" opacity="0.88"/>`,
+                legendary_gods_stapler: `<path d="M13 39 Q24 19 53 18 Q61 26 54 38 L25 50 Q15 52 13 39Z" fill="url(#${id}g)"/><path d="M23 47 L55 35 L57 45 L28 57Z" fill="#333"/><path d="M47 28 L64 24" stroke="#ffeaa7" stroke-width="5"/>`,
+                legendary_dragon_breath: `<rect x="22" y="16" width="22" height="43" rx="7" fill="url(#${id}g)"/><path d="M43 26 L61 18 L56 35 L67 34 L49 48" fill="#ff6b35"/><path d="M28 16 L42 16" stroke="#333" stroke-width="4"/>`,
+                legendary_refund_policy: `<path d="M17 15 L53 15 L53 58 L17 58 Z" fill="url(#${id}g)"/><path d="M24 26 L46 26 M24 35 L43 35 M24 44 L38 44" stroke="#062" stroke-width="3"/><path d="M48 50 Q35 62 22 50" fill="none" stroke="#fff" stroke-width="4"/>`,
+                legendary_crown_of_teeth: `<path d="M11 49 L18 24 L27 43 L35 16 L43 43 L52 24 L59 49 Z" fill="url(#${id}g)"/><path d="M20 50 L25 62 L30 50 M34 50 L39 64 L44 50" fill="#f8efba"/>`,
+                legendary_black_hole_marble: `<circle cx="35" cy="35" r="27" fill="#020006"/><circle cx="35" cy="35" r="22" fill="none" stroke="${c}" stroke-width="4" stroke-dasharray="12 7"/><circle cx="35" cy="35" r="10" fill="#000"/><path d="M12 39 Q35 15 58 31 Q39 30 26 53" fill="none" stroke="#fff" opacity="0.4" stroke-width="2"/>`,
+                legendary_angel_battery: `<rect x="20" y="18" width="31" height="38" rx="5" fill="url(#${id}g)"/><path d="M28 13 L28 21 M43 13 L43 21" stroke="#fff" stroke-width="5"/><path d="M35 22 L27 39 L38 36 L31 55 L48 30 L38 33Z" fill="#f1c40f"/><path d="M17 26 Q8 35 17 45 M53 26 Q62 35 53 45" fill="#fff3b0"/>`,
+                legendary_lawnmower: `<rect x="13" y="29" width="43" height="24" rx="5" fill="url(#${id}g)"/><circle cx="24" cy="56" r="6" fill="#111"/><circle cx="47" cy="56" r="6" fill="#111"/><path d="M31 18 L56 5" stroke="#555" stroke-width="5"/><path d="M24 41 L47 41 M35 31 L35 51" stroke="#dfe6e9" stroke-width="3"/>`,
+                legendary_living_backpack: `<rect x="23" y="14" width="29" height="44" rx="8" fill="url(#${id}g)"/><path d="M26 15 Q35 5 47 15" stroke="#3a1e10" stroke-width="5"/><circle cx="32" cy="35" r="4" fill="#111"/><circle cx="45" cy="35" r="4" fill="#111"/><path d="M30 48 Q38 54 47 48" stroke="#111" stroke-width="3"/>`,
+                legendary_infinite_soda: `<rect x="24" y="10" width="24" height="51" rx="6" fill="url(#${id}g)"/><path d="M28 20 L44 20 L44 49 L28 49Z" fill="#111" opacity="0.4"/><path d="M31 36 Q36 25 42 36 Q39 48 35 52 Q31 47 31 36Z" fill="#fff"/><text x="36" y="42" text-anchor="middle" font-size="10" fill="#74b9ff" stroke="none" font-weight="900">∞</text>`,
+                legendary_devil_contract: `<path d="M17 14 L53 14 L50 58 L20 58Z" fill="url(#${id}g)"/><path d="M24 29 L46 29 M24 38 L43 38" stroke="#2a0000" stroke-width="3"/><path d="M24 14 L15 2 M46 14 L55 2" stroke="#c0392b" stroke-width="5"/>`,
+                legendary_blender: `<path d="M21 18 L49 18 L44 58 L26 58Z" fill="url(#${id}g)"/><circle cx="35" cy="38" r="12" fill="#111"/><path d="M35 26 L41 38 L35 50 L29 38Z" fill="#dfe6e9"/><rect x="25" y="10" width="20" height="9" rx="3" fill="#333"/>`,
+                legendary_moon_boots: `<path d="M15 43 Q32 33 45 45 L61 48 Q64 58 51 61 L18 60 Q7 54 15 43Z" fill="url(#${id}g)"/><path d="M23 38 Q34 17 49 29" stroke="#1d1640" stroke-width="7"/><circle cx="50" cy="21" r="5" fill="#fff"/>`,
+                legendary_halo_of_knives: `<circle cx="35" cy="35" r="24" fill="none" stroke="url(#${id}g)" stroke-width="4"/><path d="M35 5 L40 23 L35 31 L30 23Z M35 65 L40 47 L35 39 L30 47Z M5 35 L23 30 L31 35 L23 40Z M65 35 L47 30 L39 35 L47 40Z" fill="#f5f6fa"/>`,
+                legendary_golden_chainsaw: `<path d="M15 42 L46 22 L58 34 L28 54Z" fill="url(#${id}g)"/><path d="M28 28 L54 18 L61 27 L35 39Z" fill="#333"/><path d="M33 25 L37 19 M40 25 L45 19 M48 27 L54 23" stroke="#f1c40f" stroke-width="3"/>`,
+                legendary_nuke_lunchbox: `<rect x="15" y="25" width="41" height="29" rx="5" fill="url(#${id}g)"/><path d="M24 25 Q35 12 47 25" stroke="#333" stroke-width="5"/><circle cx="35" cy="40" r="10" fill="#111"/><path d="M35 30 L35 50 M25 40 L45 40 M28 33 L42 47 M42 33 L28 47" stroke="#badc58" stroke-width="2"/>`,
+                legendary_possessed_remote: `<rect x="24" y="10" width="24" height="50" rx="6" fill="url(#${id}g)"/><circle cx="36" cy="24" r="6" fill="#111"/><path d="M31 42 Q36 48 41 42" stroke="#111" stroke-width="3"/><path d="M48 10 L62 1 M51 18 L66 15" stroke="#8e44ad" stroke-width="3"/>`,
+                legendary_bell: `<path d="M22 28 Q24 12 35 12 Q46 12 48 28 L55 52 L15 52Z" fill="url(#${id}g)"/><circle cx="35" cy="55" r="6" fill="#5a3b00"/><path d="M15 31 Q6 38 14 46 M55 31 Q64 38 56 46" stroke="#fdcb6e" stroke-width="3"/>`,
+                legendary_meteor_magnet: `<path d="M17 16 Q17 8 27 8 L30 8 L30 38 L23 38 L23 17 M40 8 L43 8 Q53 8 53 16 L53 38 L46 38 L46 17" fill="none" stroke="url(#${id}g)" stroke-width="8"/><path d="M17 58 Q36 28 57 52 Q42 48 33 63" fill="#e17055"/>`,
+                legendary_blood_crown: `<path d="M12 49 L18 22 L29 42 L35 15 L42 42 L53 22 L59 49Z" fill="url(#${id}g)"/><path d="M23 50 Q35 62 47 50" fill="#e84393"/><circle cx="35" cy="33" r="5" fill="#2a0010"/>`
+            };
+            if (legendaryBodies[id]) return wrap(legendaryBodies[id]);
             if (id === 'uncommon_barbed_bat') return wrap(`<path d="M16 55 L52 13" stroke="url(#${id}g)" stroke-width="9"/><path d="M36 24 L47 13 M40 29 L54 22 M30 31 L39 43" stroke="#222" stroke-width="2"/><path d="M14 57 L22 62" stroke="#5a2d15" stroke-width="7"/>`);
             if (id === 'uncommon_nail_gun') return wrap(`<path d="M16 26 L44 18 Q51 18 52 25 L52 39 L22 42 Q16 40 16 34 Z" fill="url(#${id}g)"/><path d="M49 28 L63 28 L63 35 L49 35 Z" fill="#222"/><path d="M25 41 L25 58 L36 58 L34 41" fill="#333"/><path d="M58 22 L66 20 M58 30 L68 30 M58 38 L66 42" stroke="#dfe6e9" stroke-width="2"/>`);
             if (id === 'uncommon_hot_sauce') return wrap(`<path d="M28 11 L43 11 L42 23 Q48 29 47 53 Q38 61 25 53 Q24 29 30 23 Z" fill="#e74c3c"/><path d="M30 11 L41 11 L40 20 L31 20 Z" fill="#111"/><path d="M29 34 Q35 25 42 34 Q39 47 35 51 Q30 45 29 34 Z" fill="#ffb000"/><text x="35" y="43" text-anchor="middle" fill="#5a0808" font-size="9" font-weight="900" font-family="monospace" stroke="none">HOT</text>`);
@@ -5000,7 +5022,58 @@
             createExplosion(player.x, player.y, player.chaosBuff.color, 16);
         }
 
+        function getCommonItemVisualScale(item) {
+            if (!item) return 1;
+            const specific = {
+                common_sock: 0.62,
+                common_lucky_penny: 0.58,
+                common_pocket_sand: 0.72,
+                rare_cursed_coin: 0.7,
+                rare_vampire_tooth: 0.76,
+                legendary_black_hole_marble: 0.72,
+                legendary_meat_grinder: 1.9,
+                legendary_lawnmower: 1.65,
+                legendary_golden_chainsaw: 1.55,
+                legendary_dragon_breath: 1.45,
+                legendary_gods_stapler: 1.42,
+                legendary_bell: 1.38,
+                legendary_nuke_lunchbox: 1.32,
+                legendary_halo_of_knives: 1.2
+            };
+            if (specific[item.id]) return specific[item.id];
+            const tierScale = { common: 0.86, uncommon: 1.0, rare: 1.12, epic: 1.24, legendary: 1.38 };
+            return tierScale[item.tier || 'common'] || 1;
+        }
+
+        function getCommonItemOrbitRadius(index, item) {
+            const base = item && item.tier === 'legendary' ? 110 : item && item.tier === 'epic' ? 98 : item && item.tier === 'rare' ? 90 : 82;
+            const spacing = item && item.tier === 'legendary' ? 22 : item && item.tier === 'epic' ? 18 : 14;
+            const specific = {
+                legendary_black_hole_marble: 66,
+                legendary_meat_grinder: 138,
+                legendary_lawnmower: 128,
+                legendary_halo_of_knives: 92,
+                legendary_bell: 116,
+                legendary_nuke_lunchbox: 74,
+                rare_homing_pebbles: 72,
+                common_lucky_penny: 62
+            };
+            return specific[item && item.id] || (base + index * spacing);
+        }
+
+        function activateItemFlags(item) {
+            if (!item) return;
+            if (item.angelBattery) player.angelBattery = true;
+            if (item.lawnmower) {
+                player.lawnmower = true;
+                player.lawnmowerState = player.lawnmowerState || { angle: 0, x: player.x + 90, y: player.y, timer: 0 };
+            }
+            if (item.livingBackpack) player.livingBackpack = true;
+            if (item.goldenChainsaw) player.goldenChainsaw = true;
+        }
+
         function applyCommonItem(item) {
+            activateItemFlags(item);
             if (item.mode === 'passive') {
                 player.passiveItems.push({ config: item, angle: Math.random() * Math.PI * 2 });
                 if (item.speedFlat) player.speed += item.speedFlat;
@@ -5067,7 +5140,7 @@
             player.commonItems.push({
                 config: item,
                 angle: Math.random() * Math.PI * 2,
-                orbitRadius: 82 + player.commonItems.length * 14,
+                orbitRadius: getCommonItemOrbitRadius(player.commonItems.length, item),
                 timer: Math.random() * (item.cooldown || 1),
                 attackAnim: 0,
                 lookAngle: 0
@@ -5360,8 +5433,15 @@
                     ci.attackAnim = 1;
                     const hx = target ? target.x : player.x + Math.cos(ci.angle) * 220;
                     const hy = target ? target.y : player.y + Math.sin(ci.angle) * 220;
-                    burnZones.push({ x:hx, y:hy, r:145, life:3.2, maxLife:3.2, dmgTimer:0, blackHole:true, trapDmg:item.dmg });
-                    createExplosion(hx, hy, item.color, 18);
+                    burnZones.push({ x:hx, y:hy, r:185, life:4.3, maxLife:4.3, dmgTimer:0, blackHole:true, trapDmg:item.dmg });
+                    triggerShake(14, 0.45);
+                    addFloatingText(hx, hy - 65, 'GRAVITY WELL', item.color, 20);
+                    createExplosion(hx, hy, item.color, 34);
+                    for (let wh = 0; wh < 36; wh++) {
+                        const a = Math.random() * Math.PI * 2;
+                        const d = 170 + Math.random() * 140;
+                        particles.push({ x:hx+Math.cos(a)*d, y:hy+Math.sin(a)*d, vx:-Math.cos(a)*(160+Math.random()*260), vy:-Math.sin(a)*(160+Math.random()*260), life:0.45+Math.random()*0.35, color:Math.random()<0.6?'#6c5ce7':'#05020a', size:3+Math.random()*6 });
+                    }
                     return;
                 }
                 if (ci.timer >= cd && item.possessedRemote) {
@@ -5682,6 +5762,43 @@
             } else if (item.id && item.id.startsWith('epic_')) {
                 ctx.fillStyle = c; ctx.beginPath(); ctx.roundRect(-14,-14,28,28,5); ctx.fill(); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.arc(-5,-5,5,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'legendary_black_hole_marble') {
+                const t = Date.now() * 0.006;
+                ctx.fillStyle = '#010006'; ctx.beginPath(); ctx.arc(0,0,15,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#6c5ce7'; ctx.lineWidth = 3; ctx.setLineDash([8,5]); ctx.lineDashOffset = -t * 12;
+                ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0,0,29,12,t,0,Math.PI*2); ctx.stroke();
+            } else if (item.id === 'legendary_meat_grinder') {
+                ctx.fillStyle = '#3a3a3a'; ctx.beginPath(); ctx.arc(0,0,24,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#dfe6e9'; ctx.beginPath();
+                for(let k=0;k<12;k++){const a=k*Math.PI/6; const rr=k%2?14:28; if(k===0)ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); else ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0,7,0,Math.PI*2); ctx.fill();
+            } else if (item.id === 'legendary_gods_stapler') {
+                ctx.fillStyle = '#ffeaa7'; ctx.beginPath(); ctx.roundRect(-22,-9,38,18,7); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.beginPath(); ctx.roundRect(-15,4,33,10,3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(13,-4);ctx.lineTo(30,-9);ctx.stroke();
+            } else if (item.id === 'legendary_dragon_breath') {
+                ctx.fillStyle = '#5a2b12'; ctx.beginPath(); ctx.roundRect(-10,-21,20,39,6); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#ff6b35'; ctx.beginPath(); ctx.moveTo(8,-13);ctx.quadraticCurveTo(34,-28,28,2);ctx.quadraticCurveTo(20,-9,8,4);ctx.fill();ctx.stroke();
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.moveTo(11,-6);ctx.quadraticCurveTo(25,-15,24,1);ctx.quadraticCurveTo(18,-4,11,7);ctx.fill();
+            } else if (item.id === 'legendary_bell') {
+                ctx.fillStyle = '#fdcb6e'; ctx.beginPath(); ctx.moveTo(-20,16);ctx.quadraticCurveTo(-12,-18,0,-20);ctx.quadraticCurveTo(12,-18,20,16);ctx.closePath();ctx.fill();ctx.stroke();
+                ctx.fillStyle = '#5a3b00'; ctx.beginPath(); ctx.arc(0,20,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#fdcb6e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0,0,31,-0.45,0.45);ctx.arc(0,0,39,-0.45,0.45);ctx.stroke();
+            } else if (item.id === 'legendary_golden_chainsaw') {
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.roundRect(-20,-9,38,18,4); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#333'; ctx.beginPath(); ctx.roundRect(2,-15,27,18,3); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#ffeaa7'; ctx.lineWidth = 2; for(let k=0;k<5;k++){ctx.beginPath();ctx.moveTo(6+k*5,-15);ctx.lineTo(9+k*5,-22);ctx.stroke();}
+            } else if (item.id === 'legendary_nuke_lunchbox') {
+                ctx.fillStyle = '#badc58'; ctx.beginPath(); ctx.roundRect(-19,-13,38,27,5); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0,-13,13,Math.PI,0); ctx.stroke();
+                ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,2,10,0,Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#badc58'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,-8);ctx.lineTo(0,12);ctx.moveTo(-10,2);ctx.lineTo(10,2);ctx.stroke();
+            } else if (item.id === 'legendary_living_backpack') {
+                ctx.fillStyle = '#7a3f21'; ctx.beginPath(); ctx.roundRect(-14,-20,28,39,7); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#111'; [-6,7].forEach(x=>{ctx.beginPath();ctx.arc(x,-3,4,0,Math.PI*2);ctx.fill();});
+                ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(1,8,8,0.1,Math.PI-0.1);ctx.stroke();
             } else if (item.id && item.id.startsWith('legendary_')) {
                 ctx.fillStyle = c; ctx.beginPath(); ctx.arc(0,0,18,0,Math.PI*2); ctx.fill(); ctx.stroke();
                 ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
@@ -6652,19 +6769,48 @@
                 const bz = burnZones[i];
                 bz.life -= deltaTime;
                 bz.dmgTimer += deltaTime;
+                if (bz.blackHole) {
+                    bz.spin = (bz.spin || 0) + deltaTime * 5.5;
+                    enemies.forEach(e => {
+                        if (e.introHidden) return;
+                        const dx = bz.x - e.x;
+                        const dy = bz.y - e.y;
+                        const d = Math.max(18, Math.sqrt(dx*dx + dy*dy));
+                        if (d < bz.r * 2.15 + e.size) {
+                            const pull = Math.atan2(dy, dx);
+                            const gravity = (1 - Math.min(1, d / (bz.r * 2.15))) * 1650;
+                            e.kx += Math.cos(pull) * gravity * deltaTime;
+                            e.ky += Math.sin(pull) * gravity * deltaTime;
+                            e.frozenTimer = Math.max(e.frozenTimer || 0, 0.05);
+                            if (d < bz.r * 0.42 + e.size) {
+                                e.hp -= 34 * deltaTime;
+                                e.hitTimer = 0.08;
+                                totalDamageDealt += 34 * deltaTime;
+                            }
+                        }
+                    });
+                    if (Math.random() < 0.5) {
+                        const a = Math.random() * Math.PI * 2;
+                        const dist = bz.r * (1.0 + Math.random() * 1.1);
+                        particles.push({
+                            x: bz.x + Math.cos(a) * dist,
+                            y: bz.y + Math.sin(a) * dist,
+                            vx: -Math.cos(a) * (90 + Math.random()*170),
+                            vy: -Math.sin(a) * (90 + Math.random()*170),
+                            life: 0.35 + Math.random()*0.25,
+                            color: Math.random() < 0.55 ? '#6c5ce7' : '#08030f',
+                            size: 2 + Math.random()*5
+                        });
+                    }
+                }
                 if (bz.dmgTimer >= 0.3) {
                     bz.dmgTimer = 0;
                     enemies.forEach(e => {
                         const d = Math.sqrt((e.x - bz.x)**2 + (e.y - bz.y)**2);
                         if (d < bz.r + e.size) {
-                            const zoneDmg = bz.trap ? (bz.trapDmg || 32) : bz.acid ? 6 : bz.poison ? 3 : 4;
+                            const zoneDmg = bz.blackHole ? 8 : bz.trap ? (bz.trapDmg || 32) : bz.acid ? 6 : bz.poison ? 3 : 4;
                             e.hp -= zoneDmg;
                             e.hitTimer = 0.05;
-                            if (bz.blackHole) {
-                                const pull = Math.atan2(bz.y-e.y, bz.x-e.x);
-                                e.kx += Math.cos(pull) * 220;
-                                e.ky += Math.sin(pull) * 220;
-                            }
                             if (bz.trap && !e.isBoss) {
                                 e.frozenTimer = Math.max(e.frozenTimer || 0, 0.7);
                                 bz.life = 0;
@@ -6676,7 +6822,7 @@
                     });
                 }
                 // Ember rising particles
-                if (Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: bz.trap ? '#8d6e63' : bz.poison ? (Math.random()<0.5?'#55efc4':'#2ecc71') : (Math.random()<0.5?'#e17055':'#f9ca24'), size:Math.random()*3+1 });
+                if (!bz.blackHole && Math.random() < 0.3) particles.push({ x: bz.x+(Math.random()-0.5)*bz.r*1.4, y: bz.y+(Math.random()-0.5)*bz.r*0.8, vx:(Math.random()-0.5)*20, vy:-25-Math.random()*30, life:0.4+Math.random()*0.3, color: bz.trap ? '#8d6e63' : bz.poison ? (Math.random()<0.5?'#55efc4':'#2ecc71') : (Math.random()<0.5?'#e17055':'#f9ca24'), size:Math.random()*3+1 });
                 if (bz.life <= 0) burnZones.splice(i, 1);
             }
 
@@ -12197,6 +12343,40 @@
             // Pulsefire burn zones
             burnZones.forEach(bz => {
                 const alpha = (bz.life / bz.maxLife) * 0.55;
+                if (bz.blackHole) {
+                    const t = Date.now() * 0.001;
+                    const pulse = 0.5 + 0.5 * Math.sin(t * 5 + (bz.spin || 0));
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'multiply';
+                    const dark = ctx.createRadialGradient(bz.x, bz.y, 0, bz.x, bz.y, bz.r * 2.35);
+                    dark.addColorStop(0, `rgba(0,0,0,${0.92 * alpha + 0.22})`);
+                    dark.addColorStop(0.42, `rgba(8,0,18,${0.7 * alpha})`);
+                    dark.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = dark;
+                    ctx.beginPath(); ctx.arc(bz.x, bz.y, bz.r * 2.35, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'screen';
+                    ctx.translate(bz.x, bz.y);
+                    ctx.rotate((bz.spin || 0) + t * 1.5);
+                    for (let ring = 0; ring < 4; ring++) {
+                        ctx.strokeStyle = ring % 2 ? `rgba(108,92,231,${alpha * 1.2})` : `rgba(255,255,255,${alpha * 0.42})`;
+                        ctx.lineWidth = 2.5 - ring * 0.35;
+                        ctx.setLineDash([10 + ring * 4, 11]);
+                        ctx.lineDashOffset = -t * 50 * (ring + 1);
+                        ctx.beginPath();
+                        ctx.ellipse(0, 0, bz.r * (0.55 + ring * 0.28 + pulse * 0.04), bz.r * (0.34 + ring * 0.18), ring * 0.55, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = '#020006';
+                    ctx.shadowColor = '#6c5ce7';
+                    ctx.shadowBlur = 28;
+                    ctx.beginPath(); ctx.arc(0, 0, bz.r * (0.32 + pulse * 0.04), 0, Math.PI * 2); ctx.fill();
+                    ctx.restore();
+                    return;
+                }
                 const grd = ctx.createRadialGradient(bz.x, bz.y, 0, bz.x, bz.y, bz.r * 1.5);
                 if (bz.trap) {
                     grd.addColorStop(0, `rgba(141, 110, 99, ${alpha + 0.08})`);
@@ -12662,6 +12842,7 @@
                 ctx.translate(ix, iy);
                 ctx.rotate(ci.lookAngle || ci.angle);
                 if (ci.attackAnim > 0) ctx.translate(18 * ci.attackAnim, 0);
+                ctx.scale(getCommonItemVisualScale(ci.config), getCommonItemVisualScale(ci.config));
                 drawCommonItemWorld(ctx, ci.config, ci.attackAnim);
                 ctx.restore();
             });
@@ -12678,7 +12859,8 @@
                     ctx.globalAlpha = 0.82;
                     ctx.translate(px, py);
                     ctx.rotate(Math.sin(t + idx) * 0.18);
-                    ctx.scale(0.48, 0.48);
+                    const charmScale = 0.42 * getCommonItemVisualScale(pi.config);
+                    ctx.scale(charmScale, charmScale);
                     drawCommonItemWorld(ctx, pi.config, 0);
                     ctx.restore();
                 });
