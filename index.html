@@ -513,6 +513,8 @@ const player = {
     dashCooldown: 0,
     dashDx: 0,
     dashDy: 0,
+    moveDx: 0,
+    moveDy: 0,
     
     hp: 100,
     maxHp: 100,
@@ -554,7 +556,7 @@ const enemies = [];
 const particles = [];
 const ashParticles = [];
 const floatingTexts = [];
-const droppedItems = [];
+const BOSS_WAVES = new Set([5, 9]);
 
 let camX = 0;
 let camY = 0;
@@ -648,11 +650,11 @@ canvas.addEventListener('touchmove', e => {
             const dx = touch.clientX - touchState.aim.startX;
             const dy = touch.clientY - touchState.aim.startY;
             const dist = Math.hypot(dx, dy);
-            const deadzone = 18;
+            const deadzone = 30;
             if (dist > deadzone) {
                 const targetDx = dx / dist;
                 const targetDy = dy / dist;
-                const smoothing = 0.22;
+                const smoothing = 0.12;
                 touchState.aim.dx += (targetDx - touchState.aim.dx) * smoothing;
                 touchState.aim.dy += (targetDy - touchState.aim.dy) * smoothing;
                 const aimLen = Math.hypot(touchState.aim.dx, touchState.aim.dy);
@@ -688,17 +690,22 @@ canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
 function getTouchRollDirection() {
+    const inputLen = Math.hypot(player.moveDx, player.moveDy);
+    if (inputLen > 0.1) {
+        return { dx: player.moveDx / inputLen, dy: player.moveDy / inputLen };
+    }
+
     const moveLen = Math.hypot(touchState.move.nx, touchState.move.ny);
     if (touchState.move.active && moveLen > 0.1) {
         return { dx: touchState.move.nx / moveLen, dy: touchState.move.ny / moveLen };
     }
 
     const velocityLen = Math.hypot(player.vx, player.vy);
-    if (velocityLen > 30) {
+    if (velocityLen > 60) {
         return { dx: player.vx / velocityLen, dy: player.vy / velocityLen };
     }
 
-    return { dx: touchState.aim.dx, dy: touchState.aim.dy };
+    return { dx: 0, dy: 0 };
 }
 
 function startRoll(dx, dy) {
@@ -888,14 +895,16 @@ function drawEnemy(ctx, e) {
     ctx.save();
     ctx.translate(e.x, e.y);
 
+    const bossScale = e.isBoss ? 2.2 : 1;
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    let shadowRadius = e.type === 'toad' ? 10 : (e.type === 'ashRat' ? 8 : 6);
+    let shadowRadius = (e.type === 'toad' ? 10 : (e.type === 'ashRat' ? 8 : 6)) * bossScale;
     let shadowScale = Math.max(0.3, 1 - ((e.z || 0) / 80));
-    ctx.ellipse(0, e.type === 'toad' ? 6 : 4, shadowRadius * shadowScale, (shadowRadius/2) * shadowScale, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, e.type === 'toad' ? 6 * bossScale : 4 * bossScale, shadowRadius * shadowScale, (shadowRadius/2) * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (e.z) ctx.translate(0, -e.z);
+    if (e.isBoss) ctx.scale(bossScale, bossScale);
 
     if (e.type === 'toad') {
         let flipX = player.x < e.x; 
@@ -985,7 +994,7 @@ function drawUI(ctx, time, dt) {
         ctx.shadowOffsetY = 6;
         let scale = 1 + (Math.max(0, 0.2 - progress) * 2);
         ctx.scale(scale, scale);
-        ctx.fillText(`WAVE ${gameState.wave}!`, 0, 0);
+        ctx.fillText(BOSS_WAVES.has(gameState.wave) ? `BOSS WAVE ${gameState.wave}!` : `WAVE ${gameState.wave}!`, 0, 0);
         ctx.restore();
     }
 
@@ -1066,13 +1075,18 @@ function drawUI(ctx, time, dt) {
     ctx.restore();
 }
 
-function spawnEnemy() {
+function getEnemySpawnPoint() {
     let ex, ey;
     let edge = Math.floor(Math.random() * 4);
     if (edge === 0) { ex = (Math.random() - 0.5) * logicalWidth; ey = -logicalHeight / 2 - 50; }
     else if (edge === 1) { ex = (Math.random() - 0.5) * logicalWidth; ey = logicalHeight / 2 + 50; } 
     else if (edge === 2) { ex = -logicalWidth / 2 - 50; ey = (Math.random() - 0.5) * logicalHeight; } 
-    else { ex = logicalWidth / 2 + 50; ey = (Math.random() - 0.5) * logicalHeight; } 
+    else { ex = logicalWidth / 2 + 50; ey = (Math.random() - 0.5) * logicalHeight; }
+    return { ex, ey };
+}
+
+function spawnEnemy() {
+    const { ex, ey } = getEnemySpawnPoint();
 
     // Create a weighted pool based on what is left to spawn this wave
     let available = [];
@@ -1099,6 +1113,32 @@ function spawnEnemy() {
     }
 }
 
+function spawnBoss() {
+    const { ex, ey } = getEnemySpawnPoint();
+    enemies.push({type: 'toad', isBoss: true, x: ex, y: ey, z: 0, hp: 1800, speed: 0, wobble: Math.random() * Math.PI * 2, state: 'wait', timer: 0.7, vx: 0, vy: 0});
+}
+
+function setupWave(wave) {
+    gameState.wave = wave;
+    gameState.waveDisplayTimer = 3.0;
+
+    if (BOSS_WAVES.has(wave)) {
+        gameState.waveTimer = 0;
+        gameState.bugsToSpawn = 0;
+        gameState.toadsToSpawn = 0;
+        gameState.ratsToSpawn = 0;
+        gameState.enemiesToSpawn = 0;
+        spawnBoss();
+        return;
+    }
+
+    gameState.waveTimer = 30.0;
+    gameState.bugsToSpawn = 30 + Math.min(wave - 1, 2) * 15;
+    gameState.toadsToSpawn = wave >= 3 ? 2 : 0;
+    gameState.ratsToSpawn = wave >= 7 ? (Math.random() < 0.7 ? 1 : 2) : 0;
+    gameState.enemiesToSpawn = gameState.bugsToSpawn + gameState.toadsToSpawn + gameState.ratsToSpawn;
+}
+
 // --- MAIN LOOP ---
 let lastTime = performance.now();
 
@@ -1114,36 +1154,28 @@ function gameLoop(currentTime) {
 
     if (gameState.currentScene === 'battle') {
         gameState.waveDisplayTimer -= dt;
-        gameState.waveTimer -= dt;
 
-        if (gameState.enemiesToSpawn > 0) {
-            const spawnChance = (gameState.enemiesToSpawn / Math.max(0.1, gameState.waveTimer)) * dt;
-            if (Math.random() < spawnChance || gameState.waveTimer <= 0) {
-                gameState.enemiesToSpawn--;
-                spawnEnemy();
+        if (BOSS_WAVES.has(gameState.wave)) {
+            if (enemies.length === 0) {
+                setupWave(gameState.wave + 1);
             }
-        }
+        } else {
+            gameState.waveTimer -= dt;
 
-        if (gameState.waveTimer <= 0) {
-            gameState.wave++;
-            gameState.waveTimer = 30.0;
-            gameState.waveDisplayTimer = 3.0;
-            
-            // Bug cap at wave 3 (Wave 1: 30, Wave 2: 45, Wave 3+: 60)
-            gameState.bugsToSpawn = 30 + Math.min(gameState.wave - 1, 2) * 15;
-            
-            // Toads capped at 2 per wave, starting wave 3
-            gameState.toadsToSpawn = gameState.wave >= 3 ? 2 : 0;
-            
-            // Rats start wave 7: 70% chance of 1, 30% chance of 2
-            if (gameState.wave >= 7) {
-                gameState.ratsToSpawn = Math.random() < 0.7 ? 1 : 2;
-            } else {
-                gameState.ratsToSpawn = 0;
+            if (gameState.enemiesToSpawn > 0) {
+                const spawnChance = (gameState.enemiesToSpawn / Math.max(0.1, gameState.waveTimer)) * dt;
+                if (Math.random() < spawnChance || gameState.waveTimer <= 0) {
+                    gameState.enemiesToSpawn--;
+                    spawnEnemy();
+                }
             }
 
-            // Total enemies to spawn is the sum of the pools
-            gameState.enemiesToSpawn = gameState.bugsToSpawn + gameState.toadsToSpawn + gameState.ratsToSpawn;
+            const nextWave = gameState.wave + 1;
+            const waveDoneSpawning = gameState.waveTimer <= 0 && gameState.enemiesToSpawn <= 0;
+            const bossGateClear = !BOSS_WAVES.has(nextWave) || enemies.length === 0;
+            if (waveDoneSpawning && bossGateClear) {
+                setupWave(nextWave);
+            }
         }
     }
 
@@ -1162,6 +1194,9 @@ function gameLoop(currentTime) {
         const len = Math.sqrt(ax * ax + ay * ay);
         ax /= len; ay /= len;
     }
+
+    player.moveDx = ax;
+    player.moveDy = ay;
 
     if (player.isRolling) {
         player.vx = player.dashDx * 1100;
@@ -1213,7 +1248,7 @@ function gameLoop(currentTime) {
         gameState.bugsToSpawn = 30; gameState.toadsToSpawn = 0; gameState.ratsToSpawn = 0;
         gameState.enemiesToSpawn = 30; 
         
-        enemies.length = 0; ashParticles.length = 0; floatingTexts.length = 0; droppedItems.length = 0;
+        enemies.length = 0; ashParticles.length = 0; floatingTexts.length = 0;
         player.speed = 2800;
     }
 
@@ -1242,8 +1277,8 @@ function gameLoop(currentTime) {
         }
 
         player.fireCharge = Math.min(player.fireCharge + dt * 1.5, 1.0);
-        camX += (Math.random() - 0.5) * 2.5 * player.fireCharge;
-        camY += (Math.random() - 0.5) * 2.5 * player.fireCharge;
+        camX += (Math.random() - 0.5) * 1.25 * player.fireCharge;
+        camY += (Math.random() - 0.5) * 1.25 * player.fireCharge;
         
         let baseAim = player.aimAngle;
         if (player.isRolling) baseAim += player.rollAngle;
@@ -1280,7 +1315,7 @@ function gameLoop(currentTime) {
             let particlesPerStream = isDragon ? 5 : 3; 
             for (let j = 0; j < particlesPerStream; j++) {
                 let spread = spreadOffsets[i];
-                if (!isDragon) spread += (Math.random() - 0.5) * 0.3; // Randomize standard stream spread
+                if (!isDragon) spread += (Math.random() - 0.5) * 0.18; // Randomize standard stream spread
 
                 let finalAngle = worldAngle + spread;
                 let speed = baseSpeed;
@@ -1385,14 +1420,15 @@ function gameLoop(currentTime) {
             }
             e.wobble += dt * (e.type === 'toad' ? 5 : 30);
             
-            if (dist < (e.type === 'toad' ? 20 : 15) && (!e.z || e.z < 20) && !player.isRolling) {
-                player.hp -= (e.type === 'toad' ? 25 : (e.type === 'ashRat' ? 20 : 15)) * dt;
+            const hitRadius = e.isBoss ? 42 : (e.type === 'toad' ? 20 : 15);
+            if (dist < hitRadius && (!e.z || e.z < 20) && !player.isRolling) {
+                player.hp -= (e.isBoss ? 40 : (e.type === 'toad' ? 25 : (e.type === 'ashRat' ? 20 : 15))) * dt;
             }
 
             for (let j = 0; j < particles.length; j++) {
                 let p = particles[j];
                 let pdist = Math.hypot(p.x - e.x, p.y - e.y);
-                if (pdist < p.size/2 + (e.type === 'toad' ? 14 : 10)) { 
+                if (pdist < p.size/2 + (e.isBoss ? 32 : (e.type === 'toad' ? 14 : 10))) { 
                     
                     let dmg = 30;
                     if (p.isSplitter && !p.isDragon) dmg = 35; // Splitter adds a tiny bit of damage
@@ -1410,31 +1446,6 @@ function gameLoop(currentTime) {
             }
             
             if (e.hp <= 0) {
-                // 1. Base Drop Logic (1-3 random of either Scrap, Oil, or Ash)
-                let baseResource = ['scrap', 'oil', 'ash'][Math.floor(Math.random() * 3)];
-                let baseAmount = Math.floor(Math.random() * 3) + 1; // 1 to 3
-                for(let j = 0; j < baseAmount; j++) {
-                    spawnDrop(e.x, e.y, baseResource);
-                }
-
-                // 2. Unique Drop Logic (30% chance)
-                if (Math.random() < 0.3) {
-                    let uniqueType = "";
-                    let isFirstChoice = Math.random() < 0.5;
-
-                    if (e.type === 'bug') {
-                        uniqueType = isFirstChoice ? 'charcoalShards' : 'bugWings';
-                    } else if (e.type === 'toad') {
-                        uniqueType = isFirstChoice ? 'toadSlime' : 'frogEyes';
-                    } else if (e.type === 'ashRat') {
-                        uniqueType = isFirstChoice ? 'burntFur' : 'sharpTeeth';
-                    }
-                    
-                    if (uniqueType) {
-                        spawnDrop(e.x, e.y, uniqueType);
-                    }
-                }
-
                 enemies.splice(i, 1);
             }
         }
@@ -1460,57 +1471,6 @@ function gameLoop(currentTime) {
             ft.x += ft.vx * dt; ft.y += ft.vy * dt;
         }
 
-        // --- UPDATE DROPPED ITEMS (Physics & Magnet Pickup) ---
-        for (let i = droppedItems.length - 1; i >= 0; i--) {
-            let item = droppedItems[i];
-            
-            // Physics
-            if (item.z > 0 || item.vz > 0) {
-                item.x += item.vx * dt;
-                item.y += item.vy * dt;
-                item.z += item.vz * dt;
-                item.vz -= 600 * dt; // gravity
-                if (item.z <= 0) {
-                    item.z = 0;
-                    item.vz *= -0.5; // bounce
-                    item.vx *= 0.5;  // friction
-                    item.vy *= 0.5;
-                    if (Math.abs(item.vz) < 20) item.vz = 0;
-                }
-            }
-
-            // Magnet / Pickup
-            let dx = player.x - item.x;
-            let dy = player.y - item.y;
-            let dist = Math.hypot(dx, dy);
-
-            // Magnetic Pull
-            if (dist < 90) { 
-                item.x += (dx / dist) * 250 * dt;
-                item.y += (dy / dist) * 250 * dt;
-            }
-
-            // Actual Pickup
-            if (dist < 25) { 
-                player[item.type] += 1;
-                
-                floatingTexts.push({
-                    x: player.x + (Math.random() - 0.5)*20, 
-                    y: player.y - 15,
-                    text: `+1 ${item.name}`,
-                    color: item.glow,
-                    life: 1.5, maxLife: 1.5,
-                    vx: (Math.random() - 0.5) * 15, vy: -30
-                });
-                
-                // Little visual burst on pickup
-                for(let k=0; k<4; k++) {
-                     ashParticles.push({x: item.x, y: item.y - 10, vx: (Math.random()-0.5)*60, vy: (Math.random()-0.5)*60, life: 0.3, maxLife: 0.3, size: 3, color: item.glow});
-                }
-                
-                droppedItems.splice(i, 1);
-            }
-        }
     }
 
     // --- DRAWING ---
@@ -1540,37 +1500,6 @@ function gameLoop(currentTime) {
         enemies.filter(e => e.y < player.y).forEach(e => drawEnemy(ctx, e));
     }
     
-    // --- DRAW DROPPED ITEMS ---
-    droppedItems.forEach(item => {
-        ctx.save();
-        ctx.translate(item.x, item.y);
-        
-        // Ground shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        let shadowScale = Math.max(0.2, 1 - (item.z / 50));
-        ctx.ellipse(0, 4, 8 * shadowScale, 4 * shadowScale, 0, 0, Math.PI*2);
-        ctx.fill();
-
-        // Hover effect
-        ctx.translate(0, -item.z - Math.sin(timeSec * 4 + item.timeOffset) * 4);
-        
-        // Glow effect
-        ctx.shadowColor = item.glow;
-        ctx.shadowBlur = 12 + Math.sin(timeSec * 8 + item.timeOffset) * 4; // Pulsing glow
-        
-        // Spin effect
-        ctx.rotate(timeSec * 2 + item.timeOffset);
-        
-        // Draw the gem/item
-        ctx.fillStyle = item.color;
-        ctx.fillRect(-5, -5, 10, 10); 
-        ctx.fillStyle = item.glow;
-        ctx.fillRect(-2, -2, 4, 4);
-
-        ctx.restore();
-    });
-
     drawPlayer(ctx, timeSec, dt);
         if (gameState.currentScene === 'battle') {
         enemies.filter(e => e.y >= player.y).forEach(e => drawEnemy(ctx, e));
@@ -1639,23 +1568,6 @@ function gameLoop(currentTime) {
     drawUI(ctx, timeSec, dt);
 
     requestAnimationFrame(gameLoop);
-}
-
-function spawnDrop(x, y, type) {
-    let itemData = INVENTORY_ITEMS.find(i => i.id === type);
-    if (!itemData) return;
-
-    droppedItems.push({
-        x: x, y: y, z: 15,
-        vx: (Math.random() - 0.5) * 120,
-        vy: (Math.random() - 0.5) * 120,
-        vz: 100 + Math.random() * 80,
-        type: type,
-        name: itemData.name,
-        color: itemData.color,
-        glow: itemData.glow,
-        timeOffset: Math.random() * Math.PI * 2
-    });
 }
 
 requestAnimationFrame(gameLoop);
