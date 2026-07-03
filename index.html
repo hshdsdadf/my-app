@@ -490,7 +490,7 @@ const mouse = { x: 0, y: 0, isDown: false };
 // right side of screen = aim + fire. No visible joystick is drawn.
 const touchState = {
     move: { active: false, id: null, startX: 0, startY: 0, nx: 0, ny: 0 },
-    aim: { active: false, id: null, startX: 0, startY: 0, dx: 1, dy: 0 }
+    aim: { active: false, id: null, startX: 0, startY: 0, dx: 1, dy: 0, lastTapTime: 0, lastTapX: 0, lastTapY: 0 }
 };
 
 const player = {
@@ -606,12 +606,20 @@ canvas.addEventListener('touchstart', e => {
                 touchState.move.ny = 0;
             }
         } else if (!touchState.aim.active) {
+            const now = performance.now();
+            const tapGap = now - touchState.aim.lastTapTime;
+            const tapDist = Math.hypot(tx - touchState.aim.lastTapX, ty - touchState.aim.lastTapY);
+            if (tapGap > 0 && tapGap < 300 && tapDist < 90) {
+                startRoll(touchState.aim.dx, touchState.aim.dy);
+            }
+            touchState.aim.lastTapTime = now;
+            touchState.aim.lastTapX = tx;
+            touchState.aim.lastTapY = ty;
+
             touchState.aim.active = true;
             touchState.aim.id = touch.identifier;
             touchState.aim.startX = tx;
             touchState.aim.startY = ty;
-            touchState.aim.dx = player.flipX ? -1 : 1;
-            touchState.aim.dy = 0;
             mouse.x = tx;
             mouse.y = ty;
             mouse.isDown = true;
@@ -662,8 +670,6 @@ function handleTouchEnd(e) {
         if (touchState.aim.active && touch.identifier === touchState.aim.id) {
             touchState.aim.active = false;
             touchState.aim.id = null;
-            touchState.aim.dx = player.flipX ? -1 : 1;
-            touchState.aim.dy = 0;
             mouse.isDown = false;
             stopFireSound();
         }
@@ -671,6 +677,29 @@ function handleTouchEnd(e) {
 }
 canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+function startRoll(dx, dy) {
+    if (player.dashCooldown > 0 || player.isRolling) return false;
+
+    let len = Math.hypot(dx, dy);
+    if (len < 0.1) {
+        dx = player.flipX ? -1 : 1;
+        dy = 0;
+        len = 1;
+    }
+
+    player.isRolling = true;
+    player.dashTimer = 0.25;
+    player.dashCooldown = 0.8;
+    player.dashDx = dx / len;
+    player.dashDy = dy / len;
+
+    for (let i = 0; i < 15; i++) {
+        ashParticles.push({x: player.x + (Math.random()-0.5)*20, y: player.y + 10 + (Math.random()-0.5)*10, vx: -player.dashDx * 150 + (Math.random()-0.5)*100, vy: -player.dashDy * 150 + (Math.random()-0.5)*100, life: 0.4 + Math.random()*0.4, maxLife: 0.8, size: Math.random()*6 + 4, isDust: true});
+    }
+
+    return true;
+}
 
 // --- ENVIRONMENT GENERATION ---
 const GRASS_COLORS = ['#22c55e', '#4ade80', '#16a34a', '#15803d'];
@@ -1112,23 +1141,16 @@ function gameLoop(currentTime) {
     }
 
     if (player.isRolling) {
-            player.vx = player.dashDx * 1100;
-            player.vy = player.dashDy * 1100;
-            player.dashTimer -= dt;
-            if (player.dashTimer <= 0) player.isRolling = false;
-        } else {
-            player.vx += ax * player.speed * dt;
-            player.vy += ay * player.speed * dt;
-            if (keys[' '] && player.dashCooldown <= 0) {
-                player.isRolling = true;
-                player.dashTimer = 0.25;
-                player.dashCooldown = 0.8;
-                if (ax !== 0 || ay !== 0) { player.dashDx = ax; player.dashDy = ay; }
-                else { player.dashDx = player.flipX ? -1 : 1; player.dashDy = 0; }
-                for (let i = 0; i < 15; i++) {
-                    ashParticles.push({x: player.x + (Math.random()-0.5)*20, y: player.y + 10 + (Math.random()-0.5)*10, vx: -player.dashDx * 150 + (Math.random()-0.5)*100, vy: -player.dashDy * 150 + (Math.random()-0.5)*100, life: 0.4 + Math.random()*0.4, maxLife: 0.8, size: Math.random()*6 + 4, isDust: true});
-                }
-            }
+        player.vx = player.dashDx * 1100;
+        player.vy = player.dashDy * 1100;
+        player.dashTimer -= dt;
+        if (player.dashTimer <= 0) player.isRolling = false;
+    } else {
+        player.vx += ax * player.speed * dt;
+        player.vy += ay * player.speed * dt;
+        if (keys[' ']) {
+            startRoll(ax, ay);
+        }
     }
     
     player.dashCooldown -= dt;
@@ -1190,7 +1212,7 @@ function gameLoop(currentTime) {
     if (mouse.isDown && player.fuel > 0) {
         if (!fireSoundSource && audioCtx.state !== 'suspended') startFireSound();
         
-        player.fuel -= 15 * dt; 
+        player.fuel -= 8 * dt; 
         if (player.fuel <= 0) {
             player.fuel = 0; 
             stopFireSound();
