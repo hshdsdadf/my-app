@@ -628,6 +628,13 @@ const droppedItems = [];
 let camX = 0;
 let camY = 0;
 
+// On touch devices the world is rendered zoomed-out so more of the arena is visible
+// (fixed pixel-art sprite sizes otherwise look huge on a small phone screen).
+// logicalWidth/logicalHeight represent the amount of world-space actually visible.
+let worldZoom = 1;
+let logicalWidth = 0;
+let logicalHeight = 0;
+
 // --- SHOP HELPERS (shared by mouse + touch input) ---
 function toggleShop() {
     gameState.isShopOpen = !gameState.isShopOpen;
@@ -651,11 +658,15 @@ function getShopButtonRect() {
 
 function getShopLayout() {
     const margin = Math.min(60, width * 0.05);
+    // "Design" panel size - same as before. On small screens this can be bigger than
+    // the actual viewport, so uiScale below shrinks the whole panel to fit.
     const panelW = Math.max(800, width - margin * 4);
     const panelH = Math.max(600, height - margin * 2);
     const startX = width / 2 - panelW / 2;
     const startY = height / 2 - panelH / 2;
-    return { margin, panelW, panelH, startX, startY, topBarH: 50, leftPanelW: 220 };
+    const outerPad = 16;
+    const uiScale = Math.min(1, (width - outerPad * 2) / panelW, (height - outerPad * 2) / panelH);
+    return { margin, panelW, panelH, startX, startY, topBarH: 50, leftPanelW: 220, uiScale };
 }
 
 // Screen-space tappable "X" close button on the shop panel (for touch devices, since
@@ -666,20 +677,26 @@ function getShopCloseButtonRect() {
 }
 
 function handleShopPointerDown() {
+    const L = getShopLayout();
+    const scale = L.uiScale;
+    // The panel is rendered scaled around the screen center (see drawShopMenu), so convert
+    // the real pointer position into the same unscaled "design space" used for layout.
+    const px = (mouse.x - width / 2) / scale + width / 2;
+    const py = (mouse.y - height / 2) / scale + height / 2;
+
     const closeRect = getShopCloseButtonRect();
-    if (mouse.x > closeRect.x && mouse.x < closeRect.x + closeRect.w && mouse.y > closeRect.y && mouse.y < closeRect.y + closeRect.h) {
+    if (px > closeRect.x && px < closeRect.x + closeRect.w && py > closeRect.y && py < closeRect.y + closeRect.h) {
         toggleShop();
         return;
     }
 
-    const L = getShopLayout();
     const panelW = L.panelW, startX = L.startX, startY = L.startY, topBarH = L.topBarH, leftPanelW = L.leftPanelW;
 
     // Handle Category Clicks
     const categories = ["Weapon", "Inventory", "Armor", "Gadgets", "Utility", "Mutations", "Black Market"];
     let catY = startY + topBarH + 30;
     for (let i = 0; i < categories.length; i++) {
-        if (mouse.x > startX + 15 && mouse.x < startX + 15 + leftPanelW - 30 && mouse.y > catY && mouse.y < catY + 40) {
+        if (px > startX + 15 && px < startX + 15 + leftPanelW - 30 && py > catY && py < catY + 40) {
             gameState.activeShopTab = categories[i];
             return; // Tab changed, exit click handler
         }
@@ -696,7 +713,7 @@ function handleShopPointerDown() {
 
         SHOP_ITEMS.forEach((item) => {
             const itemH = 48; // Compacted to fit all 9 items perfectly
-            if (mouse.x > centerX && mouse.x < centerX + centerW && mouse.y > itemY && mouse.y < itemY + itemH) {
+            if (px > centerX && px < centerX + centerW && py > itemY && py < itemY + itemH) {
                 if (!item.owned) {
                     // Check if can afford
                     let canAfford = true;
@@ -939,8 +956,8 @@ function drawPlayer(ctx, time, dt) {
     ctx.ellipse(0, 6, 14, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    const screenX = width / 2 + (player.x - camX);
-    const screenY = height / 2 + (player.y - camY);
+    const screenX = width / 2 + (player.x - camX) * worldZoom;
+    const screenY = height / 2 + (player.y - camY) * worldZoom;
     let dx = mouse.x - screenX;
     let dy = mouse.y - screenY;
     
@@ -1016,8 +1033,8 @@ function drawPlayer(ctx, time, dt) {
     const localTipY = 0;
     const screenTipX = matrix.a * localTipX + matrix.c * localTipY + matrix.e;
     const screenTipY = matrix.b * localTipX + matrix.d * localTipY + matrix.f;
-    player.gunTipWorldX = screenTipX + camX - width / 2;
-    player.gunTipWorldY = screenTipY + camY - height / 2;
+    player.gunTipWorldX = (screenTipX - width / 2) / worldZoom + camX;
+    player.gunTipWorldY = (screenTipY - height / 2) / worldZoom + camY;
 
     drawSprite(ctx, 'bottomBeak', 0, 0);
     drawSprite(ctx, player.isBlinking ? 'headBlink' : 'head', 0, 0);
@@ -1058,10 +1075,10 @@ function drawEnemy(ctx, e) {
 
 function drawGrass(ctx, time, blades) {
     const viewPadding = 50;
-    const left = camX - width / 2 - viewPadding;
-    const right = camX + width / 2 + viewPadding;
-    const top = camY - height / 2 - viewPadding;
-    const bottom = camY + height / 2 + viewPadding;
+    const left = camX - logicalWidth / 2 - viewPadding;
+    const right = camX + logicalWidth / 2 + viewPadding;
+    const top = camY - logicalHeight / 2 - viewPadding;
+    const bottom = camY + logicalHeight / 2 + viewPadding;
 
     blades.forEach(blade => {
         if (blade.x > left && blade.x < right && blade.y > top && blade.y < bottom) {
@@ -1212,17 +1229,21 @@ function drawShop(ctx, time) {
 function drawShopMenu(ctx, time) {
     if (!gameState.isShopOpen) return;
 
-    // Darken Background
+    // Darken Background (drawn at real screen size, not scaled)
     ctx.resetTransform();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
     ctx.fillRect(0, 0, width, height);
 
     // Layout Sizes
-    const margin = Math.min(60, width * 0.05);
-    const panelW = Math.max(800, width - margin * 4);
-    const panelH = Math.max(600, height - margin * 2);
-    const startX = width / 2 - panelW / 2;
-    const startY = height / 2 - panelH / 2;
+    const L = getShopLayout();
+    const margin = L.margin, panelW = L.panelW, panelH = L.panelH, startX = L.startX, startY = L.startY;
+
+    // Shrink the whole panel to fit small screens (e.g. mobile) around the screen center.
+    // Hit-testing (handleShopPointerDown) applies the same inverse transform.
+    ctx.save();
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(L.uiScale, L.uiScale);
+    ctx.translate(-width / 2, -height / 2);
 
     // Main Modal Box
     ctx.fillStyle = '#0f172a'; // Dark slate
@@ -1531,6 +1552,8 @@ function drawShopMenu(ctx, time) {
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'right';
     ctx.fillText(isTouchDevice ? "TAP X TO CLOSE" : "PRESS [E] TO CLOSE", startX + panelW - 20, startY + panelH - 20);
+
+    ctx.restore(); // pop the fit-to-screen scale transform
 }
 
 function drawUI(ctx, time, dt) {
@@ -1574,12 +1597,15 @@ function drawUI(ctx, time, dt) {
         ctx.restore();
     }
 
-    const topMargin = 15 + safeAreaTop;  
-    const sideMargin = 30; 
+    // HUD bars are chunkier than needed on small phone screens - scale them down there
+    const hudScale = isTouchDevice ? Math.max(0.55, Math.min(1, width / 700)) : 1;
+    const topMargin = 15 * hudScale + safeAreaTop;  
+    const sideMargin = 30 * hudScale; 
     const barWidth = width - sideMargin * 2;
-    const hpHeight = 22;
-    const xpHeight = 12;
-    const spacing = 8;
+    const hpHeight = 22 * hudScale;
+    const xpHeight = 12 * hudScale;
+    const spacing = 8 * hudScale;
+    const borderPad = 4 * hudScale;
     const startY = topMargin;
 
     if (player.displayHp > player.hp) {
@@ -1603,7 +1629,7 @@ function drawUI(ctx, time, dt) {
     const fuelDisplayRatio = Math.max(0, Math.min(1, player.displayFuel / maxBarFuel));
 
     ctx.fillStyle = '#000000';
-    ctx.fillRect(sideMargin - 4, startY - 4, barWidth + 8, hpHeight + 8);
+    ctx.fillRect(sideMargin - borderPad, startY - borderPad, barWidth + borderPad * 2, hpHeight + borderPad * 2);
     ctx.fillStyle = '#1e1b4b'; 
     ctx.fillRect(sideMargin, startY, barWidth, hpHeight);
     ctx.fillStyle = '#ffffff';
@@ -1619,9 +1645,9 @@ function drawUI(ctx, time, dt) {
     ctx.fillRect(sideMargin, startY, barWidth * hpRatio, 5);
 
     const fuelY = startY + hpHeight + spacing;
-    const fuelHeight = 12;
+    const fuelHeight = 12 * hudScale;
     ctx.fillStyle = '#000000';
-    ctx.fillRect(sideMargin - 4, fuelY - 4, barWidth + 8, fuelHeight + 8);
+    ctx.fillRect(sideMargin - borderPad, fuelY - borderPad, barWidth + borderPad * 2, fuelHeight + borderPad * 2);
     ctx.fillStyle = '#000000';
     ctx.fillRect(sideMargin, fuelY, barWidth, fuelHeight);
     
@@ -1651,10 +1677,10 @@ function drawUI(ctx, time, dt) {
 function spawnEnemy() {
     let ex, ey;
     let edge = Math.floor(Math.random() * 4);
-    if (edge === 0) { ex = (Math.random() - 0.5) * width; ey = -height / 2 - 50; }
-    else if (edge === 1) { ex = (Math.random() - 0.5) * width; ey = height / 2 + 50; } 
-    else if (edge === 2) { ex = -width / 2 - 50; ey = (Math.random() - 0.5) * height; } 
-    else { ex = width / 2 + 50; ey = (Math.random() - 0.5) * height; } 
+    if (edge === 0) { ex = (Math.random() - 0.5) * logicalWidth; ey = -logicalHeight / 2 - 50; }
+    else if (edge === 1) { ex = (Math.random() - 0.5) * logicalWidth; ey = logicalHeight / 2 + 50; } 
+    else if (edge === 2) { ex = -logicalWidth / 2 - 50; ey = (Math.random() - 0.5) * logicalHeight; } 
+    else { ex = logicalWidth / 2 + 50; ey = (Math.random() - 0.5) * logicalHeight; } 
 
     // Create a weighted pool based on what is left to spawn this wave
     let available = [];
@@ -1688,6 +1714,11 @@ function gameLoop(currentTime) {
     const dt = Math.min((currentTime - lastTime) / 1000, 0.1); 
     lastTime = currentTime;
     const timeSec = currentTime / 1000;
+
+    // Zoom the world out on touch devices so the play area isn't dominated by oversized sprites
+    worldZoom = isTouchDevice ? Math.max(0.5, Math.min(1, Math.min(width, height) / 800)) : 1;
+    logicalWidth = width / worldZoom;
+    logicalHeight = height / worldZoom;
 
     if (gameState.isShopOpen) {
         keys['w'] = false; keys['a'] = false; keys['s'] = false; keys['d'] = false;
@@ -1778,8 +1809,8 @@ function gameLoop(currentTime) {
     player.x += player.vx * dt;
     player.y += player.vy * dt;
 
-    const arenaBoundsX = width / 2;
-    const arenaBoundsY = height / 2 - 20;
+    const arenaBoundsX = logicalWidth / 2;
+    const arenaBoundsY = logicalHeight / 2 - 20;
 
     if (gameState.currentScene === 'battle') {
         if (player.x < -arenaBoundsX + 20) { player.x = -arenaBoundsX + 20; player.vx = 0; }
@@ -2137,13 +2168,14 @@ function gameLoop(currentTime) {
     ctx.clearRect(0, 0, width, height);
     ctx.save();
     ctx.translate(-camX + width / 2, -camY + height / 2);
+    ctx.scale(worldZoom, worldZoom);
     
     ctx.fillStyle = groundPattern;
-    ctx.fillRect(camX - width/2, camY - height/2, width, height);
+    ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
     
     if (gameState.currentScene === 'safe') {
         ctx.fillStyle = 'rgba(0, 25, 10, 0.4)'; 
-        ctx.fillRect(camX - width/2, camY - height/2, width, height);
+        ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
     }
 
     const activeGrassBlades = gameState.currentScene === 'battle' ? battleGrassBlades : safeGrassBlades;
