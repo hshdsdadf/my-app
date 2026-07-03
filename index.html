@@ -610,7 +610,8 @@ canvas.addEventListener('touchstart', e => {
             const tapGap = now - touchState.aim.lastTapTime;
             const tapDist = Math.hypot(tx - touchState.aim.lastTapX, ty - touchState.aim.lastTapY);
             if (tapGap > 0 && tapGap < 300 && tapDist < 90) {
-                startRoll(touchState.aim.dx, touchState.aim.dy);
+                const rollDir = getTouchRollDirection();
+                startRoll(rollDir.dx, rollDir.dy);
             }
             touchState.aim.lastTapTime = now;
             touchState.aim.lastTapX = tx;
@@ -647,10 +648,18 @@ canvas.addEventListener('touchmove', e => {
             const dx = touch.clientX - touchState.aim.startX;
             const dy = touch.clientY - touchState.aim.startY;
             const dist = Math.hypot(dx, dy);
-            const deadzone = 6;
+            const deadzone = 18;
             if (dist > deadzone) {
-                touchState.aim.dx = dx / dist;
-                touchState.aim.dy = dy / dist;
+                const targetDx = dx / dist;
+                const targetDy = dy / dist;
+                const smoothing = 0.22;
+                touchState.aim.dx += (targetDx - touchState.aim.dx) * smoothing;
+                touchState.aim.dy += (targetDy - touchState.aim.dy) * smoothing;
+                const aimLen = Math.hypot(touchState.aim.dx, touchState.aim.dy);
+                if (aimLen > 0) {
+                    touchState.aim.dx /= aimLen;
+                    touchState.aim.dy /= aimLen;
+                }
             }
             mouse.x = touch.clientX;
             mouse.y = touch.clientY;
@@ -677,6 +686,20 @@ function handleTouchEnd(e) {
 }
 canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+function getTouchRollDirection() {
+    const moveLen = Math.hypot(touchState.move.nx, touchState.move.ny);
+    if (touchState.move.active && moveLen > 0.1) {
+        return { dx: touchState.move.nx / moveLen, dy: touchState.move.ny / moveLen };
+    }
+
+    const velocityLen = Math.hypot(player.vx, player.vy);
+    if (velocityLen > 30) {
+        return { dx: player.vx / velocityLen, dy: player.vy / velocityLen };
+    }
+
+    return { dx: touchState.aim.dx, dy: touchState.aim.dy };
+}
 
 function startRoll(dx, dy) {
     if (player.dashCooldown > 0 || player.isRolling) return false;
@@ -1219,8 +1242,8 @@ function gameLoop(currentTime) {
         }
 
         player.fireCharge = Math.min(player.fireCharge + dt * 1.5, 1.0);
-        camX += (Math.random() - 0.5) * 6 * player.fireCharge;
-        camY += (Math.random() - 0.5) * 6 * player.fireCharge;
+        camX += (Math.random() - 0.5) * 2.5 * player.fireCharge;
+        camY += (Math.random() - 0.5) * 2.5 * player.fireCharge;
         
         let baseAim = player.aimAngle;
         if (player.isRolling) baseAim += player.rollAngle;
