@@ -2,10 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Duck With a Flamethrower</title>
+
+    <!-- iOS "Add to Home Screen" support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Duck Flamethrower">
+    <meta name="theme-color" content="#0f172a">
+    <link rel="apple-touch-icon" id="appleTouchIcon" href="">
+
     <style>
-        body, html {
+        html, body {
             margin: 0;
             padding: 0;
             width: 100%;
@@ -13,9 +22,18 @@
             background-color: #0f172a;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            position: fixed;
+            inset: 0;
+            overscroll-behavior: none;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
         canvas {
             display: block;
+            touch-action: none;
             image-rendering: -moz-crisp-edges;
             image-rendering: -webkit-crisp-edges;
             image-rendering: pixelated;
@@ -44,7 +62,86 @@ function resize() {
     ctx.imageSmoothingEnabled = false;
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resize);
+}
 resize();
+
+// --- MOBILE / "ADD TO HOME SCREEN" SUPPORT ---
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+// Read iOS safe-area insets (notch / home indicator) so the HUD doesn't sit under them
+let safeAreaTop = 0, safeAreaBottom = 0;
+function updateSafeAreaInsets() {
+    const probe = document.createElement('div');
+    probe.style.position = 'fixed';
+    probe.style.top = '0';
+    probe.style.left = '0';
+    probe.style.height = '0';
+    probe.style.paddingTop = 'env(safe-area-inset-top)';
+    probe.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    probe.style.visibility = 'hidden';
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    safeAreaTop = parseFloat(cs.paddingTop) || 0;
+    safeAreaBottom = parseFloat(cs.paddingBottom) || 0;
+    document.body.removeChild(probe);
+}
+updateSafeAreaInsets();
+window.addEventListener('resize', updateSafeAreaInsets);
+window.addEventListener('orientationchange', updateSafeAreaInsets);
+
+// Block Safari pinch-zoom / double-tap-zoom gestures so the game feels like a native app
+['gesturestart', 'gesturechange', 'gestureend'].forEach(evt => {
+    document.addEventListener(evt, e => e.preventDefault());
+});
+document.addEventListener('dblclick', e => e.preventDefault());
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Generate a simple app icon on the fly (no external image file needed) for "Add to Home Screen"
+(function generateAppleTouchIcon() {
+    const iconCanvas = document.createElement('canvas');
+    iconCanvas.width = 180; iconCanvas.height = 180;
+    const ictx = iconCanvas.getContext('2d');
+    ictx.fillStyle = '#0f172a';
+    ictx.fillRect(0, 0, 180, 180);
+    // Duck body
+    ictx.fillStyle = '#FFFFFF';
+    ictx.beginPath();
+    ictx.ellipse(80, 105, 55, 45, 0, 0, Math.PI * 2);
+    ictx.fill();
+    // Beak
+    ictx.fillStyle = '#FACC15';
+    ictx.beginPath();
+    ictx.moveTo(120, 100);
+    ictx.lineTo(155, 92);
+    ictx.lineTo(155, 112);
+    ictx.closePath();
+    ictx.fill();
+    // Eye
+    ictx.fillStyle = '#000000';
+    ictx.beginPath();
+    ictx.arc(95, 80, 5, 0, Math.PI * 2);
+    ictx.fill();
+    // Flame
+    ictx.fillStyle = '#EA580C';
+    ictx.beginPath();
+    ictx.moveTo(150, 95);
+    ictx.quadraticCurveTo(172, 85, 168, 60);
+    ictx.quadraticCurveTo(160, 78, 150, 70);
+    ictx.quadraticCurveTo(158, 88, 150, 95);
+    ictx.fill();
+    ictx.fillStyle = '#FACC15';
+    ictx.beginPath();
+    ictx.moveTo(152, 88);
+    ictx.quadraticCurveTo(164, 80, 161, 66);
+    ictx.quadraticCurveTo(156, 78, 152, 88);
+    ictx.fill();
+
+    const link = document.getElementById('appleTouchIcon');
+    if (link) link.href = iconCanvas.toDataURL('image/png');
+})();
 
 // --- PALETTES AND SPRITE DATA ---
 const PIXEL_SCALE = 4;
@@ -389,6 +486,13 @@ function stopFireSound() {
 const keys = {};
 const mouse = { x: 0, y: 0, isDown: false };
 
+// Touch control state: left side of screen = invisible drag-to-move,
+// right side of screen = aim + fire. No visible joystick is drawn.
+const touchState = {
+    move: { active: false, id: null, startX: 0, startY: 0, nx: 0, ny: 0 },
+    aim: { active: false, id: null }
+};
+
 // SORTED CHEAPEST TO MOST EXPENSIVE
 const SHOP_ITEMS = [
     {
@@ -524,6 +628,113 @@ const droppedItems = [];
 let camX = 0;
 let camY = 0;
 
+// --- SHOP HELPERS (shared by mouse + touch input) ---
+function toggleShop() {
+    gameState.isShopOpen = !gameState.isShopOpen;
+    if (gameState.isShopOpen) {
+        mouse.isDown = false; // Stop shooting if opening menu
+        stopFireSound();
+    }
+}
+
+function isNearShopEntrance() {
+    if (gameState.currentScene !== 'safe') return false;
+    let distToShop = Math.hypot(player.x - 0, player.y - (-50));
+    return distToShop < 120;
+}
+
+// Screen-space tappable "SHOP" button (shown on touch devices near the shop entrance,
+// since there's no [E] key on mobile)
+function getShopButtonRect() {
+    return { x: width / 2 - 65, y: 90 + safeAreaTop, w: 130, h: 46 };
+}
+
+function getShopLayout() {
+    const margin = Math.min(60, width * 0.05);
+    const panelW = Math.max(800, width - margin * 4);
+    const panelH = Math.max(600, height - margin * 2);
+    const startX = width / 2 - panelW / 2;
+    const startY = height / 2 - panelH / 2;
+    return { margin, panelW, panelH, startX, startY, topBarH: 50, leftPanelW: 220 };
+}
+
+// Screen-space tappable "X" close button on the shop panel (for touch devices, since
+// there's no [E] key to close the menu on mobile)
+function getShopCloseButtonRect() {
+    const L = getShopLayout();
+    return { x: L.startX + L.panelW - 46, y: L.startY + 9, w: 32, h: 32 };
+}
+
+function handleShopPointerDown() {
+    const closeRect = getShopCloseButtonRect();
+    if (mouse.x > closeRect.x && mouse.x < closeRect.x + closeRect.w && mouse.y > closeRect.y && mouse.y < closeRect.y + closeRect.h) {
+        toggleShop();
+        return;
+    }
+
+    const L = getShopLayout();
+    const panelW = L.panelW, startX = L.startX, startY = L.startY, topBarH = L.topBarH, leftPanelW = L.leftPanelW;
+
+    // Handle Category Clicks
+    const categories = ["Weapon", "Inventory", "Armor", "Gadgets", "Utility", "Mutations", "Black Market"];
+    let catY = startY + topBarH + 30;
+    for (let i = 0; i < categories.length; i++) {
+        if (mouse.x > startX + 15 && mouse.x < startX + 15 + leftPanelW - 30 && mouse.y > catY && mouse.y < catY + 40) {
+            gameState.activeShopTab = categories[i];
+            return; // Tab changed, exit click handler
+        }
+        catY += 50;
+    }
+
+    // Handle Weapon Purchases if we are on the Weapon tab
+    if (gameState.activeShopTab === 'Weapon') {
+        const previewW = 280;
+        const previewX = startX + panelW - previewW - 40;
+        const centerW = previewX - (startX + leftPanelW) - 40;
+        const centerX = startX + leftPanelW + 20;
+        let itemY = startY + topBarH + 25;
+
+        SHOP_ITEMS.forEach((item) => {
+            const itemH = 48; // Compacted to fit all 9 items perfectly
+            if (mouse.x > centerX && mouse.x < centerX + centerW && mouse.y > itemY && mouse.y < itemY + itemH) {
+                if (!item.owned) {
+                    // Check if can afford
+                    let canAfford = true;
+                    if (item.cost.scrap && player.scrap < item.cost.scrap) canAfford = false;
+                    if (item.cost.oil && player.oil < item.cost.oil) canAfford = false;
+                    if (item.cost.ash && player.ash < item.cost.ash) canAfford = false;
+                    if (item.cost.heatedMetal && player.heatedMetal < item.cost.heatedMetal) canAfford = false;
+                    if (item.cost.furnaceCore && player.furnaceCore < item.cost.furnaceCore) canAfford = false;
+
+                    if (canAfford) {
+                        // Deduct Cost
+                        if (item.cost.scrap) player.scrap -= item.cost.scrap;
+                        if (item.cost.oil) player.oil -= item.cost.oil;
+                        if (item.cost.ash) player.ash -= item.cost.ash;
+                        if (item.cost.heatedMetal) player.heatedMetal -= item.cost.heatedMetal;
+                        if (item.cost.furnaceCore) player.furnaceCore -= item.cost.furnaceCore;
+
+                        item.owned = true;
+
+                        // Immediate effect assignments
+                        if (item.id === 'medium_tank') {
+                            player.maxFuel = 300; // BUFFED from 100 to 300!
+                        }
+
+                        // Weapon name updates based on best upgrade
+                        if (item.id === 'dragon_barrel') player.weapon = "Dragon Beam";
+                        else if (item.id === 'chain_igniter' && player.weapon !== "Dragon Beam") player.weapon = "Chain Spitter";
+                        else if (item.id === 'napalm_mixer' && player.weapon !== "Dragon Beam") player.weapon = "Napalm Thrower";
+                        else if (item.id === 'triple_nozzle' && player.weapon === "Flamethrower") player.weapon = "Triple Thrower";
+                        else if (item.id === 'splitter_nozzle' && player.weapon === "Flamethrower") player.weapon = "Splitter";
+                    }
+                }
+            }
+            itemY += itemH + 8;
+        });
+    }
+}
+
 // --- INPUT LISTENERS ---
 window.addEventListener('keydown', e => {
     const key = e.key.toLowerCase();
@@ -531,15 +742,8 @@ window.addEventListener('keydown', e => {
 
     // Shop Toggle Logic
     if (key === 'e' && !e.repeat) {
-        if (gameState.currentScene === 'safe') {
-            let distToShop = Math.hypot(player.x - 0, player.y - (-50));
-            if (distToShop < 120) {
-                gameState.isShopOpen = !gameState.isShopOpen;
-                if (gameState.isShopOpen) {
-                    mouse.isDown = false; // Stop shooting if opening menu
-                    stopFireSound();
-                }
-            }
+        if (isNearShopEntrance()) {
+            toggleShop();
         }
     }
 });
@@ -553,73 +757,15 @@ window.addEventListener('mousemove', e => {
 
 window.addEventListener('mousedown', () => {
     if (gameState.isShopOpen) {
-        const margin = Math.min(60, width * 0.05);
-        const panelW = Math.max(800, width - margin * 4);
-        const panelH = Math.max(600, height - margin * 2);
-        const startX = width / 2 - panelW / 2;
-        const startY = height / 2 - panelH / 2;
-        const topBarH = 50;
-        const leftPanelW = 220;
-        
-        // Handle Category Clicks
-        const categories = ["Weapon", "Inventory", "Armor", "Gadgets", "Utility", "Mutations", "Black Market"];
-        let catY = startY + topBarH + 30;
-        for (let i = 0; i < categories.length; i++) {
-            if (mouse.x > startX + 15 && mouse.x < startX + 15 + leftPanelW - 30 && mouse.y > catY && mouse.y < catY + 40) {
-                gameState.activeShopTab = categories[i];
-                return; // Tab changed, exit click handler
-            }
-            catY += 50;
+        handleShopPointerDown();
+    } else if (isTouchDevice && isNearShopEntrance()) {
+        const btn = getShopButtonRect();
+        if (mouse.x > btn.x && mouse.x < btn.x + btn.w && mouse.y > btn.y && mouse.y < btn.y + btn.h) {
+            toggleShop();
+            return;
         }
-
-        // Handle Weapon Purchases if we are on the Weapon tab
-        if (gameState.activeShopTab === 'Weapon') {
-            const previewW = 280;
-            const previewX = startX + panelW - previewW - 40;
-            const centerW = previewX - (startX + leftPanelW) - 40;
-            const centerX = startX + leftPanelW + 20;
-            let itemY = startY + topBarH + 25;
-
-            SHOP_ITEMS.forEach((item) => {
-                const itemH = 48; // Compacted to fit all 9 items perfectly
-                if (mouse.x > centerX && mouse.x < centerX + centerW && mouse.y > itemY && mouse.y < itemY + itemH) {
-                    if (!item.owned) {
-                        // Check if can afford
-                        let canAfford = true;
-                        if (item.cost.scrap && player.scrap < item.cost.scrap) canAfford = false;
-                        if (item.cost.oil && player.oil < item.cost.oil) canAfford = false;
-                        if (item.cost.ash && player.ash < item.cost.ash) canAfford = false;
-                        if (item.cost.heatedMetal && player.heatedMetal < item.cost.heatedMetal) canAfford = false;
-                        if (item.cost.furnaceCore && player.furnaceCore < item.cost.furnaceCore) canAfford = false;
-
-                        if (canAfford) {
-                            // Deduct Cost
-                            if (item.cost.scrap) player.scrap -= item.cost.scrap;
-                            if (item.cost.oil) player.oil -= item.cost.oil;
-                            if (item.cost.ash) player.ash -= item.cost.ash;
-                            if (item.cost.heatedMetal) player.heatedMetal -= item.cost.heatedMetal;
-                            if (item.cost.furnaceCore) player.furnaceCore -= item.cost.furnaceCore;
-
-                            item.owned = true;
-
-                            // Immediate effect assignments
-                            if (item.id === 'medium_tank') {
-                                player.maxFuel = 300; // BUFFED from 100 to 300!
-                            }
-
-                            // Weapon name updates based on best upgrade
-                            if (item.id === 'dragon_barrel') player.weapon = "Dragon Beam";
-                            else if (item.id === 'chain_igniter' && player.weapon !== "Dragon Beam") player.weapon = "Chain Spitter";
-                            else if (item.id === 'napalm_mixer' && player.weapon !== "Dragon Beam") player.weapon = "Napalm Thrower";
-                            else if (item.id === 'triple_nozzle' && player.weapon === "Flamethrower") player.weapon = "Triple Thrower";
-                            else if (item.id === 'splitter_nozzle' && player.weapon === "Flamethrower") player.weapon = "Splitter";
-                        }
-                    }
-                }
-                itemY += itemH + 8;
-            });
-        }
-
+        mouse.isDown = true;
+        if (player.fuel > 0) startFireSound();
     } else {
         mouse.isDown = true;
         if (player.fuel > 0) startFireSound(); 
@@ -630,6 +776,93 @@ window.addEventListener('mouseup', () => {
     mouse.isDown = false;
     stopFireSound();  
 });
+
+// --- TOUCH CONTROLS ---
+// Left half of the screen: drag to move (no visible joystick, purely relative-drag direction).
+// Right half of the screen: touch = aim toward that point + fire (mirrors mouse aim + click).
+// While the shop is open, touches behave like clicks against the shop UI.
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+        const tx = touch.clientX, ty = touch.clientY;
+
+        if (gameState.isShopOpen) {
+            mouse.x = tx; mouse.y = ty;
+            handleShopPointerDown();
+            continue;
+        }
+
+        // "SHOP" button takes priority over move/aim zones so it's reliably tappable
+        if (isNearShopEntrance()) {
+            const btn = getShopButtonRect();
+            if (tx > btn.x && tx < btn.x + btn.w && ty > btn.y && ty < btn.y + btn.h) {
+                toggleShop();
+                continue;
+            }
+        }
+
+        if (tx < width / 2) {
+            if (!touchState.move.active) {
+                touchState.move.active = true;
+                touchState.move.id = touch.identifier;
+                touchState.move.startX = tx;
+                touchState.move.startY = ty;
+                touchState.move.nx = 0;
+                touchState.move.ny = 0;
+            }
+        } else {
+            if (!touchState.aim.active) {
+                touchState.aim.active = true;
+                touchState.aim.id = touch.identifier;
+                mouse.x = tx; mouse.y = ty;
+                mouse.isDown = true;
+                if (player.fuel > 0) startFireSound();
+            }
+        }
+    }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+        if (touchState.move.active && touch.identifier === touchState.move.id) {
+            const dx = touch.clientX - touchState.move.startX;
+            const dy = touch.clientY - touchState.move.startY;
+            const dist = Math.hypot(dx, dy);
+            const deadzone = 6;
+            if (dist > deadzone) {
+                touchState.move.nx = dx / dist;
+                touchState.move.ny = dy / dist;
+            } else {
+                touchState.move.nx = 0;
+                touchState.move.ny = 0;
+            }
+        } else if (touchState.aim.active && touch.identifier === touchState.aim.id) {
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+        }
+    }
+}, { passive: false });
+
+function handleTouchEnd(e) {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+        if (touchState.move.active && touch.identifier === touchState.move.id) {
+            touchState.move.active = false;
+            touchState.move.id = null;
+            touchState.move.nx = 0;
+            touchState.move.ny = 0;
+        }
+        if (touchState.aim.active && touch.identifier === touchState.aim.id) {
+            touchState.aim.active = false;
+            touchState.aim.id = null;
+            mouse.isDown = false;
+            stopFireSound();
+        }
+    }
+}
+canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
 // --- ENVIRONMENT GENERATION ---
 const GRASS_COLORS = ['#22c55e', '#4ade80', '#16a34a', '#15803d'];
@@ -1036,6 +1269,19 @@ function drawShopMenu(ctx, time) {
     const statsText = `EQUIPPED WEAPON: ${player.weapon.toUpperCase()}`;
     ctx.fillText(statsText, startX + panelW / 2, topY);
 
+    // --- CLOSE BUTTON (tappable on mobile, no keyboard needed) ---
+    const closeRect = getShopCloseButtonRect();
+    ctx.fillStyle = '#334155';
+    roundRect(ctx, closeRect.x, closeRect.y, closeRect.w, closeRect.h, 8, true, false);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(closeRect.x + 10, closeRect.y + 10);
+    ctx.lineTo(closeRect.x + closeRect.w - 10, closeRect.y + closeRect.h - 10);
+    ctx.moveTo(closeRect.x + closeRect.w - 10, closeRect.y + 10);
+    ctx.lineTo(closeRect.x + 10, closeRect.y + closeRect.h - 10);
+    ctx.stroke();
+
     // --- LEFT SIDE (Categories) ---
     const leftPanelW = 220;
     ctx.fillStyle = '#1e293b';
@@ -1284,13 +1530,29 @@ function drawShopMenu(ctx, time) {
     ctx.fillStyle = '#64748b';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText("PRESS [E] TO CLOSE", startX + panelW - 20, startY + panelH - 20);
+    ctx.fillText(isTouchDevice ? "TAP X TO CLOSE" : "PRESS [E] TO CLOSE", startX + panelW - 20, startY + panelH - 20);
 }
 
 function drawUI(ctx, time, dt) {
     if (gameState.isShopOpen) return; 
 
     ctx.resetTransform(); 
+
+    // Tappable "SHOP" button for touch devices (no [E] key on mobile)
+    if (isTouchDevice && gameState.currentScene === 'safe' && isNearShopEntrance()) {
+        const btn = getShopButtonRect();
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.strokeStyle = '#A855F7';
+        ctx.lineWidth = 2;
+        roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 10, true, true);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 18px "Arial Black", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText("SHOP", btn.x + btn.w / 2, btn.y + btn.h / 2 + 1);
+        ctx.restore();
+    }
 
     if (gameState.currentScene === 'battle' && gameState.waveDisplayTimer > 0) {
         ctx.save();
@@ -1312,7 +1574,7 @@ function drawUI(ctx, time, dt) {
         ctx.restore();
     }
 
-    const topMargin = 15;  
+    const topMargin = 15 + safeAreaTop;  
     const sideMargin = 30; 
     const barWidth = width - sideMargin * 2;
     const hpHeight = 22;
@@ -1432,6 +1694,7 @@ function gameLoop(currentTime) {
         keys['arrowup'] = false; keys['arrowleft'] = false; keys['arrowdown'] = false; keys['arrowright'] = false;
         mouse.isDown = false;
         player.isRolling = false;
+        touchState.move.nx = 0; touchState.move.ny = 0;
     }
 
     if (gameState.currentScene === 'battle' && !gameState.isShopOpen) {
@@ -1475,6 +1738,11 @@ function gameLoop(currentTime) {
         if (keys['s'] || keys['arrowdown']) ay += 1;
         if (keys['a'] || keys['arrowleft']) ax -= 1;
         if (keys['d'] || keys['arrowright']) ax += 1;
+
+        if (touchState.move.active) {
+            ax += touchState.move.nx;
+            ay += touchState.move.ny;
+        }
     }
 
     if (ax !== 0 && ay !== 0) {
@@ -1940,19 +2208,16 @@ function gameLoop(currentTime) {
     
     drawGrass(ctx, timeSec, grassFront);
 
-    if (gameState.currentScene === 'safe' && !gameState.isShopOpen) {
-        let distToShop = Math.hypot(player.x - 0, player.y - (-50));
-        if (distToShop < 120) {
-            ctx.save();
-            ctx.translate(0, -180); 
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 20px "Arial Black", sans-serif'; // Keeping arcade font here
-            ctx.textAlign = 'center';
-            ctx.shadowColor = '#000000';
-            ctx.shadowBlur = 6;
-            ctx.fillText("PRESS [E] TO SHOP", 0, Math.sin(timeSec * 5) * 5); 
-            ctx.restore();
-        }
+    if (gameState.currentScene === 'safe' && !gameState.isShopOpen && isNearShopEntrance()) {
+        ctx.save();
+        ctx.translate(0, -180); 
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 20px "Arial Black", sans-serif'; // Keeping arcade font here
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#000000';
+        ctx.shadowBlur = 6;
+        ctx.fillText(isTouchDevice ? "TAP TO SHOP" : "PRESS [E] TO SHOP", 0, Math.sin(timeSec * 5) * 5); 
+        ctx.restore();
     }
 
     // --- DRAW PARTICLES ---
