@@ -718,8 +718,13 @@ canvas.addEventListener('touchstart', e => {
 
             touchState.aim.active = true;
             touchState.aim.id = touch.identifier;
-            touchState.aim.startX = tx;
-            touchState.aim.startY = ty;
+            // Clamp the anchor away from the edges - if someone's first touch
+            // lands right up against the right (or top/bottom) edge, there's
+            // no physical room left to drag further that way, which is what
+            // made aiming toward the right feel stuck/awkward.
+            const aimMargin = 70;
+            touchState.aim.startX = Math.min(tx, width - aimMargin);
+            touchState.aim.startY = Math.max(aimMargin, Math.min(ty, height - aimMargin));
             mouse.x = tx;
             mouse.y = ty;
             mouse.isDown = true;
@@ -1048,27 +1053,20 @@ function drawSprite(ctx, spriteKey, x, y, rotation = 0) {
     ctx.restore();
 }
 
-function drawFloatyDuck(ctx, time) {
-    // Once the truck has all but arrived, the duck clocks it and freezes into a stare -
-    // idle bobbing/drifting damps out and the neck cranes further toward it.
-    // Once the truck's gone, it eases back to a calm float for the quiet beat after.
-    const truck = getIntroTruckState(time);
-    const seq = getIntroSequenceState(time);
-    let stareRaw = Math.max(0, Math.min(1, (truck.progress - 0.7) / 0.3));
-    if (seq.departed) {
-        stareRaw *= Math.max(0, 1 - seq.sinceDeparted / 1.5);
-    }
-    const stare = smoothStep(stareRaw);
+// The inflatable ring the duck floats in. Split from the duck's own drawing
+// so it can be left behind in the pond once the duck jumps out, then slowly
+// sink and vanish a couple seconds later.
+const floatyRing = {
+    left: false,
+    leftAt: 0,
+    x: 0,
+    y: 0
+};
 
-    const bob = Math.sin(time * 1.25) * 4 * (1 - stare * 0.7);
-    const driftTilt = Math.sin(time * 0.8) * 0.035 * (1 - stare);
-
-    player.gunTipWorldX = player.x;
-    player.gunTipWorldY = player.y;
-
+function drawFloatyRing(ctx, time, x, y, alpha, sinkOffset) {
     ctx.save();
-    ctx.translate(player.x, player.y + bob);
-    ctx.rotate(driftTilt);
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y + sinkOffset);
 
     ctx.fillStyle = 'rgba(7, 89, 133, 0.24)';
     ctx.beginPath();
@@ -1115,9 +1113,61 @@ function drawFloatyDuck(ctx, time) {
         ctx.stroke();
     });
 
+    ctx.restore();
+}
+
+// Drawn once the duck has jumped out - stays put at the spot it was
+// abandoned, bobs for a couple seconds, then sinks and fades away.
+function drawAbandonedFloatyRing(ctx, time) {
+    if (!floatyRing.left) return;
+    const elapsed = time - floatyRing.leftAt;
+    const waitBeforeSink = 2.0;
+    const sinkDuration = 2.0;
+
+    if (elapsed < waitBeforeSink) {
+        const bob = Math.sin(time * 1.25) * 4;
+        drawFloatyRing(ctx, time, floatyRing.x, floatyRing.y, 1, bob);
+    } else {
+        const sinkT = Math.min(1, (elapsed - waitBeforeSink) / sinkDuration);
+        const alpha = 1 - sinkT;
+        if (alpha > 0.01) {
+            drawFloatyRing(ctx, time, floatyRing.x, floatyRing.y, alpha, sinkT * 42);
+        }
+    }
+}
+
+function drawFloatyDuck(ctx, time) {
+    // Once the truck has all but arrived, the duck clocks it and freezes into a stare -
+    // idle bobbing/drifting damps out and the neck cranes further toward it.
+    // Once the truck's gone, it eases back to a calm float for the quiet beat after.
+    const truck = getIntroTruckState(time);
+    const seq = getIntroSequenceState(time);
+    let stareRaw = Math.max(0, Math.min(1, (truck.progress - 0.7) / 0.3));
+    if (seq.departed) {
+        stareRaw *= Math.max(0, 1 - seq.sinceDeparted / 1.5);
+    }
+    const stare = smoothStep(stareRaw);
+    const jumping = qte.phase === 'jumping';
+
+    const bob = jumping ? 0 : Math.sin(time * 1.25) * 4 * (1 - stare * 0.7);
+    const driftTilt = jumping ? 0 : Math.sin(time * 0.8) * 0.035 * (1 - stare);
+    const jumpT = jumping ? Math.min(1, qte.jumpTimer / qte.jumpDuration) : 0;
+    const jumpLean = jumping ? Math.sin(jumpT * Math.PI) * 0.5 : 0;
+
+    player.gunTipWorldX = player.x;
+    player.gunTipWorldY = player.y;
+
+    if (!floatyRing.left) {
+        drawFloatyRing(ctx, time, player.x, player.y, 1, bob);
+    }
+
+    ctx.save();
+    ctx.translate(player.x, player.y + bob);
+    ctx.rotate(driftTilt);
+
     ctx.save();
     ctx.translate(0, -9 + Math.sin(time * 1.4 + 0.6) * 1.6 * (1 - stare));
-    ctx.rotate(-0.22 - stare * 0.32 + Math.sin(time * 0.9) * 0.02 * (1 - stare));
+    ctx.rotate(-0.22 - stare * 0.32 - jumpLean + Math.sin(time * 0.9) * 0.02 * (1 - stare));
     ctx.scale(1.08, 1.08);
 
     drawSprite(ctx, 'leg', -5, 1, -0.85);
@@ -1586,6 +1636,11 @@ function updateQte(dt, time) {
             qte.jumpTimer = 0;
             qte.startX = player.x;
             qte.startY = player.y;
+            floatyRing.left = true;
+            floatyRing.leftAt = time;
+            floatyRing.x = player.x;
+            floatyRing.y = player.y;
+            triggerMutantFrogAttack(time);
         }
     } else if (qte.phase === 'jumping') {
         qte.jumpTimer += dt;
@@ -1617,6 +1672,87 @@ function handleQteTap() {
         qte.resultTimer = 0.8;
     }
     return true;
+}
+
+// The three pond frogs, mutated by the sludge. They leap out of the water the
+// instant the duck jumps for shore, land near it, then chase and bite.
+let mutantFrogsTriggered = false;
+let mutantFrogsTriggerTime = 0;
+const mutantFrogs = [
+    { x: -84, y: -26, scale: 0.78 },
+    { x: 72, y: 20, scale: 0.64 },
+    { x: -26, y: 58, scale: 0.58 }
+].map((f, i) => ({
+    ...f,
+    id: i,
+    state: 'pending',
+    launchDelay: i * 0.15,
+    leapTimer: 0,
+    leapDuration: 0.65 + i * 0.08,
+    startX: f.x,
+    startY: f.y,
+    targetX: 0,
+    targetY: 0,
+    biteCooldown: 0
+}));
+
+function triggerMutantFrogAttack(time) {
+    mutantFrogsTriggered = true;
+    mutantFrogsTriggerTime = time;
+}
+
+function updateMutantFrogs(dt, time) {
+    if (!mutantFrogsTriggered) return;
+    mutantFrogs.forEach(f => {
+        if (f.state === 'pending') {
+            if (time - mutantFrogsTriggerTime >= f.launchDelay) {
+                f.state = 'leaping';
+                f.leapTimer = 0;
+                f.startX = f.x;
+                f.startY = f.y;
+                f.targetX = qte.endX + (f.id - 1) * 45;
+                f.targetY = qte.endY + 15 + f.id * 8;
+            }
+        } else if (f.state === 'leaping') {
+            f.leapTimer += dt;
+            const t = Math.min(1, f.leapTimer / f.leapDuration);
+            const ease = smoothStep(t);
+            f.x = f.startX + (f.targetX - f.startX) * ease;
+            f.y = f.startY + (f.targetY - f.startY) * ease - Math.sin(t * Math.PI) * 70;
+            if (t >= 1) {
+                f.state = 'chasing';
+                f.x = f.targetX;
+                f.y = f.targetY;
+            }
+        } else if (f.state === 'chasing') {
+            const dx = player.x - f.x, dy = player.y - f.y;
+            const dist = Math.hypot(dx, dy) || 0.0001;
+            if (dist > 30) {
+                const speed = 145;
+                f.x += (dx / dist) * speed * dt;
+                f.y += (dy / dist) * speed * dt;
+            }
+            f.biteCooldown -= dt;
+            if (dist <= 36 && f.biteCooldown <= 0 && !INTRO_CHILL_SCENE) {
+                f.biteCooldown = 1.4;
+                player.hp = Math.max(0, player.hp - 6);
+                floatingTexts.push({
+                    text: '-6', x: player.x, y: player.y - 30,
+                    vx: (Math.random() - 0.5) * 20, vy: -40,
+                    life: 0.8, maxLife: 0.8, color: '#4ade80'
+                });
+            }
+        }
+    });
+}
+
+function drawMutantFrogs(ctx, time) {
+    if (!mutantFrogsTriggered) return;
+    mutantFrogs.forEach(f => {
+        if (f.state === 'pending') return;
+        const lunge = f.state === 'chasing' ? 1 + Math.sin(time * 10 + f.id) * 0.08 : 1;
+        drawPixelFrog(ctx, f.x, f.y, f.scale * lunge, time * 1.3 + f.id * 2, f.state === 'chasing' ? 0.4 : 0);
+    });
 }
 
 // Two FeastCorp workers climb out of the cab and walk single-file down the
@@ -1967,9 +2103,11 @@ function drawPond(ctx, time, contamP = 0) {
     });
 
     const frogTwitch = Math.max(0, Math.min(1, (contamP - 0.12) / 0.3));
-    drawPixelFrog(ctx, -84, -26 + Math.sin(time * 1.9) * 2, 0.78, time * 1.1, frogTwitch);
-    drawPixelFrog(ctx, 72, 20 + Math.sin(time * 1.9 + 1.3) * 2, 0.64, time * 1.2 + 2, frogTwitch);
-    drawPixelFrog(ctx, -26, 58 + Math.sin(time * 1.9 + 3.9) * 2, 0.58, time * 1.4 + 4, frogTwitch);
+    if (!mutantFrogsTriggered) {
+        drawPixelFrog(ctx, -84, -26 + Math.sin(time * 1.9) * 2, 0.78, time * 1.1, frogTwitch);
+        drawPixelFrog(ctx, 72, 20 + Math.sin(time * 1.9 + 1.3) * 2, 0.64, time * 1.2 + 2, frogTwitch);
+        drawPixelFrog(ctx, -26, 58 + Math.sin(time * 1.9 + 3.9) * 2, 0.58, time * 1.4 + 4, frogTwitch);
+    }
 
 
     for (let i = 0; i < 14; i++) {
@@ -2201,6 +2339,7 @@ function gameLoop(currentTime) {
         stopFireSound();
         updateQte(dt, timeSec);
     }
+    updateMutantFrogs(dt, timeSec);
 
     if (ax !== 0 && ay !== 0) {
         const len = Math.sqrt(ax * ax + ay * ay);
@@ -2249,6 +2388,24 @@ function gameLoop(currentTime) {
         if (player.x < -arenaBoundsX) {
             gameState.currentScene = 'battle';
             player.x = arenaBoundsX - 30; 
+        }
+    }
+
+    // The pond is now a toxic waste pond behind the duck - can't wade or run
+    // back into it. Roughly approximated as an ellipse over its visible shape.
+    if (!INTRO_CHILL_SCENE) {
+        const pondCx = 6, pondCy = 3, pondRx = 178, pondRy = 118;
+        let ex = (player.x - pondCx) / pondRx;
+        let ey = (player.y - pondCy) / pondRy;
+        const distSq = ex * ex + ey * ey;
+        if (distSq < 1) {
+            let dist = Math.sqrt(distSq);
+            if (dist < 0.0001) { ex = 0; ey = 1; dist = 1; }
+            const nx = ex / dist, ny = ey / dist;
+            player.x = pondCx + nx * pondRx;
+            player.y = pondCy + ny * pondRy;
+            player.vx = 0;
+            player.vy = 0;
         }
     }
 
@@ -2401,19 +2558,21 @@ function gameLoop(currentTime) {
     ctx.fillStyle = groundPattern;
     ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
     
-    // Draw the forest floor gradient BEFORE the grass so the grass sits on top of it
+    // Draw the forest floor gradient BEFORE the grass so the grass sits on top of it.
+    // Pushed well above the truck's whole drive-in path (-760 to -285) and any
+    // camera target, so it never overlaps or looks like it's stuck to the truck.
     const screenLeftX = camX - logicalWidth/2 - 200;
     ctx.fillStyle = '#020617';
-    ctx.fillRect(screenLeftX, -950, logicalWidth + 400, 200); 
+    ctx.fillRect(screenLeftX, -1750, logicalWidth + 400, 200); 
     
-    const groundGrad = ctx.createLinearGradient(0, -750, 0, -590);
+    const groundGrad = ctx.createLinearGradient(0, -1550, 0, -1390);
     groundGrad.addColorStop(0, '#020617'); // Matches the dark canopy abyss
     groundGrad.addColorStop(0.35, '#022c22'); // Deep shadow green
     groundGrad.addColorStop(0.65, '#064e3b'); // Midground green under the front trees
     groundGrad.addColorStop(1, 'rgba(6, 78, 59, 0)'); // Fades out completely into the existing grass
 
     ctx.fillStyle = groundGrad;
-    ctx.fillRect(screenLeftX, -750, logicalWidth + 400, 170);
+    ctx.fillRect(screenLeftX, -1550, logicalWidth + 400, 170);
 
     if (gameState.currentScene === 'safe') {
         ctx.fillStyle = 'rgba(0, 25, 10, 0.4)'; 
@@ -2433,9 +2592,11 @@ function gameLoop(currentTime) {
     drawFeastCorpWorkers(ctx, timeSec);
     const introContam = introState.startTime !== null ? getIntroSequenceState(timeSec).contamP : 0;
     drawPond(ctx, timeSec, introContam);
+    drawAbandonedFloatyRing(ctx, timeSec);
     drawSludgeStream(ctx, timeSec);
     
     drawPlayer(ctx, timeSec, dt);
+    drawMutantFrogs(ctx, timeSec);
     
     drawGrass(ctx, timeSec, grassFront);
 
