@@ -162,7 +162,9 @@ const PALETTE = {
     'S': '#78350f', // Stick Brown
     'D': '#374151', // Ash Rat Dark Gray
     'U': '#A855F7', // Purple Duck Main
-    'u': '#7E22CE'  // Purple Duck Shadow
+    'u': '#7E22CE', // Purple Duck Shadow
+    'N': '#94A3B8', // Worker Duck Grey Main
+    'n': '#64748B'  // Worker Duck Grey Shadow
 };
 
 const SPRITES = {
@@ -202,6 +204,46 @@ const SPRITES = {
             "  XYYYYX  ",
             "   XXXX   ",
             "          "
+        ]
+    },
+    greyBody: {
+        pivot: {x: 6, y: 4},
+        data: [
+            "   XXXXXX   ",
+            "  XNNNNNNX  ",
+            " XNNNNNNNNX ",
+            " XJNNNNNNNX ",
+            " XNNNNnnnNX ",
+            "  XNNnnnnX  ",
+            "   XXXXXX   "
+        ]
+    },
+    greyHead: {
+        pivot: {x: 4, y: 6},
+        data: [
+            "          ",
+            "          ",
+            "   XXXX   ",
+            "  XNNNNX  ",
+            "  XNNBNX  ",
+            "  XNNNNX  ",
+            "  XNNNNX  ",
+            "   XXXX   ",
+            "          "
+        ]
+    },
+    gasMask: {
+        pivot: {x: 4, y: 6},
+        data: [
+            "             ",
+            "    XXX      ",
+            "   XGGGX     ",
+            "  XGXBGGX    ",
+            "  XGBBGGXXggX",
+            "  XGXBGGXXggX",
+            "   XGGGX XXXX",
+            "    XXX      ",
+            "             "
         ]
     },
     purpleHead: {
@@ -485,6 +527,66 @@ function stopFireSound() {
 // --- GAME STATE ---
 const keys = {};
 const mouse = { x: 0, y: 0, isDown: false };
+let INTRO_CHILL_SCENE = true;
+const introState = {
+    startTime: null,
+    cameraHold: 5.0,
+    cameraDuration: 3.8,
+    cameraHandoffDuration: 2.0,
+    truckDelay: -3.2,
+    truckDriveDuration: 7.2,
+    startCamX: 0,
+    startCamY: 0,
+    targetCamX: 0,
+    targetCamY: -620,
+    pondCamY: -150,
+    truckStartY: -760,
+    truckEndY: -285,
+    truckX: 42,
+    workerAppearDelay: 0.5,
+    workerExitDuration: 0.6,
+    workerWalkDuration: 1.7,
+    doorOpenDelay: 0.5,
+    doorOpenDuration: 1.1,
+    contaminationDuration: 7.0,
+    holdDuration: 2.0,
+    truckLeaveDelay: 0.5,
+    truckLeaveDuration: 3.2,
+    silenceDuration: 2.5
+};
+
+// Drives the QTE the duck has to time to hop out of the ruined pond onto dry
+// land. Mutable/event-driven (taps, retries) rather than a pure function of
+// time, unlike the rest of the intro timeline.
+const qte = {
+    unlocked: false,
+    phase: 'idle', // idle -> running -> (fail -> running)* -> success -> jumping -> done
+    pos: 0,
+    dir: 1,
+    speed: 0.55,
+    greenStart: 0.4,
+    greenEnd: 0.6,
+    resultTimer: 0,
+    jumpTimer: 0,
+    jumpDuration: 1.0,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 150
+};
+
+function smoothStep(p) { return p * p * (3 - 2 * p); }
+
+function lerpColor(colorA, colorB, t) {
+    t = Math.max(0, Math.min(1, t));
+    const a = parseInt(colorA.slice(1), 16), b = parseInt(colorB.slice(1), 16);
+    const ar = (a >> 16) & 255, ag = (a >> 8) & 255, ab = a & 255;
+    const br = (b >> 16) & 255, bg = (b >> 8) & 255, bb = b & 255;
+    const r = Math.round(ar + (br - ar) * t);
+    const g = Math.round(ag + (bg - ag) * t);
+    const bl = Math.round(ab + (bb - ab) * t);
+    return `rgb(${r}, ${g}, ${bl})`;
+}
 
 // Touch control state: left side of screen = invisible drag-to-move,
 // right side of screen = aim + fire. No visible joystick is drawn.
@@ -556,8 +658,6 @@ let camX = 0;
 let camY = 0;
 
 // On touch devices the world is rendered zoomed-out so more of the arena is visible
-// (fixed pixel-art sprite sizes otherwise look huge on a small phone screen).
-// logicalWidth/logicalHeight represent the amount of world-space actually visible.
 let worldZoom = 1;
 let logicalWidth = 0;
 let logicalHeight = 0;
@@ -575,6 +675,7 @@ window.addEventListener('mousemove', e => {
 });
 
 window.addEventListener('mousedown', () => {
+    if (handleQteTap()) return;
     mouse.isDown = true;
     if (player.fuel > 0) startFireSound();
 });
@@ -585,10 +686,9 @@ window.addEventListener('mouseup', () => {
 });
 
 // --- TOUCH CONTROLS ---
-// Left half of the screen: drag to move.
-// Right half of the screen: drag like an invisible aim stick and fire.
 canvas.addEventListener('touchstart', e => {
     e.preventDefault();
+    if (handleQteTap()) return;
     for (const touch of e.changedTouches) {
         const tx = touch.clientX, ty = touch.clientY;
 
@@ -725,6 +825,163 @@ function startRoll(dx, dy) {
     return true;
 }
 
+// --- HIGH QUALITY PROCEDURAL TREES (No external image files) ---
+const treeSprites = [];
+const forestTrees = [];
+
+// Helper function to force hard pixel-art edges on procedural canvases
+function crispify(ctxToCrisp, canvasWidth, canvasHeight) {
+    const imgData = ctxToCrisp.getImageData(0, 0, canvasWidth, canvasHeight);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+        // If there's any transparency, snap it to fully solid or fully transparent
+        if (d[i+3] > 0 && d[i+3] < 255) {
+            d[i+3] = d[i+3] > 127 ? 255 : 0;
+        }
+    }
+    ctxToCrisp.putImageData(imgData, 0, 0);
+}
+
+function createTreeSprites() {
+    const makeCanvas = () => {
+        const c = document.createElement('canvas');
+        c.width = 64; c.height = 80;
+        const ctx = c.getContext('2d');
+        // Ensure paths aren't blurred when we draw internally
+        ctx.imageSmoothingEnabled = false; 
+        return {c, ctx};
+    };
+
+    // Draws a perfect pixel circle by iterating over the grid
+    const pCircle = (ctx, x, y, r, color) => {
+        ctx.fillStyle = color;
+        for(let dy = -r; dy <= r; dy++) {
+            for(let dx = -r; dx <= r; dx++) {
+                if(dx*dx + dy*dy <= r*r + 0.5) {
+                    ctx.fillRect(Math.round(x+dx), Math.round(y+dy), 1, 1);
+                }
+            }
+        }
+    };
+
+    // Tree 0: Lush Oak (Deep green, bubbly canopy)
+    let {c, ctx} = makeCanvas();
+    ctx.fillStyle = '#3f2410'; ctx.fillRect(28, 40, 8, 40); // Base trunk
+    ctx.fillStyle = '#1c0f04'; ctx.fillRect(34, 40, 2, 40); // Trunk shadow
+    ctx.fillStyle = '#5c381c'; ctx.fillRect(28, 40, 2, 40); // Trunk highlight
+    const clusters = [ {x:32, y:30, r:18}, {x:16, y:40, r:16}, {x:48, y:38, r:16}, {x:24, y:20, r:15}, {x:40, y:18, r:15}, {x:32, y:8, r:14} ];
+    clusters.forEach(cl => pCircle(ctx, cl.x, cl.y, cl.r+2, '#022c22')); // Deep shadow outline
+    clusters.forEach(cl => pCircle(ctx, cl.x, cl.y, cl.r, '#064e3b')); // Shadow layer
+    clusters.forEach(cl => pCircle(ctx, cl.x, cl.y-2, cl.r-2, '#15803d')); // Base layer
+    clusters.forEach(cl => pCircle(ctx, cl.x-3, cl.y-5, cl.r-4, '#22c55e')); // Left-side highlights
+    crispify(ctx, 64, 80);
+    treeSprites.push(c);
+
+    // Tree 1: Tall Pine (Classic stacked triangles)
+    ({c, ctx} = makeCanvas());
+    ctx.fillStyle = '#3f2410'; ctx.fillRect(30, 40, 4, 40);
+    ctx.fillStyle = '#1c0f04'; ctx.fillRect(33, 40, 1, 40);
+    ctx.fillStyle = '#5c381c'; ctx.fillRect(30, 40, 1, 40);
+    for(let i=0; i<6; i++) {
+        let w = 22 - i*3.5; let y = 60 - i*10;
+        ctx.fillStyle = '#022c22'; // Outline
+        ctx.beginPath(); ctx.moveTo(32, y-20); ctx.lineTo(32+w+2, y+2); ctx.lineTo(32-w-2, y+2); ctx.fill();
+        ctx.fillStyle = '#064e3b'; // Shadow
+        ctx.beginPath(); ctx.moveTo(32, y-18); ctx.lineTo(32+w, y); ctx.lineTo(32-w, y); ctx.fill();
+        ctx.fillStyle = '#047857'; // Base
+        ctx.beginPath(); ctx.moveTo(32, y-18); ctx.lineTo(32+w-3, y-1); ctx.lineTo(32-w+3, y-1); ctx.fill();
+        ctx.fillStyle = '#10b981'; // Left Highlight
+        ctx.beginPath(); ctx.moveTo(32, y-18); ctx.lineTo(32, y-1); ctx.lineTo(32-w+3, y-1); ctx.fill();
+    }
+    crispify(ctx, 64, 80);
+    treeSprites.push(c);
+
+    // Tree 2: Autumn Birch (White trunk, yellow/orange leaves)
+    ({c, ctx} = makeCanvas());
+    ctx.fillStyle = '#e2e8f0'; ctx.fillRect(29, 40, 6, 40);
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(33, 40, 2, 40); 
+    // Birch bark marks
+    ctx.fillRect(29, 50, 4, 2); ctx.fillRect(31, 65, 4, 2); ctx.fillRect(29, 75, 3, 2);
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(29, 40, 1, 40);
+    const bClusters = [ {x:32, y:30, r:16}, {x:18, y:42, r:14}, {x:46, y:38, r:14}, {x:32, y:14, r:15} ];
+    bClusters.forEach(cl => pCircle(ctx, cl.x, cl.y, cl.r+2, '#78350f')); 
+    bClusters.forEach(cl => pCircle(ctx, cl.x, cl.y, cl.r, '#b45309')); 
+    bClusters.forEach(cl => pCircle(ctx, cl.x, cl.y-2, cl.r-2, '#f59e0b')); 
+    bClusters.forEach(cl => pCircle(ctx, cl.x-3, cl.y-5, cl.r-4, '#fcd34d')); 
+    crispify(ctx, 64, 80);
+    treeSprites.push(c);
+
+    // Tree 3: Dark Silhouette Pine (For distant background depth)
+    ({c, ctx} = makeCanvas());
+    ctx.fillStyle = '#020617'; ctx.fillRect(30, 40, 4, 40);
+    for(let i=0; i<7; i++) {
+        let w = 24 - i*3; let y = 65 - i*9;
+        ctx.fillStyle = '#020617'; 
+        ctx.beginPath(); ctx.moveTo(32, y-18); ctx.lineTo(32+w, y); ctx.lineTo(32-w, y); ctx.fill();
+        ctx.fillStyle = '#0f172a'; // Faint highlight to add slight texture
+        ctx.beginPath(); ctx.moveTo(32, y-18); ctx.lineTo(32, y-1); ctx.lineTo(32-w+1, y-1); ctx.fill();
+    }
+    crispify(ctx, 64, 80);
+    treeSprites.push(c);
+    
+    // Tree 4: Dead Burnt Tree (Spidery twisted branches)
+    ({c, ctx} = makeCanvas());
+    ctx.fillStyle = '#1c1917'; ctx.fillRect(28, 45, 6, 35); 
+    ctx.fillStyle = '#292524'; ctx.fillRect(28, 45, 2, 35); 
+    ctx.strokeStyle = '#1c1917'; ctx.lineWidth = 4; ctx.lineCap = 'square';
+    ctx.beginPath(); ctx.moveTo(31, 60); ctx.quadraticCurveTo(15, 45, 10, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(31, 55); ctx.quadraticCurveTo(50, 40, 55, 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(31, 45); ctx.quadraticCurveTo(35, 25, 25, 10); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(18, 45); ctx.lineTo(12, 35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(42, 40); ctx.lineTo(50, 35); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(32, 28); ctx.lineTo(40, 20); ctx.stroke();
+    crispify(ctx, 64, 80);
+    treeSprites.push(c);
+}
+
+function initForest() {
+    // Very distant background layer (Dark silhouettes for parallax depth)
+    for (let i = 0; i < 150; i++) {
+        forestTrees.push({
+            x: (Math.random() - 0.5) * 4000,
+            y: -780 - Math.random() * 80,
+            type: 3,
+            scale: 6 + Math.random() * 3,
+            sway: Math.random() * Math.PI * 2,
+            layer: 0
+        });
+    }
+    // Midground layer (Pines and Dead Trees)
+    for (let i = 0; i < 180; i++) {
+        forestTrees.push({
+            x: (Math.random() - 0.5) * 4200,
+            y: -720 - Math.random() * 60,
+            type: Math.random() > 0.8 ? 4 : 1, 
+            scale: 5 + Math.random() * 2.5,
+            sway: Math.random() * Math.PI * 2,
+            layer: 1
+        });
+    }
+    // Foreground prominent layer (Oaks, Birches, some Pines)
+    for (let i = 0; i < 120; i++) {
+        forestTrees.push({
+            x: (Math.random() - 0.5) * 4400,
+            y: -660 - Math.random() * 50,
+            type: Math.floor(Math.random() * 3), 
+            scale: 4.5 + Math.random() * 2,
+            sway: Math.random() * Math.PI * 2,
+            layer: 2
+        });
+    }
+    // Sort to strictly draw back-to-front (Painter's algorithm)
+    forestTrees.sort((a, b) => a.y - b.y);
+}
+
+// Generate our beautiful tree art right at boot up
+createTreeSprites();
+initForest();
+
 // --- ENVIRONMENT GENERATION ---
 const GRASS_COLORS = ['#22c55e', '#4ade80', '#16a34a', '#15803d'];
 const battleGrassBlades = [];
@@ -788,7 +1045,109 @@ function drawSprite(ctx, spriteKey, x, y, rotation = 0) {
     ctx.restore();
 }
 
+function drawFloatyDuck(ctx, time) {
+    // Once the truck has all but arrived, the duck clocks it and freezes into a stare -
+    // idle bobbing/drifting damps out and the neck cranes further toward it.
+    // Once the truck's gone, it eases back to a calm float for the quiet beat after.
+    const truck = getIntroTruckState(time);
+    const seq = getIntroSequenceState(time);
+    let stareRaw = Math.max(0, Math.min(1, (truck.progress - 0.7) / 0.3));
+    if (seq.departed) {
+        stareRaw *= Math.max(0, 1 - seq.sinceDeparted / 1.5);
+    }
+    const stare = smoothStep(stareRaw);
+
+    const bob = Math.sin(time * 1.25) * 4 * (1 - stare * 0.7);
+    const driftTilt = Math.sin(time * 0.8) * 0.035 * (1 - stare);
+
+    player.gunTipWorldX = player.x;
+    player.gunTipWorldY = player.y;
+
+    ctx.save();
+    ctx.translate(player.x, player.y + bob);
+    ctx.rotate(driftTilt);
+
+    ctx.fillStyle = 'rgba(7, 89, 133, 0.24)';
+    ctx.beginPath();
+    ctx.ellipse(0, 10, 58, 25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 56, 31, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 28, 14, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#f472b6';
+    ctx.fill('evenodd');
+
+    const ringGrad = ctx.createLinearGradient(0, -32, 0, 34);
+    ringGrad.addColorStop(0, 'rgba(253, 242, 248, 0.7)');
+    ringGrad.addColorStop(0.35, 'rgba(244, 114, 182, 0.16)');
+    ringGrad.addColorStop(1, 'rgba(190, 24, 93, 0.35)');
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 56, 31, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 28, 14, 0, 0, Math.PI * 2);
+    ctx.fillStyle = ringGrad;
+    ctx.fill('evenodd');
+
+    ctx.strokeStyle = '#be185d';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 56, 31, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = '#fbcfe8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -1, 30, 15, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(253, 242, 248, 0.95)';
+    ctx.fillRect(-31, -20, 20, 4);
+    ctx.fillRect(14, -23, 13, 3);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(224, 242, 254, 0.42)';
+    ctx.lineWidth = 2;
+    [-1, 1].forEach((side, i) => {
+        ctx.beginPath();
+        ctx.ellipse(side * 63, -4 + Math.sin(time * 1.2 + i) * 3, 16, 4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    });
+
+    ctx.save();
+    ctx.translate(0, -9 + Math.sin(time * 1.4 + 0.6) * 1.6 * (1 - stare));
+    ctx.rotate(-0.22 - stare * 0.32 + Math.sin(time * 0.9) * 0.02 * (1 - stare));
+    ctx.scale(1.08, 1.08);
+
+    drawSprite(ctx, 'leg', -5, 1, -0.85);
+    drawSprite(ctx, 'leg', 2, 1, -0.45);
+
+    ctx.save();
+    ctx.rotate(-0.1);
+    drawSprite(ctx, 'body', 0, 0, 0.03);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(7, -7);
+    ctx.rotate(0.18);
+    drawSprite(ctx, 'head', 0, 0, 0);
+
+    ctx.fillStyle = PALETTE['J'];
+    ctx.fillRect(13, -6, 18, 6);
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(16, -1, 14, 3);
+    ctx.fillStyle = '#92400e';
+    ctx.fillRect(13, 1, 18, 2);
+    ctx.restore();
+
+    ctx.restore();
+    ctx.restore();
+}
+
 function drawPlayer(ctx, time, dt) {
+    if (INTRO_CHILL_SCENE) {
+        drawFloatyDuck(ctx, time);
+        return;
+    }
+
     const isRunning = Math.abs(player.vx) > 10 || Math.abs(player.vy) > 10;
     const runCycle = time * 14; 
     
@@ -807,7 +1166,7 @@ function drawPlayer(ctx, time, dt) {
 
     player.flipX = dx < 0;
     if (player.flipX) {
-        dx = -dx; // Invert aim dx if body is flipped
+        dx = -dx; 
     }
     let aimAngle = Math.atan2(dy, dx);
     aimAngle = Math.max(-Math.PI/2, Math.min(Math.PI/2, aimAngle));
@@ -850,7 +1209,6 @@ function drawPlayer(ctx, time, dt) {
         setTimeout(() => player.isBlinking = false, 150);
     }
 
-    // Evaluate upgrades to dynamically build gun
     let isExtended = false;
     let isTriple = false;
     let isPressure = false;
@@ -865,10 +1223,9 @@ function drawPlayer(ctx, time, dt) {
 
     drawSprite(ctx, gunSprite, 0, 0);
 
-    // Overlays
     if (isPressure) drawSprite(ctx, 'gun_valve', 0, 0);
     if (isMediumTank) drawSprite(ctx, 'gun_medium_tank', 0, 0);
-    if (isNapalm) drawSprite(ctx, 'gun_napalm_tank', 0, 0); // Can layer over the medium tank
+    if (isNapalm) drawSprite(ctx, 'gun_napalm_tank', 0, 0); 
     
     const matrix = ctx.getTransform();
     const localTipX = 22 * PIXEL_SCALE;
@@ -894,6 +1251,16 @@ function drawGrass(ctx, time, blades) {
 
     blades.forEach(blade => {
         if (blade.x > left && blade.x < right && blade.y > top && blade.y < bottom) {
+            
+            // Fade the grass to darkness the deeper into the forest it goes
+            let alpha = 1.0;
+            if (blade.y < -550) { 
+                alpha = Math.max(0, 1.0 - (-550 - blade.y) / 160);
+            }
+            if (alpha <= 0) return;
+            
+            ctx.globalAlpha = alpha;
+
             const sway = Math.sin(time * 2 + blade.offset) * 5 * blade.scale + 
                          Math.sin(time * 0.8 + blade.offset * 2) * 2 * blade.scale;
             ctx.fillStyle = GRASS_COLORS[blade.colorIndex];
@@ -911,6 +1278,443 @@ function drawGrass(ctx, time, blades) {
             ctx.fill();
         }
     });
+    
+    ctx.globalAlpha = 1.0; // Reset alpha
+}
+
+function drawWoodline(ctx, time) {
+    ctx.save();
+
+    forestTrees.forEach(t => {
+        if (t.x < camX - logicalWidth / 2 - 350 || t.x > camX + logicalWidth / 2 + 350) return;
+
+        const sprite = treeSprites[t.type];
+        const baseSway = Math.sin(time * 0.7 + t.sway) * (t.layer === 0 ? 0.015 : 0.035);
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        
+        if (t.layer > 0 && t.type !== 3) {
+            ctx.fillStyle = 'rgba(2, 44, 34, 0.45)';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 22 * t.scale, 6 * t.scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.transform(1, 0, baseSway, 1, 0, 0); 
+        ctx.drawImage(sprite, -32 * t.scale, -80 * t.scale, 64 * t.scale, 80 * t.scale);
+        ctx.restore();
+    });
+
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
+function getIntroTruckState(time) {
+    if (introState.startTime === null) {
+        return { active: false, progress: 0, eased: 0, appear: 1, x: introState.truckX, y: introState.truckStartY };
+    }
+
+    const elapsed = time - introState.startTime;
+    const driveStart = introState.cameraHold + introState.cameraDuration + introState.truckDelay;
+    const raw = (elapsed - driveStart) / introState.truckDriveDuration;
+    const progress = Math.max(0, Math.min(1, raw));
+    const eased = progress < 0.5
+        ? 2 * progress * progress
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+    return {
+        active: elapsed >= driveStart,
+        progress,
+        eased,
+        appear: 1,
+        x: introState.truckX + Math.sin(time * 0.75) * 1.2 * (1 - progress),
+        y: introState.truckStartY + (introState.truckEndY - introState.truckStartY) * eased
+    };
+}
+
+function drawFeastCorpTruck(ctx, time) {
+    const truck = getIntroTruckState(time);
+    if (!truck.active) return;
+    const seq = getIntroSequenceState(time);
+    if (seq.departed) return;
+
+    const rumble = Math.sin(time * 15) * (1 - truck.progress) * 0.8;
+    const scale = 1.2;
+
+    ctx.save();
+    ctx.translate(truck.x, truck.y + rumble + seq.departY);
+    ctx.scale(scale, scale);
+
+    // Faint tracks in the grass only.
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.18)';
+    ctx.fillRect(-47, -142, 13, 190);
+    ctx.fillRect(34, -142, 13, 190);
+    if (truck.progress < 0.95) {
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.16)';
+        for (let i = 0; i < 6; i++) {
+            const puff = (time * 1.15 + i * 0.16) % 1;
+            ctx.fillRect(-54 + i * 21, -142 - puff * 28, 16 + puff * 12, 7 + puff * 7);
+        }
+    }
+
+    // Main roof/tank plane: front is up in the woods, rear is down toward the pond.
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-68, -139, 136, 189);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-62, -145, 124, 180);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(-50, -115, 100, 118);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-43, -107, 86, 18);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-50, -50, 100, 9);
+    ctx.fillRect(-50, -12, 100, 9);
+
+    // Cab roof at the far/top end, so the truck is facing the woodline.
+    ctx.fillStyle = '#dbeafe';
+    ctx.fillRect(-42, -170, 84, 35);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-53, -146, 106, 28);
+    ctx.fillStyle = '#bae6fd';
+    ctx.fillRect(-31, -164, 62, 16);
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-38, -132, 76, 7);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-50, -135, 10, 8);
+    ctx.fillRect(40, -135, 10, 8);
+
+    // Top hatch and FeastCorp mark on the visible roof.
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(-30, -82, 60, 37);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(-30, -82, 60, 5);
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(-12, -68, 24, 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-4, -75, 8, 30);
+    ctx.fillRect(-16, -62, 32, 8);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 15px Arial Black, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FeastCorp', 0, -28);
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 7px monospace';
+    ctx.fillText('WASTE', 0, -17);
+
+    // Rear compactor/hatch. This is the one and only design for the truck's
+    // rear - while parked it just sits closed; once the workers arrive it
+    // hinges up and away, squashing toward its top edge as it lifts, then
+    // reverses the same way when it's time to shut again.
+    const doorEase = seq.doorEase;
+
+    if (doorEase > 0) {
+        ctx.fillStyle = seq.flowing ? '#052e16' : '#0f172a';
+        ctx.fillRect(-66, 28, 132, 66);
+        if (seq.flowing) {
+            const seep = ctx.createRadialGradient(0, 60, 6, 0, 60, 70);
+            seep.addColorStop(0, 'rgba(163, 230, 53, 0.5)');
+            seep.addColorStop(1, 'rgba(163, 230, 53, 0)');
+            ctx.fillStyle = seep;
+            ctx.fillRect(-80, 20, 160, 100);
+        }
+    }
+
+    ctx.save();
+    ctx.translate(0, 28);
+    ctx.translate(0, -doorEase * 5);
+    ctx.scale(1, 1 - doorEase * 0.92);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-66, 0, 132, 60);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(-56, 8, 112, 36);
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(-48, 16, 96, 7);
+    ctx.fillRect(-48, 33, 96, 7);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-66, 54, 132, 12);
+
+    for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = i % 2 === 0 ? '#facc15' : '#ef4444';
+        ctx.fillRect(-58 + i * 19, 46, 16, 8);
+    }
+    if (Math.floor(time * 3) % 2 === 0) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-72, 16, 8, 8);
+        ctx.fillRect(64, 16, 8, 8);
+    }
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-72, 34, 7, 7);
+    ctx.fillRect(65, 34, 7, 7);
+    ctx.restore();
+
+    ctx.restore();
+
+}
+
+function drawWorkerDuck(ctx, legSwing, flinch) {
+    ctx.save();
+    ctx.scale(0.92, 0.92);
+    ctx.rotate(-flinch * 0.12);
+    ctx.translate(0, flinch * 3);
+
+    // Legs, subtly stepping while walking
+    drawSprite(ctx, 'leg', -5, 1, -0.85 + legSwing);
+    drawSprite(ctx, 'leg', 2, 1, -0.45 - legSwing);
+
+    // Grey body
+    drawSprite(ctx, 'greyBody', 0, 0, 0.03);
+
+    // Head + gas mask - a real pixel sprite now, not procedural circles.
+    ctx.save();
+    ctx.translate(7, -7);
+    ctx.rotate(0.05);
+    drawSprite(ctx, 'greyHead', 0, 0, 0);
+    drawSprite(ctx, 'gasMask', 0, 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+}
+
+function getIntroWorkerState(time) {
+    const truck = getIntroTruckState(time);
+    if (!truck.active || truck.progress < 1) {
+        return { show: false, exitP: 0, walkP: 0, legPhase: 0, sinceArrive: 0 };
+    }
+
+    const driveStart = introState.cameraHold + introState.cameraDuration + introState.truckDelay;
+    const truckArriveElapsed = driveStart + introState.truckDriveDuration;
+    const elapsed = (time - introState.startTime) - truckArriveElapsed;
+
+    const t = elapsed - introState.workerAppearDelay;
+    if (t < 0) return { show: false, exitP: 0, walkP: 0, legPhase: 0, sinceArrive: 0 };
+
+    const exitDur = introState.workerExitDuration;
+    const walkDur = introState.workerWalkDuration;
+
+    const exitP = Math.max(0, Math.min(1, t / exitDur));
+    const walkP = Math.max(0, Math.min(1, (t - exitDur) / walkDur));
+    const sinceArrive = Math.max(0, t - exitDur - walkDur);
+
+    return { show: true, exitP, walkP, legPhase: t, sinceArrive };
+}
+
+// Once both workers are standing at the back of the truck, this drives the
+// whole rest of the beat: door opens, sludge pours, pond festers, then it all
+// reverses - door shuts, workers walk back, truck leaves, then silence until
+// the QTE unlocks. contamP only ever climbs (the pond stays ruined for good);
+// everything else about the door/workers/truck plays forward then in reverse.
+function getIntroSequenceState(time) {
+    const w = getIntroWorkerState(time);
+    const empty = {
+        show: w.show, doorEase: 0, flowing: false, contamP: 0,
+        returnWalkP: 0, enterP: 0, departY: 0, departed: false,
+        sinceDeparted: 0, qteShouldStart: false
+    };
+    if (!w.show || w.walkP < 1) return empty;
+
+    const s = w.sinceArrive;
+    const doorOpenP = Math.max(0, Math.min(1, (s - introState.doorOpenDelay) / introState.doorOpenDuration));
+    const flowStart = introState.doorOpenDelay + introState.doorOpenDuration * 0.3;
+    const contamP = Math.max(0, Math.min(1, (s - flowStart) / introState.contaminationDuration));
+    const outroStart = flowStart + introState.contaminationDuration + introState.holdDuration;
+
+    if (s < outroStart) {
+        return { ...empty, doorEase: smoothStep(doorOpenP), flowing: s >= flowStart, contamP };
+    }
+
+    // --- reverse sequence: shut the door, walk back, drive off, go quiet ---
+    const r = s - outroStart;
+    const closeP = Math.max(0, Math.min(1, r / introState.doorOpenDuration));
+    const doorEase = smoothStep(1 - closeP);
+
+    const returnStart = introState.doorOpenDuration + 0.2;
+    const returnWalkP = Math.max(0, Math.min(1, (r - returnStart) / introState.workerWalkDuration));
+
+    const enterStart = returnStart + introState.workerWalkDuration;
+    const enterP = Math.max(0, Math.min(1, (r - enterStart) / introState.workerExitDuration));
+
+    const leaveStart = enterStart + introState.workerExitDuration + introState.truckLeaveDelay;
+    const leaveP = Math.max(0, Math.min(1, (r - leaveStart) / introState.truckLeaveDuration));
+    const departY = -smoothStep(leaveP) * 900;
+    const departed = leaveP >= 1;
+
+    const silenceStart = leaveStart + introState.truckLeaveDuration;
+    const sinceDeparted = departed ? r - silenceStart : 0;
+    const qteShouldStart = r >= silenceStart + introState.silenceDuration;
+
+    return { ...empty, doorEase, flowing: false, contamP, returnWalkP, enterP, departY, departed, sinceDeparted, qteShouldStart };
+}
+
+// Drives the tap-timing meter: waits for the silence to end, runs the
+// back-and-forth indicator, handles a miss by resetting for a retry, and on a
+// hit plays a short hop from the pond onto dry land before handing control
+// over to the player.
+function updateQte(dt, time) {
+    if (qte.phase === 'done') return;
+
+    if (!qte.unlocked) {
+        const seq = getIntroSequenceState(time);
+        if (seq.qteShouldStart) {
+            qte.unlocked = true;
+            qte.phase = 'running';
+            qte.pos = 0;
+            qte.dir = 1;
+        }
+        return;
+    }
+
+    if (qte.phase === 'running') {
+        qte.pos += qte.dir * qte.speed * dt;
+        if (qte.pos >= 1) { qte.pos = 1; qte.dir = -1; }
+        if (qte.pos <= 0) { qte.pos = 0; qte.dir = 1; }
+    } else if (qte.phase === 'fail') {
+        qte.resultTimer -= dt;
+        if (qte.resultTimer <= 0) {
+            qte.phase = 'running';
+            qte.pos = 0;
+            qte.dir = 1;
+        }
+    } else if (qte.phase === 'success') {
+        qte.resultTimer -= dt;
+        if (qte.resultTimer <= 0) {
+            qte.phase = 'jumping';
+            qte.jumpTimer = 0;
+            qte.startX = player.x;
+            qte.startY = player.y;
+        }
+    } else if (qte.phase === 'jumping') {
+        qte.jumpTimer += dt;
+        const t = Math.min(1, qte.jumpTimer / qte.jumpDuration);
+        const ease = smoothStep(t);
+        player.x = qte.startX + (qte.endX - qte.startX) * ease;
+        player.y = qte.startY + (qte.endY - qte.startY) * ease - Math.sin(t * Math.PI) * 60;
+        if (t >= 1) {
+            qte.phase = 'done';
+            player.x = qte.endX;
+            player.y = qte.endY;
+            player.vx = 0;
+            player.vy = 0;
+            INTRO_CHILL_SCENE = false;
+        }
+    }
+}
+
+// Called from the tap/click handlers - consumes the input if the meter is
+// live, and returns whether it did so (so normal gameplay input is skipped).
+function handleQteTap() {
+    if (qte.phase !== 'running') return false;
+    const inGreen = qte.pos >= qte.greenStart && qte.pos <= qte.greenEnd;
+    if (inGreen) {
+        qte.phase = 'success';
+        qte.resultTimer = 1.0;
+    } else {
+        qte.phase = 'fail';
+        qte.resultTimer = 0.8;
+    }
+    return true;
+}
+
+// Two FeastCorp workers climb out of the cab and walk single-file down the
+// outside of the truck to the back - staying clear of its footprint the whole
+// way - then just stand there in total silence.
+function drawFeastCorpWorkers(ctx, time) {
+    const truck = getIntroTruckState(time);
+    const w = getIntroWorkerState(time);
+    if (!w.show) return;
+
+    const seq = getIntroSequenceState(time);
+    if (seq.departed) return;
+
+    const scale = 1.2;
+    ctx.save();
+    ctx.translate(truck.x, truck.y);
+    ctx.scale(scale, scale);
+
+    const exitEase = smoothStep(w.exitP);
+    const walkEase = smoothStep(w.walkP);
+    const returnEase = smoothStep(seq.returnWalkP);
+    const enterEase = smoothStep(seq.enterP);
+    const flinch = seq.doorEase * 0.6;
+
+    // walkBlend: 1 while standing at the back, eases back to 0 as they return.
+    // presence: 1 while they're "out"; fades as they climb back into the cab.
+    const walkBlend = walkEase * (1 - returnEase);
+    const presence = exitEase * (1 - enterEase);
+
+    const doorY = -120;
+    const backY = 60;
+    const doorX = 36;   // where the cab doors are, at the truck's edge
+    const sideX = 92;   // clear of the truck's ~68px-wide top-down footprint
+    const signs = [-1, 1];
+
+    signs.forEach((sign, i) => {
+        const popIn = 0.7 + 0.3 * presence;
+        // Step sideways out to the lane, and back in toward the door on return.
+        const laneX = doorX + (sideX - doorX) * exitEase * (1 - enterEase);
+        const y = doorY + (backY - doorY) * walkBlend;
+        const moving = (walkEase > 0 && walkEase < 1) || (returnEase > 0 && returnEase < 1);
+        const legSwing = moving ? Math.sin(w.legPhase * 14 + i * Math.PI) * 0.5 : 0;
+        const bob = moving ? Math.abs(Math.sin(w.legPhase * 14 + i * Math.PI)) * 2 : 0;
+
+        ctx.save();
+        ctx.globalAlpha = presence;
+        ctx.translate(sign * laneX, y - bob);
+        ctx.scale(popIn, popIn);
+        drawWorkerDuck(ctx, legSwing, flinch);
+        ctx.restore();
+    });
+
+    ctx.restore();
+}
+
+// A thick, glowing green stream pouring out of the open hatch and down into
+// the pond below - drawn after the pond so it visibly lands in the water.
+function drawSludgeStream(ctx, time) {
+    const truck = getIntroTruckState(time);
+    const seq = getIntroSequenceState(time);
+    if (!seq.flowing) return;
+
+    const flowIntensity = Math.min(1, (seq.contamP * introState.contaminationDuration) / 1.0);
+    const topX = truck.x;
+    const topY = truck.y + 94;
+    const bottomX = truck.x - 8;
+    const bottomY = -84;
+    const segments = 14;
+
+    ctx.save();
+    ctx.globalAlpha = 0.55 + 0.45 * flowIntensity;
+    for (let i = 0; i < segments; i++) {
+        const p = i / segments;
+        const flowP = (p + time * 1.6) % 1;
+        const x = topX + (bottomX - topX) * flowP + Math.sin(time * 6 + i * 1.3) * 4 * flowIntensity;
+        const y = topY + (bottomY - topY) * flowP;
+        const w = (7 + (i % 3) * 2) * flowIntensity;
+        const shade = i % 3 === 0 ? '#bef264' : (i % 3 === 1 ? '#84cc16' : '#3f6212');
+        ctx.fillStyle = shade;
+        ctx.fillRect(x - w / 2, y - w / 2, w, w);
+    }
+    ctx.restore();
+
+    ctx.save();
+    for (let i = 0; i < 5; i++) {
+        const ringP = (time * 0.9 + i * 0.2) % 1;
+        const r = 6 + ringP * 42 * flowIntensity;
+        ctx.strokeStyle = `rgba(190, 242, 100, ${0.5 * (1 - ringP) * flowIntensity})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(bottomX, bottomY + 4, r, r * 0.4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+        const dp = (time * 2.2 + i * 0.37) % 1;
+        const dx = bottomX + Math.sin(i * 2.1) * 20 * dp;
+        const dy = bottomY - dp * 22 + dp * dp * 30;
+        ctx.fillStyle = `rgba(163, 230, 53, ${0.6 * (1 - dp) * flowIntensity})`;
+        ctx.fillRect(dx - 2, dy - 2, 4, 4);
+    }
+    ctx.restore();
 }
 
 function pondPath(ctx, scale = 1, offsetX = 0, offsetY = 0) {
@@ -924,10 +1728,67 @@ function pondPath(ctx, scale = 1, offsetX = 0, offsetY = 0) {
     ctx.closePath();
 }
 
-function drawPond(ctx, time) {
+function drawPixelFish(ctx, x, y, flip, color, rotation = 0, teeth = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    if (flip) ctx.scale(-1, 1);
+    ctx.fillStyle = color;
+    ctx.fillRect(-10, -4, 16, 8);
+    ctx.fillRect(4, -6, 7, 12);
+    ctx.fillRect(-15, -2, 6, 4);
+    ctx.fillStyle = 'rgba(224, 242, 254, 0.38)';
+    ctx.fillRect(-5, -2, 5, 2);
+    ctx.fillStyle = teeth ? '#ef4444' : 'rgba(15, 23, 42, 0.35)';
+    ctx.fillRect(6, -1, 2, 2);
+    if (teeth) {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-13, -3, 2, 2);
+        ctx.fillRect(-11, -1, 2, 2);
+        ctx.fillRect(-13, 1, 2, 2);
+    }
+    ctx.restore();
+}
+
+function drawPixelFrog(ctx, x, y, scale, phase, twitch = 0) {
+    const hopBob = Math.sin(phase) * 1.4;
+    const twitchX = twitch > 0 ? Math.sin(phase * 23.7) * twitch * 4 : 0;
+    const twitchY = twitch > 0 ? Math.sin(phase * 31.3 + 1.7) * twitch * 3 : 0;
+    ctx.save();
+    ctx.translate(x + twitchX, y + hopBob + twitchY);
+    ctx.rotate(twitch > 0 ? Math.sin(phase * 17) * twitch * 0.2 : 0);
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = '#166534';
+    ctx.fillRect(-13, -4, 26, 14);
+    ctx.fillRect(-9, -10, 18, 8);
+    ctx.fillRect(-15, 6, 8, 6);
+    ctx.fillRect(7, 6, 8, 6);
+
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(-10, -6, 20, 11);
+    ctx.fillRect(-7, -13, 14, 7);
+    ctx.fillRect(-12, 7, 5, 3);
+    ctx.fillRect(7, 7, 5, 3);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-8, -14, 5, 5);
+    ctx.fillRect(3, -14, 5, 5);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-6, -12, 2, 2);
+    ctx.fillRect(5, -12, 2, 2);
+
+    ctx.fillStyle = '#86efac';
+    ctx.fillRect(-5, -1, 10, 3);
+    ctx.fillStyle = 'rgba(20, 83, 45, 0.55)';
+    ctx.fillRect(-8, 4, 4, 2);
+    ctx.fillRect(4, 4, 4, 2);
+    ctx.restore();
+}
+
+function drawPond(ctx, time, contamP = 0) {
     ctx.save();
 
-    // Feathered grass shelves around the pond instead of a hard muddy border.
     const shelfLayers = [
         { scale: 1.18, color: 'rgba(74, 222, 128, 0.16)', y: 5 },
         { scale: 1.1, color: 'rgba(34, 197, 94, 0.22)', y: 2 },
@@ -939,18 +1800,24 @@ function drawPond(ctx, time) {
         ctx.fill();
     });
 
-    // Darker shallow edge, clipped to the irregular pond shape.
     ctx.save();
     pondPath(ctx, 1, 0, 0);
     ctx.clip();
 
+    const waterT = Math.min(1, contamP * 1.3);
     const deepWater = ctx.createLinearGradient(0, -120, 0, 120);
-    deepWater.addColorStop(0, '#7dd3fc');
-    deepWater.addColorStop(0.16, '#38bdf8');
-    deepWater.addColorStop(0.52, '#0284c7');
-    deepWater.addColorStop(1, '#075985');
+    deepWater.addColorStop(0, lerpColor('#7dd3fc', '#bef264', waterT));
+    deepWater.addColorStop(0.16, lerpColor('#38bdf8', '#84cc16', waterT));
+    deepWater.addColorStop(0.52, lerpColor('#0284c7', '#166534', waterT));
+    deepWater.addColorStop(1, lerpColor('#075985', '#052e16', waterT));
     ctx.fillStyle = deepWater;
     ctx.fillRect(-210, -145, 420, 290);
+
+    if (contamP > 0.02) {
+        const pulse = 0.5 + 0.5 * Math.sin(time * 3);
+        ctx.fillStyle = `rgba(132, 204, 22, ${(0.1 + 0.1 * pulse) * contamP})`;
+        ctx.fillRect(-210, -145, 420, 290);
+    }
 
     const glow = ctx.createRadialGradient(-34, -28, 20, -20, -8, 180);
     glow.addColorStop(0, 'rgba(224, 242, 254, 0.34)');
@@ -959,7 +1826,6 @@ function drawPond(ctx, time) {
     ctx.fillStyle = glow;
     ctx.fillRect(-210, -145, 420, 290);
 
-    // Soft shallow-water lip. This reads as water depth, not dirt.
     ctx.lineWidth = 18;
     ctx.strokeStyle = 'rgba(125, 211, 252, 0.28)';
     pondPath(ctx, 0.96, 0, 0);
@@ -969,7 +1835,6 @@ function drawPond(ctx, time) {
     pondPath(ctx, 0.985, 0, -1);
     ctx.stroke();
 
-    // Animated ribbon highlights that slide slowly across the surface.
     for (let i = 0; i < 10; i++) {
         const x = -150 + i * 34 + Math.sin(time * 0.9 + i) * 7;
         const y = -72 + ((i * 37) % 142) + Math.sin(time * 1.4 + i * 0.6) * 4;
@@ -979,7 +1844,6 @@ function drawPond(ctx, time) {
         if (i % 2 === 0) ctx.fillRect(x + 9, y + 6, 14, 3);
     }
 
-    // Expanding ripple rings, staggered and subtle.
     ctx.lineWidth = 2;
     for (let i = 0; i < 6; i++) {
         const t = (time * 0.42 + i * 0.19) % 1;
@@ -991,9 +1855,55 @@ function drawPond(ctx, time) {
         ctx.stroke();
     }
 
+    if (contamP > 0.02) {
+        const bubbleCount = Math.round(22 * contamP);
+        for (let i = 0; i < bubbleCount; i++) {
+            const lane = -160 + ((i * 41) % 320);
+            const cycle = (time * 0.55 + i * 0.29) % 1;
+            const by = 118 - cycle * 235;
+            const size = 3 + (i % 3) * 2;
+            ctx.fillStyle = `rgba(190, 242, 100, ${0.55 * (1 - cycle) * contamP})`;
+            ctx.fillRect(lane, by, size, size);
+            if (i % 4 === 0) ctx.fillRect(lane + size, by - size, Math.max(2, size - 2), Math.max(2, size - 2));
+        }
+    }
+
+    ctx.save();
+    ctx.globalAlpha = 0.48;
+    ctx.fillStyle = 'rgba(14, 116, 144, 0.18)';
+    const fish = [
+        { x: -132, y: -28, speed: 18, lane: 0, color: '#fbbf24' },
+        { x: 42, y: 58, speed: -14, lane: 1, color: '#fb7185' },
+        { x: 108, y: -54, speed: 11, lane: 2, color: '#a7f3d0' },
+        { x: -18, y: 20, speed: -9, lane: 3, color: '#fde68a' }
+    ];
+    fish.forEach((f, i) => {
+        // Sequential, readable stages instead of several fast wobbles at once:
+        // swim normally -> slow down and float up belly-first -> hang there a
+        // beat -> snap upright in one quick motion -> dart around, revived.
+        const dieP = Math.max(0, Math.min(1, (contamP - 0.22) / 0.18));   // 0.22-0.40
+        const snapP = Math.max(0, Math.min(1, (contamP - 0.55) / 0.08));  // 0.55-0.63
+        const aggroP = Math.max(0, Math.min(1, (contamP - 0.63) / 0.15)); // 0.63-0.78
+
+        const speedMult = (1 - dieP) + aggroP * 3.5;
+        const swim = ((f.x + time * f.speed * speedMult + 210) % 360) - 180
+            + Math.sin(time * 3 + i) * 10 * aggroP;
+
+        const surfaceY = -78;
+        const baseY = f.y + Math.sin(time * 1.5 + i) * 5 * (1 - dieP);
+        const fy = baseY + (surfaceY - baseY) * dieP + Math.sin(time * 2.2 + i) * 6 * aggroP;
+
+        const rotation = Math.PI * dieP * (1 - snapP);
+        const fishColor = lerpColor(f.color, '#94a3b8', snapP);
+
+        drawPixelFish(ctx, swim, fy, f.speed < 0, fishColor, rotation, snapP > 0.5);
+        ctx.fillRect(swim - 18, fy - 8, 42, 17);
+    });
     ctx.restore();
 
-    // Pixel shoreline details, kept green/stone instead of brown.
+
+    ctx.restore();
+
     const grassTufts = [
         [-175, -14, 20], [-160, 48, 28], [-116, 99, 22], [-62, -112, 26], [22, 114, 24],
         [74, -112, 22], [142, -68, 30], [174, 8, 24], [132, 86, 22], [-22, -119, 18]
@@ -1022,7 +1932,6 @@ function drawPond(ctx, time) {
         ctx.fillRect(s[0] + 3, s[1] + 2, Math.max(4, s[2] - 9), 2);
     });
 
-    // Lily pads sit in the water with a few bright pixels, not oversized stickers.
     const pads = [
         { x: -84, y: -18, s: 0.86, a: 0.15 },
         { x: 72, y: 28, s: 0.72, a: -0.35 },
@@ -1030,28 +1939,36 @@ function drawPond(ctx, time) {
         { x: -26, y: 66, s: 0.58, a: -0.05 }
     ];
     pads.forEach((pad, i) => {
-        const bob = Math.sin(time * 1.9 + i * 1.3) * 2;
+        const padT = Math.max(0, Math.min(1, (contamP - 0.15) / 0.45));
+        const bob = Math.sin(time * 1.9 + i * 1.3) * 2 * (1 - padT * 0.6);
         ctx.save();
         ctx.translate(pad.x, pad.y + bob);
         ctx.rotate(pad.a + Math.sin(time * 0.8 + i) * 0.04);
         ctx.scale(pad.s, pad.s);
-        ctx.fillStyle = '#15803d';
+        ctx.fillStyle = lerpColor('#15803d', '#0a0a0a', padT);
         ctx.beginPath();
         ctx.ellipse(0, 0, 27, 17, 0, 0.22, Math.PI * 2 - 0.55);
         ctx.lineTo(0, 0);
         ctx.fill();
-        ctx.fillStyle = '#4ade80';
+        ctx.fillStyle = lerpColor('#4ade80', '#1e293b', padT);
         ctx.fillRect(-12, -5, 13, 3);
         ctx.fillRect(-4, 3, 11, 3);
-        if (i === 1 || i === 2) {
+        if ((i === 1 || i === 2) && padT < 0.7) {
             ctx.fillStyle = i === 1 ? '#f9a8d4' : '#fef08a';
+            ctx.globalAlpha = 1 - padT;
             ctx.fillRect(6, -10, 5, 5);
             ctx.fillRect(1, -5, 5, 5);
+            ctx.globalAlpha = 1;
         }
         ctx.restore();
     });
 
-    // Tiny sparkle pixels on top, sparse and tasteful.
+    const frogTwitch = Math.max(0, Math.min(1, (contamP - 0.12) / 0.3));
+    drawPixelFrog(ctx, -84, -26 + Math.sin(time * 1.9) * 2, 0.78, time * 1.1, frogTwitch);
+    drawPixelFrog(ctx, 72, 20 + Math.sin(time * 1.9 + 1.3) * 2, 0.64, time * 1.2 + 2, frogTwitch);
+    drawPixelFrog(ctx, -26, 58 + Math.sin(time * 1.9 + 3.9) * 2, 0.58, time * 1.4 + 4, frogTwitch);
+
+
     for (let i = 0; i < 14; i++) {
         const pulse = Math.sin(time * 2.4 + i * 1.9);
         if (pulse > 0.45) {
@@ -1059,6 +1976,21 @@ function drawPond(ctx, time) {
             const y = ((i * 31) % 162) - 81;
             ctx.fillStyle = 'rgba(240, 249, 255, 0.82)';
             ctx.fillRect(x, y, 3, 3);
+        }
+    }
+
+    // Steam rising off the surface once the water's hot enough to cook.
+    if (contamP > 0.3) {
+        const steamT = Math.min(1, (contamP - 0.3) / 0.4);
+        const puffCount = Math.round(10 * steamT);
+        for (let i = 0; i < puffCount; i++) {
+            const lane = -160 + ((i * 53) % 320);
+            const cycle = (time * 0.35 + i * 0.41) % 1;
+            const sy = 100 - cycle * 260;
+            const size = 4 + Math.floor(cycle * 6);
+            const alpha = 0.3 * steamT * (1 - cycle);
+            ctx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
+            ctx.fillRect(lane + Math.sin(cycle * 6 + i) * 10, sy, size, size);
         }
     }
 
@@ -1089,10 +2021,72 @@ function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
     if (stroke) ctx.stroke();
 }
 
+// The tap-timing meter for hopping out of the pond: a pixel bar with a red
+// miss zone, a green hit zone in the middle, and an indicator sliding back
+// and forth across it.
+function drawQteMeter(ctx, time) {
+    if (!qte.unlocked || qte.phase === 'jumping' || qte.phase === 'done') return;
+
+    ctx.resetTransform();
+
+    const barW = Math.min(340, width * 0.72);
+    const barH = 24;
+    const barX = width / 2 - barW / 2;
+    const barY = height - 130;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+    ctx.fillRect(barX - 12, barY - 34, barW + 24, barH + 50);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(barX - 12, barY - 34, barW + 24, 4);
+    ctx.fillRect(barX - 12, barY + barH + 12, barW + 24, 4);
+
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(barX, barY, barW, barH);
+
+    const gx = barX + qte.greenStart * barW;
+    const gw = (qte.greenEnd - qte.greenStart) * barW;
+    ctx.fillStyle = '#15803d';
+    ctx.fillRect(gx, barY, gw, barH);
+    ctx.fillStyle = '#4ade80';
+    ctx.fillRect(gx, barY, gw, 4);
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
+    for (let i = 1; i < 10; i++) {
+        ctx.fillRect(barX + Math.round((barW / 10) * i), barY, 2, barH);
+    }
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(barX - 3, barY, 3, barH);
+    ctx.fillRect(barX + barW, barY, 3, barH);
+
+    const ix = barX + qte.pos * barW;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(ix - 4, barY - 10, 8, barH + 20);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(ix - 2, barY - 8, 4, barH + 16);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(ix - 6, barY - 14, 12, 6);
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace';
+    if (qte.phase === 'running') {
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText('TAP TO JUMP', width / 2, barY - 18);
+    } else if (qte.phase === 'fail') {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('MISSED - TRY AGAIN', width / 2, barY - 18);
+    } else if (qte.phase === 'success') {
+        ctx.fillStyle = '#4ade80';
+        ctx.fillText('NICE!', width / 2, barY - 18);
+    }
+    ctx.restore();
+}
+
 function drawUI(ctx, time, dt) {
+    if (INTRO_CHILL_SCENE) return;
+
     ctx.resetTransform(); 
 
-    // HUD bars are chunkier than needed on small phone screens - scale them down there
     const hudScale = isTouchDevice ? Math.max(0.55, Math.min(1, width / 700)) : 1;
     const topMargin = 15 * hudScale + safeAreaTop;  
     const sideMargin = 30 * hudScale; 
@@ -1109,14 +2103,12 @@ function drawUI(ctx, time, dt) {
         player.displayHp = player.hp;
     }
 
-    // Increased UI fuel animation speed drastically so it doesn't take forever to catch up to large tank sizes
     if (player.displayFuel < player.fuel) {
         player.displayFuel = Math.min(player.fuel, player.displayFuel + 300 * dt);
     } else if (player.displayFuel > player.fuel) {
         player.displayFuel = Math.max(player.fuel, player.displayFuel - 300 * dt);
     }
 
-    // Protect against fuel temporarily looking > 100% when buying Medium Tank
     const maxBarFuel = Math.max(player.fuel, player.maxFuel);
     const hpRatio = Math.max(0, player.hp / player.maxHp);
     const hpDisplayRatio = Math.max(0, player.displayHp / player.maxHp);
@@ -1177,7 +2169,6 @@ function gameLoop(currentTime) {
     lastTime = currentTime;
     const timeSec = currentTime / 1000;
 
-    // Zoom the world out on touch devices so the play area isn't dominated by oversized sprites
     worldZoom = isTouchDevice ? Math.max(0.5, Math.min(1, Math.min(width, height) / 800)) : 1;
     logicalWidth = width / worldZoom;
     logicalHeight = height / worldZoom;
@@ -1191,6 +2182,21 @@ function gameLoop(currentTime) {
     if (touchState.move.active) {
         ax += touchState.move.nx;
         ay += touchState.move.ny;
+    }
+
+    if (INTRO_CHILL_SCENE) {
+        ax = 0;
+        ay = 0;
+        if (qte.phase !== 'jumping') {
+            player.x = Math.sin(timeSec * 0.32) * 5;
+            player.y = Math.sin(timeSec * 0.45) * 3;
+        }
+        player.vx = 0;
+        player.vy = 0;
+        player.isRolling = false;
+        mouse.isDown = false;
+        stopFireSound();
+        updateQte(dt, timeSec);
     }
 
     if (ax !== 0 && ay !== 0) {
@@ -1252,9 +2258,26 @@ function gameLoop(currentTime) {
 
     camX = 0;
     camY = 0;
+    if (INTRO_CHILL_SCENE) {
+        if (introState.startTime === null) introState.startTime = timeSec;
+        const introElapsed = timeSec - introState.startTime;
+        const flyProgress = Math.max(0, Math.min(1, (introElapsed - introState.cameraHold) / introState.cameraDuration));
+        const easedFly = flyProgress * flyProgress * (3 - 2 * flyProgress);
+        const truck = getIntroTruckState(timeSec);
+        camX = introState.startCamX + (introState.targetCamX - introState.startCamX) * easedFly;
+        camY = introState.startCamY + (introState.targetCamY - introState.startCamY) * easedFly;
+        if (flyProgress >= 1 && truck.active) {
+            const handoffProgress = Math.max(0, Math.min(1, (introElapsed - introState.cameraHold - introState.cameraDuration) / introState.cameraHandoffDuration));
+            const easedHandoff = handoffProgress * handoffProgress * (3 - 2 * handoffProgress);
+            const followEase = truck.progress * truck.progress * (3 - 2 * truck.progress);
+            const desiredCamX = truck.x * 0.28 * followEase;
+            const desiredCamY = introState.targetCamY + (introState.pondCamY - introState.targetCamY) * followEase;
+            camX = camX + (desiredCamX - camX) * easedHandoff;
+            camY = camY + (desiredCamY - camY) * easedHandoff;
+        }
+    }
     PALETTE['P'] = (Math.floor(currentTime / 80) % 2 === 0) ? '#F59E0B' : '#FEF08A';
 
-    // Weapon upgrades are disabled.
     let isExtended = false;
     let isSplitter = false;
     let isTriple = false;
@@ -1265,7 +2288,7 @@ function gameLoop(currentTime) {
     let isChainIgniter = false;
 
     // --- PARTICLE & FUEL LOGIC ---
-    if (mouse.isDown && player.fuel > 0) {
+    if (!INTRO_CHILL_SCENE && mouse.isDown && player.fuel > 0) {
         if (!fireSoundSource && audioCtx.state !== 'suspended') startFireSound();
         
         player.fuel -= 8 * dt; 
@@ -1282,10 +2305,9 @@ function gameLoop(currentTime) {
         if (player.isRolling) baseAim += player.rollAngle;
         let worldAngle = player.flipX ? Math.PI - baseAim : baseAim;
         
-        // Upgrade modifiers
         let baseLife = 0.15 + player.fireCharge * 0.4 + Math.random() * 0.15;
         if (isExtended) baseLife *= 1.6;
-        if (isSplitter && !isDragon) baseLife *= 0.6; // Splitter dramatically cuts range unless dragon beam overrides it
+        if (isSplitter && !isDragon) baseLife *= 0.6; 
         if (isDragon) baseLife *= 1.8;
 
         let baseSpeed = 200 + player.fireCharge * 500 + Math.random() * 200;
@@ -1297,9 +2319,9 @@ function gameLoop(currentTime) {
         
         if (isDragon) {
             streams = 1;
-            spreadOffsets = [(Math.random() - 0.5) * 0.1]; // Super tight beam
+            spreadOffsets = [(Math.random() - 0.5) * 0.1]; 
         } else if (isSplitter && isTriple) {
-            streams = 5; // A massive fan of fire!
+            streams = 5; 
             spreadOffsets = [-0.5, -0.25, 0, 0.25, 0.5]; 
         } else if (isTriple) {
             streams = 3;
@@ -1313,7 +2335,7 @@ function gameLoop(currentTime) {
             let particlesPerStream = isDragon ? 5 : 3; 
             for (let j = 0; j < particlesPerStream; j++) {
                 let spread = spreadOffsets[i];
-                if (!isDragon) spread += (Math.random() - 0.5) * 0.18; // Randomize standard stream spread
+                if (!isDragon) spread += (Math.random() - 0.5) * 0.18; 
 
                 let finalAngle = worldAngle + spread;
                 let speed = baseSpeed;
@@ -1336,18 +2358,13 @@ function gameLoop(currentTime) {
     } else {
         player.fireCharge = Math.max(player.fireCharge - dt * 3, 0);
         
-        // Base and upgraded battle refill rates
         let fuelRegen = isFuelCompressor ? 6.0 : 2.0; 
-        
-        // Slow, steady refill in the safe area
         if (gameState.currentScene === 'safe') {
             fuelRegen = isFuelCompressor ? 10.0 : 5.0; 
         }
 
         player.fuel = Math.min(player.maxFuel, player.fuel + fuelRegen * dt); 
     }
-
-
 
     {
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -1368,7 +2385,6 @@ function gameLoop(currentTime) {
             if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
             ft.x += ft.vx * dt; ft.y += ft.vy * dt;
         }
-
     }
 
     // --- DRAWING ---
@@ -1380,6 +2396,20 @@ function gameLoop(currentTime) {
     ctx.fillStyle = groundPattern;
     ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
     
+    // Draw the forest floor gradient BEFORE the grass so the grass sits on top of it
+    const screenLeftX = camX - logicalWidth/2 - 200;
+    ctx.fillStyle = '#020617';
+    ctx.fillRect(screenLeftX, -950, logicalWidth + 400, 200); 
+    
+    const groundGrad = ctx.createLinearGradient(0, -750, 0, -590);
+    groundGrad.addColorStop(0, '#020617'); // Matches the dark canopy abyss
+    groundGrad.addColorStop(0.35, '#022c22'); // Deep shadow green
+    groundGrad.addColorStop(0.65, '#064e3b'); // Midground green under the front trees
+    groundGrad.addColorStop(1, 'rgba(6, 78, 59, 0)'); // Fades out completely into the existing grass
+
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(screenLeftX, -750, logicalWidth + 400, 170);
+
     if (gameState.currentScene === 'safe') {
         ctx.fillStyle = 'rgba(0, 25, 10, 0.4)'; 
         ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
@@ -1393,7 +2423,12 @@ function gameLoop(currentTime) {
     }
 
     drawGrass(ctx, timeSec, grassBehind);
-    drawPond(ctx, timeSec);
+    drawWoodline(ctx, timeSec);
+    drawFeastCorpTruck(ctx, timeSec);
+    drawFeastCorpWorkers(ctx, timeSec);
+    const introContam = introState.startTime !== null ? getIntroSequenceState(timeSec).contamP : 0;
+    drawPond(ctx, timeSec, introContam);
+    drawSludgeStream(ctx, timeSec);
     
     drawPlayer(ctx, timeSec, dt);
     
@@ -1405,16 +2440,15 @@ function gameLoop(currentTime) {
         let p = particles[i];
         let ratio = p.life / p.maxLife;
         
-        // Color based on upgrade
         if (p.isDragon) {
             if (ratio < 0.1) ctx.fillStyle = '#FFFFFF'; 
-            else if (ratio < 0.25) ctx.fillStyle = '#67e8f9'; // Cyan
-            else if (ratio < 0.45) ctx.fillStyle = '#06b6d4'; // Deep Cyan
+            else if (ratio < 0.25) ctx.fillStyle = '#67e8f9'; 
+            else if (ratio < 0.45) ctx.fillStyle = '#06b6d4'; 
             else ctx.fillStyle = `rgba(8, 145, 178, ${1 - ratio})`; 
         } else if (p.isNapalm) {
             if (ratio < 0.1) ctx.fillStyle = '#FFFFFF'; 
-            else if (ratio < 0.25) ctx.fillStyle = '#a3e635'; // Lime green
-            else if (ratio < 0.45) ctx.fillStyle = '#65a30d'; // Deep green
+            else if (ratio < 0.25) ctx.fillStyle = '#a3e635'; 
+            else if (ratio < 0.45) ctx.fillStyle = '#65a30d'; 
             else ctx.fillStyle = `rgba(77, 124, 15, ${1 - ratio})`; 
         } else {
             if (ratio < 0.1) ctx.fillStyle = '#FFFFFF'; 
@@ -1447,7 +2481,7 @@ function gameLoop(currentTime) {
         ctx.save(); 
         ctx.translate(ft.x, ft.y); 
         ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
-        ctx.fillStyle = ft.color || '#EF4444'; // Defaults to red if no color provided
+        ctx.fillStyle = ft.color || '#EF4444'; 
         ctx.font = ft.color ? 'bold 15px sans-serif' : 'bold 18px "Impact", sans-serif'; 
         ctx.textAlign = 'center'; 
         ctx.fillText(ft.text, 0, 0); 
@@ -1458,6 +2492,7 @@ function gameLoop(currentTime) {
     applyVignette(ctx);
     
     drawUI(ctx, timeSec, dt);
+    drawQteMeter(ctx, timeSec);
 
     requestAnimationFrame(gameLoop);
 }
