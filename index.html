@@ -538,8 +538,11 @@ const introState = {
     startCamX: 0,
     startCamY: 0,
     targetCamX: 0,
-    targetCamY: -620,
-    pondCamY: -150,
+    // Ratios of logicalHeight rather than fixed pixels, so the framing holds
+    // up across very different aspect ratios (tall/narrow mobile screens use
+    // a much larger logicalHeight than desktop at the same worldZoom).
+    targetCamYRatio: -0.52,
+    pondCamYRatio: -0.04,
     truckStartY: -760,
     truckEndY: -285,
     truckX: 42,
@@ -563,7 +566,7 @@ const qte = {
     phase: 'idle', // idle -> running -> (fail -> running)* -> success -> jumping -> done
     pos: 0,
     dir: 1,
-    speed: 0.55,
+    speed: 1.15,
     greenStart: 0.4,
     greenEnd: 0.6,
     resultTimer: 0,
@@ -2264,14 +2267,16 @@ function gameLoop(currentTime) {
         const flyProgress = Math.max(0, Math.min(1, (introElapsed - introState.cameraHold) / introState.cameraDuration));
         const easedFly = flyProgress * flyProgress * (3 - 2 * flyProgress);
         const truck = getIntroTruckState(timeSec);
+        const targetCamY = logicalHeight * introState.targetCamYRatio;
+        const pondCamY = logicalHeight * introState.pondCamYRatio;
         camX = introState.startCamX + (introState.targetCamX - introState.startCamX) * easedFly;
-        camY = introState.startCamY + (introState.targetCamY - introState.startCamY) * easedFly;
+        camY = introState.startCamY + (targetCamY - introState.startCamY) * easedFly;
         if (flyProgress >= 1 && truck.active) {
             const handoffProgress = Math.max(0, Math.min(1, (introElapsed - introState.cameraHold - introState.cameraDuration) / introState.cameraHandoffDuration));
             const easedHandoff = handoffProgress * handoffProgress * (3 - 2 * handoffProgress);
             const followEase = truck.progress * truck.progress * (3 - 2 * truck.progress);
             const desiredCamX = truck.x * 0.28 * followEase;
-            const desiredCamY = introState.targetCamY + (introState.pondCamY - introState.targetCamY) * followEase;
+            const desiredCamY = targetCamY + (pondCamY - targetCamY) * followEase;
             camX = camX + (desiredCamX - camX) * easedHandoff;
             camY = camY + (desiredCamY - camY) * easedHandoff;
         }
