@@ -605,6 +605,7 @@ const player = {
     vy: 0, 
     speed: 2800, 
     friction: 0.85, 
+    landingEaseTimer: 0,
     flipX: false,
     isBlinking: false,
     fireCharge: 0,
@@ -752,11 +753,11 @@ canvas.addEventListener('touchmove', e => {
             const dx = touch.clientX - touchState.aim.startX;
             const dy = touch.clientY - touchState.aim.startY;
             const dist = Math.hypot(dx, dy);
-            const deadzone = 30;
+            const deadzone = 10;
             if (dist > deadzone) {
                 const targetDx = dx / dist;
                 const targetDy = dy / dist;
-                const smoothing = 0.12;
+                const smoothing = 0.5;
                 touchState.aim.dx += (targetDx - touchState.aim.dx) * smoothing;
                 touchState.aim.dy += (targetDy - touchState.aim.dy) * smoothing;
                 const aimLen = Math.hypot(touchState.aim.dx, touchState.aim.dy);
@@ -1640,7 +1641,7 @@ function updateQte(dt, time) {
             floatyRing.leftAt = time;
             floatyRing.x = player.x;
             floatyRing.y = player.y;
-            triggerMutantFrogAttack(time);
+            triggerFrogSink(time);
         }
     } else if (qte.phase === 'jumping') {
         qte.jumpTimer += dt;
@@ -1654,7 +1655,9 @@ function updateQte(dt, time) {
             player.y = qte.endY;
             player.vx = 0;
             player.vy = 0;
+            player.landingEaseTimer = 0.6;
             INTRO_CHILL_SCENE = false;
+            startWave(time);
         }
     }
 }
@@ -1674,84 +1677,196 @@ function handleQteTap() {
     return true;
 }
 
-// The three pond frogs, mutated by the sludge. They leap out of the water the
-// instant the duck jumps for shore, land near it, then chase and bite.
-let mutantFrogsTriggered = false;
-let mutantFrogsTriggerTime = 0;
-const mutantFrogs = [
-    { x: -84, y: -26, scale: 0.78 },
-    { x: 72, y: 20, scale: 0.64 },
-    { x: -26, y: 58, scale: 0.58 }
-].map((f, i) => ({
-    ...f,
-    id: i,
-    state: 'pending',
-    launchDelay: i * 0.15,
-    leapTimer: 0,
-    leapDuration: 0.65 + i * 0.08,
-    startX: f.x,
-    startY: f.y,
-    targetX: 0,
-    targetY: 0,
-    biteCooldown: 0
-}));
+// The three pond frogs, mutated by the sludge. Since there's nothing the
+// player can do about them yet, they just sink under the surface and vanish
+// the instant the duck jumps for shore, rather than following it out.
+let frogsSinkTriggered = false;
+let frogsSinkTriggerTime = 0;
+const sinkingFrogs = [
+    { x: -84, y: -26, scale: 0.78, delay: 0 },
+    { x: 72, y: 20, scale: 0.64, delay: 0.12 },
+    { x: -26, y: 58, scale: 0.58, delay: 0.24 }
+];
 
-function triggerMutantFrogAttack(time) {
-    mutantFrogsTriggered = true;
-    mutantFrogsTriggerTime = time;
+function triggerFrogSink(time) {
+    frogsSinkTriggered = true;
+    frogsSinkTriggerTime = time;
 }
 
-function updateMutantFrogs(dt, time) {
-    if (!mutantFrogsTriggered) return;
-    mutantFrogs.forEach(f => {
-        if (f.state === 'pending') {
-            if (time - mutantFrogsTriggerTime >= f.launchDelay) {
-                f.state = 'leaping';
-                f.leapTimer = 0;
-                f.startX = f.x;
-                f.startY = f.y;
-                f.targetX = qte.endX + (f.id - 1) * 45;
-                f.targetY = qte.endY + 15 + f.id * 8;
-            }
-        } else if (f.state === 'leaping') {
-            f.leapTimer += dt;
-            const t = Math.min(1, f.leapTimer / f.leapDuration);
-            const ease = smoothStep(t);
-            f.x = f.startX + (f.targetX - f.startX) * ease;
-            f.y = f.startY + (f.targetY - f.startY) * ease - Math.sin(t * Math.PI) * 70;
-            if (t >= 1) {
-                f.state = 'chasing';
-                f.x = f.targetX;
-                f.y = f.targetY;
-            }
-        } else if (f.state === 'chasing') {
-            const dx = player.x - f.x, dy = player.y - f.y;
-            const dist = Math.hypot(dx, dy) || 0.0001;
-            if (dist > 30) {
-                const speed = 145;
-                f.x += (dx / dist) * speed * dt;
-                f.y += (dy / dist) * speed * dt;
-            }
-            f.biteCooldown -= dt;
-            if (dist <= 36 && f.biteCooldown <= 0 && !INTRO_CHILL_SCENE) {
-                f.biteCooldown = 1.4;
-                player.hp = Math.max(0, player.hp - 6);
-                floatingTexts.push({
-                    text: '-6', x: player.x, y: player.y - 30,
-                    vx: (Math.random() - 0.5) * 20, vy: -40,
-                    life: 0.8, maxLife: 0.8, color: '#4ade80'
-                });
-            }
+function drawSinkingFrogs(ctx, time) {
+    if (!frogsSinkTriggered) return;
+    const sinkDuration = 1.6;
+    sinkingFrogs.forEach((f, i) => {
+        const elapsed = time - frogsSinkTriggerTime - f.delay;
+        if (elapsed < 0) {
+            drawPixelFrog(ctx, f.x, f.y + Math.sin(time * 1.9 + i) * 2, f.scale, time * 1.2 + i * 2, 0.5);
+            return;
         }
+        const t = Math.min(1, elapsed / sinkDuration);
+        const alpha = 1 - t;
+        if (alpha <= 0.02) return;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        drawPixelFrog(ctx, f.x, f.y + t * 34, f.scale * (1 - t * 0.35), time * 1.2 + i * 2, 0.6);
+        ctx.restore();
     });
 }
 
-function drawMutantFrogs(ctx, time) {
-    if (!mutantFrogsTriggered) return;
-    mutantFrogs.forEach(f => {
-        if (f.state === 'pending') return;
-        const lunge = f.state === 'chasing' ? 1 + Math.sin(time * 10 + f.id) * 0.08 : 1;
-        drawPixelFrog(ctx, f.x, f.y, f.scale * lunge, time * 1.3 + f.id * 2, f.state === 'chasing' ? 0.4 : 0);
+// --- ROT FROG WAVES ---
+// Enemies spawn out of the pond in small staggered bursts (1-3 at a time,
+// never all 10 at once), then hop toward the player in short leaps and bite
+// on contact. The flamethrower kills them - continuous exposure burns them
+// down and they leave.
+const enemies = [];
+const waveConfig = { enemiesPerWave: 10, waveDuration: 20 };
+let waveActive = false;
+let waveSpawnedCount = 0;
+let waveNextSpawnAt = 0;
+
+// Roughly the same ellipse used for the player's pond-collision, so spawns
+// land visibly in the water.
+const pondSpawnEllipse = { cx: 6, cy: 3, rx: 178, ry: 118 };
+
+function startWave(time) {
+    waveActive = true;
+    gameState.waveTimer = 0;
+    gameState.waveDisplayTimer = 2.2;
+    waveSpawnedCount = 0;
+    waveNextSpawnAt = time + 0.8 + Math.random() * 1.0;
+}
+
+function spawnRotFrog(time) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * 0.82;
+    const x = pondSpawnEllipse.cx + Math.cos(angle) * pondSpawnEllipse.rx * r;
+    const y = pondSpawnEllipse.cy + Math.sin(angle) * pondSpawnEllipse.ry * r;
+    enemies.push({
+        x, y,
+        hp: 20, maxHp: 20,
+        state: 'emerging',
+        spawnTime: time,
+        scale: 0.52 + Math.random() * 0.14,
+        hopTimer: 0,
+        hopDuration: 0.45 + Math.random() * 0.1,
+        waitTimer: 0,
+        startX: x, startY: y,
+        targetX: x, targetY: y,
+        biteCooldown: 0,
+        burnFlash: 0
+    });
+}
+
+function updateEnemies(dt, time) {
+    if (gameState.waveDisplayTimer > 0) gameState.waveDisplayTimer = Math.max(0, gameState.waveDisplayTimer - dt);
+
+    if (waveActive) {
+        gameState.waveTimer += dt;
+
+        if (waveSpawnedCount < waveConfig.enemiesPerWave && time >= waveNextSpawnAt) {
+            const remaining = waveConfig.enemiesPerWave - waveSpawnedCount;
+            const burst = Math.min(remaining, 1 + Math.floor(Math.random() * 3));
+            for (let i = 0; i < burst; i++) spawnRotFrog(time);
+            waveSpawnedCount += burst;
+            waveNextSpawnAt = time + 2.2 + Math.random() * 2.0;
+        }
+
+        if (gameState.waveTimer >= waveConfig.waveDuration) {
+            gameState.wave += 1;
+            startWave(time);
+        }
+    }
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+
+        if (e.state === 'emerging') {
+            if (time - e.spawnTime >= 0.55) e.state = 'hopping';
+        } else if (e.state === 'hopping') {
+            if (e.hopTimer > 0) {
+                e.hopTimer -= dt;
+                const t = 1 - Math.max(0, e.hopTimer / e.hopDuration);
+                e.x = e.startX + (e.targetX - e.startX) * t;
+                e.y = e.startY + (e.targetY - e.startY) * t - Math.sin(t * Math.PI) * 24 * e.scale;
+                if (e.hopTimer <= 0) {
+                    e.x = e.targetX;
+                    e.y = e.targetY;
+                    e.waitTimer = 0.2 + Math.random() * 0.3;
+                }
+            } else if (e.waitTimer > 0) {
+                e.waitTimer -= dt;
+            } else {
+                const dx = player.x - e.x, dy = player.y - e.y;
+                const dist = Math.hypot(dx, dy) || 0.0001;
+                if (dist > 34) {
+                    const hopDist = Math.max(20, Math.min(dist - 20, 55 + Math.random() * 35));
+                    e.startX = e.x;
+                    e.startY = e.y;
+                    e.targetX = e.x + (dx / dist) * hopDist;
+                    e.targetY = e.y + (dy / dist) * hopDist;
+                    e.hopTimer = e.hopDuration;
+                } else if (!INTRO_CHILL_SCENE && e.biteCooldown <= 0) {
+                    player.hp = Math.max(0, player.hp - 8);
+                    floatingTexts.push({
+                        text: '-8', x: player.x, y: player.y - 30,
+                        vx: (Math.random() - 0.5) * 20, vy: -40,
+                        life: 0.8, maxLife: 0.8, color: '#f87171'
+                    });
+                    e.biteCooldown = 1.0;
+                    e.waitTimer = 0.35;
+                } else {
+                    e.waitTimer = 0.2;
+                }
+            }
+        }
+
+        e.biteCooldown = Math.max(0, e.biteCooldown - dt);
+
+        if (e.state === 'hopping') {
+            let inFlame = false;
+            for (let j = 0; j < particles.length; j++) {
+                const p = particles[j];
+                if (Math.hypot(p.x - e.x, p.y - (e.y - 6)) < 22 * e.scale) { inFlame = true; break; }
+            }
+            if (inFlame) {
+                e.hp -= 65 * dt;
+                e.burnFlash = 0.12;
+                if (Math.random() < 0.4) {
+                    ashParticles.push({
+                        x: e.x + (Math.random() - 0.5) * 14, y: e.y - 6,
+                        vx: (Math.random() - 0.5) * 40, vy: -30 - Math.random() * 30,
+                        life: 0.35 + Math.random() * 0.25, maxLife: 0.6,
+                        size: Math.random() * 5 + 3, isDust: true
+                    });
+                }
+            }
+        }
+        e.burnFlash = Math.max(0, e.burnFlash - dt);
+
+        if (e.hp <= 0) {
+            for (let k = 0; k < 8; k++) {
+                ashParticles.push({
+                    x: e.x, y: e.y - 6,
+                    vx: (Math.random() - 0.5) * 120, vy: -60 - Math.random() * 60,
+                    life: 0.3 + Math.random() * 0.3, maxLife: 0.6,
+                    size: Math.random() * 6 + 3, isDust: true
+                });
+            }
+            enemies.splice(i, 1);
+        }
+    }
+}
+
+function drawEnemies(ctx, time) {
+    enemies.forEach(e => {
+        if (e.state === 'emerging') {
+            const t = Math.min(1, (time - e.spawnTime) / 0.55);
+            ctx.save();
+            ctx.globalAlpha = t;
+            drawRotFrog(ctx, e.x, e.y + (1 - t) * 24, e.scale * (0.6 + t * 0.4), time * 1.3, false);
+            ctx.restore();
+        } else {
+            drawRotFrog(ctx, e.x, e.y, e.scale, time * 1.3 + e.x, e.burnFlash > 0);
+        }
     });
 }
 
@@ -1922,6 +2037,48 @@ function drawPixelFrog(ctx, x, y, scale, phase, twitch = 0) {
     ctx.fillStyle = 'rgba(20, 83, 45, 0.55)';
     ctx.fillRect(-8, 4, 4, 2);
     ctx.fillRect(4, 4, 4, 2);
+    ctx.restore();
+}
+
+// A mutated frog, sickly yellow-green with rot blotches and red eyes -
+// distinct from the ambient pond frogs. Tints orange while it's on fire.
+function drawRotFrog(ctx, x, y, scale, phase, burning) {
+    const hopBob = Math.sin(phase) * 1.4;
+    ctx.save();
+    ctx.translate(x, y + hopBob);
+    ctx.scale(scale, scale);
+
+    ctx.fillStyle = '#3f6212';
+    ctx.fillRect(-13, -4, 26, 14);
+    ctx.fillRect(-9, -10, 18, 8);
+    ctx.fillRect(-15, 6, 8, 6);
+    ctx.fillRect(7, 6, 8, 6);
+
+    ctx.fillStyle = burning ? '#f97316' : '#a3e635';
+    ctx.fillRect(-10, -6, 20, 11);
+    ctx.fillRect(-7, -13, 14, 7);
+    ctx.fillRect(-12, 7, 5, 3);
+    ctx.fillRect(7, 7, 5, 3);
+
+    ctx.fillStyle = 'rgba(87, 13, 13, 0.5)';
+    ctx.fillRect(-6, -4, 4, 4);
+    ctx.fillRect(3, -2, 4, 4);
+
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(-8, -14, 5, 5);
+    ctx.fillRect(3, -14, 5, 5);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-6, -12, 2, 2);
+    ctx.fillRect(5, -12, 2, 2);
+
+    ctx.fillStyle = '#d9f99d';
+    ctx.fillRect(-5, -1, 10, 3);
+    ctx.fillStyle = 'rgba(63, 98, 18, 0.6)';
+    ctx.fillRect(-8, 4, 4, 2);
+    ctx.fillRect(4, 4, 4, 2);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(-3, 1, 2, 3);
+    ctx.fillRect(1, 1, 2, 3);
     ctx.restore();
 }
 
@@ -2103,7 +2260,7 @@ function drawPond(ctx, time, contamP = 0) {
     });
 
     const frogTwitch = Math.max(0, Math.min(1, (contamP - 0.12) / 0.3));
-    if (!mutantFrogsTriggered) {
+    if (!frogsSinkTriggered) {
         drawPixelFrog(ctx, -84, -26 + Math.sin(time * 1.9) * 2, 0.78, time * 1.1, frogTwitch);
         drawPixelFrog(ctx, 72, 20 + Math.sin(time * 1.9 + 1.3) * 2, 0.64, time * 1.2 + 2, frogTwitch);
         drawPixelFrog(ctx, -26, 58 + Math.sin(time * 1.9 + 3.9) * 2, 0.58, time * 1.4 + 4, frogTwitch);
@@ -2300,6 +2457,20 @@ function drawUI(ctx, time, dt) {
     ctx.transform(1, 0, -0.6, 1, 0, 0);
     ctx.fillRect(sideMargin + shineOffset, 0, 100, height);
     ctx.restore();
+
+    if (gameState.waveDisplayTimer > 0) {
+        const wt = gameState.waveDisplayTimer;
+        const alpha = wt > 0.4 ? 1 : wt / 0.4;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 30px "Impact", sans-serif';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+        ctx.fillText('WAVE ' + gameState.wave, width / 2 + 2, height * 0.32 + 2);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText('WAVE ' + gameState.wave, width / 2, height * 0.32);
+        ctx.restore();
+    }
 }
 
 // --- MAIN LOOP ---
@@ -2339,7 +2510,7 @@ function gameLoop(currentTime) {
         stopFireSound();
         updateQte(dt, timeSec);
     }
-    updateMutantFrogs(dt, timeSec);
+    updateEnemies(dt, timeSec);
 
     if (ax !== 0 && ay !== 0) {
         const len = Math.sqrt(ax * ax + ay * ay);
@@ -2349,14 +2520,17 @@ function gameLoop(currentTime) {
     player.moveDx = ax;
     player.moveDy = ay;
 
+    if (player.landingEaseTimer > 0) player.landingEaseTimer = Math.max(0, player.landingEaseTimer - dt);
+    const landingEaseMult = player.landingEaseTimer > 0 ? 1 - (player.landingEaseTimer / 0.6) * 0.65 : 1;
+
     if (player.isRolling) {
         player.vx = player.dashDx * 1100;
         player.vy = player.dashDy * 1100;
         player.dashTimer -= dt;
         if (player.dashTimer <= 0) player.isRolling = false;
     } else {
-        player.vx += ax * player.speed * dt;
-        player.vy += ay * player.speed * dt;
+        player.vx += ax * player.speed * landingEaseMult * dt;
+        player.vy += ay * player.speed * landingEaseMult * dt;
         if (keys[' ']) {
             startRoll(ax, ay);
         }
@@ -2593,10 +2767,11 @@ function gameLoop(currentTime) {
     const introContam = introState.startTime !== null ? getIntroSequenceState(timeSec).contamP : 0;
     drawPond(ctx, timeSec, introContam);
     drawAbandonedFloatyRing(ctx, timeSec);
+    drawSinkingFrogs(ctx, timeSec);
     drawSludgeStream(ctx, timeSec);
     
     drawPlayer(ctx, timeSec, dt);
-    drawMutantFrogs(ctx, timeSec);
+    drawEnemies(ctx, timeSec);
     
     drawGrass(ctx, timeSec, grassFront);
 
