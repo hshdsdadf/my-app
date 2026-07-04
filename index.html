@@ -1712,36 +1712,98 @@ function drawSinkingFrogs(ctx, time) {
     });
 }
 
-// --- ROT FROG WAVES ---
-// Enemies spawn out of the pond in small staggered bursts (1-3 at a time,
-// never all 10 at once), then hop toward the player in short leaps and bite
-// on contact. The flamethrower kills them - continuous exposure burns them
-// down and they leave.
+// --- ENEMY WAVES ---
+// Rot Frogs spawn out of the pond in small staggered bursts (1-3 at a time),
+// hop toward the player, and bite on contact. Starting wave 3, Grease Rats
+// join in - fast, continuous movers that come in a couple of packs rather
+// than a trickle, ignite almost instantly in the flame, and then panic-run
+// in random directions while they burn down instead of fleeing sensibly.
+//
+// Both types "aim" for a spot orbiting the player (not the player's exact
+// tile) with a bit of predictive lead based on the player's velocity, and
+// push off of each other if they get too close, so they spread out around
+// the player instead of stacking on one spot.
 const enemies = [];
-const waveConfig = { enemiesPerWave: 10, waveDuration: 20 };
+const waveConfig = { enemiesPerWave: 10, ratsPerWave: 8, waveDuration: 20 };
 let waveActive = false;
-let waveSpawnedCount = 0;
-let waveNextSpawnAt = 0;
+let frogSpawnedCount = 0;
+let frogNextSpawnAt = 0;
+let ratSpawnSchedule = [];
+let ratScheduleIndex = 0;
 
 // Roughly the same ellipse used for the player's pond-collision, so spawns
 // land visibly in the water.
 const pondSpawnEllipse = { cx: 6, cy: 3, rx: 178, ry: 118 };
 
+function randomPondPoint(spread) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * spread;
+    return {
+        x: pondSpawnEllipse.cx + Math.cos(angle) * pondSpawnEllipse.rx * r,
+        y: pondSpawnEllipse.cy + Math.sin(angle) * pondSpawnEllipse.ry * r
+    };
+}
+
 function startWave(time) {
     waveActive = true;
     gameState.waveTimer = 0;
     gameState.waveDisplayTimer = 2.2;
-    waveSpawnedCount = 0;
-    waveNextSpawnAt = time + 0.8 + Math.random() * 1.0;
+
+    frogSpawnedCount = 0;
+    frogNextSpawnAt = time + 0.8 + Math.random() * 1.0;
+
+    ratSpawnSchedule = [];
+    ratScheduleIndex = 0;
+    if (gameState.wave >= 3) {
+        const groupCount = 2 + Math.floor(Math.random() * 2); // 2 or 3 groups
+        let remaining = waveConfig.ratsPerWave;
+        for (let i = 0; i < groupCount; i++) {
+            const isLast = i === groupCount - 1;
+            const size = isLast ? remaining : Math.max(1, Math.round(waveConfig.ratsPerWave / groupCount));
+            remaining -= size;
+            const t = time + (waveConfig.waveDuration * (i + 1)) / (groupCount + 1) + (Math.random() - 0.5) * 2;
+            ratSpawnSchedule.push({ time: t, count: size });
+        }
+        ratSpawnSchedule.sort((a, b) => a.time - b.time);
+    }
+}
+
+// A shared "approach point" orbiting the player rather than the player's
+// exact position, with a little lead based on player velocity - keeps
+// enemies from all beelining onto the same tile and gives them a hint of
+// anticipation instead of pure direct chase.
+function getApproachTarget(e, leadTime) {
+    const px = player.x + player.vx * leadTime;
+    const py = player.y + player.vy * leadTime;
+    return {
+        x: px + Math.cos(e.surroundAngle) * e.surroundRadius,
+        y: py + Math.sin(e.surroundAngle) * e.surroundRadius
+    };
+}
+
+function applySeparation(e, dt) {
+    let pushX = 0, pushY = 0;
+    for (let i = 0; i < enemies.length; i++) {
+        const other = enemies[i];
+        if (other === e) continue;
+        const dx = e.x - other.x, dy = e.y - other.y;
+        const d = Math.hypot(dx, dy);
+        const minDist = 24 * (e.scale + other.scale);
+        if (d > 0 && d < minDist) {
+            const f = (minDist - d) / minDist;
+            pushX += (dx / d) * f;
+            pushY += (dy / d) * f;
+        }
+    }
+    e.x += pushX * 45 * dt;
+    e.y += pushY * 45 * dt;
 }
 
 function spawnRotFrog(time) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.sqrt(Math.random()) * 0.82;
-    const x = pondSpawnEllipse.cx + Math.cos(angle) * pondSpawnEllipse.rx * r;
-    const y = pondSpawnEllipse.cy + Math.sin(angle) * pondSpawnEllipse.ry * r;
+    const p = randomPondPoint(0.82);
     enemies.push({
-        x, y,
+        kind: 'rotfrog',
+        x: p.x, y: p.y,
         hp: 20, maxHp: 20,
         state: 'emerging',
         spawnTime: time,
@@ -1749,10 +1811,34 @@ function spawnRotFrog(time) {
         hopTimer: 0,
         hopDuration: 0.45 + Math.random() * 0.1,
         waitTimer: 0,
-        startX: x, startY: y,
-        targetX: x, targetY: y,
+        startX: p.x, startY: p.y,
+        targetX: p.x, targetY: p.y,
         biteCooldown: 0,
-        burnFlash: 0
+        burnFlash: 0,
+        onFire: false,
+        surroundAngle: Math.random() * Math.PI * 2,
+        surroundRadius: 44 + Math.random() * 26,
+        surroundSpin: (Math.random() < 0.5 ? 1 : -1) * (0.1 + Math.random() * 0.15)
+    });
+}
+
+function spawnGreaseRat(time, x, y) {
+    enemies.push({
+        kind: 'greaserat',
+        x, y,
+        hp: 12, maxHp: 12,
+        state: 'emerging',
+        spawnTime: time,
+        scale: 0.4 + Math.random() * 0.08,
+        onFire: false,
+        panicDir: 0,
+        panicTimer: 0,
+        zigzagPhase: Math.random() * Math.PI * 2,
+        biteCooldown: 0,
+        burnFlash: 0,
+        surroundAngle: Math.random() * Math.PI * 2,
+        surroundRadius: 30 + Math.random() * 20,
+        surroundSpin: (Math.random() < 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.2)
     });
 }
 
@@ -1762,12 +1848,21 @@ function updateEnemies(dt, time) {
     if (waveActive) {
         gameState.waveTimer += dt;
 
-        if (waveSpawnedCount < waveConfig.enemiesPerWave && time >= waveNextSpawnAt) {
-            const remaining = waveConfig.enemiesPerWave - waveSpawnedCount;
+        if (frogSpawnedCount < waveConfig.enemiesPerWave && time >= frogNextSpawnAt) {
+            const remaining = waveConfig.enemiesPerWave - frogSpawnedCount;
             const burst = Math.min(remaining, 1 + Math.floor(Math.random() * 3));
             for (let i = 0; i < burst; i++) spawnRotFrog(time);
-            waveSpawnedCount += burst;
-            waveNextSpawnAt = time + 2.2 + Math.random() * 2.0;
+            frogSpawnedCount += burst;
+            frogNextSpawnAt = time + 2.2 + Math.random() * 2.0;
+        }
+
+        while (ratScheduleIndex < ratSpawnSchedule.length && time >= ratSpawnSchedule[ratScheduleIndex].time) {
+            const group = ratSpawnSchedule[ratScheduleIndex];
+            const anchor = randomPondPoint(0.7);
+            for (let i = 0; i < group.count; i++) {
+                spawnGreaseRat(time, anchor.x + (Math.random() - 0.5) * 34, anchor.y + (Math.random() - 0.5) * 34);
+            }
+            ratScheduleIndex++;
         }
 
         if (gameState.waveTimer >= waveConfig.waveDuration) {
@@ -1778,10 +1873,11 @@ function updateEnemies(dt, time) {
 
     for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
+        e.surroundAngle += e.surroundSpin * dt;
 
         if (e.state === 'emerging') {
-            if (time - e.spawnTime >= 0.55) e.state = 'hopping';
-        } else if (e.state === 'hopping') {
+            if (time - e.spawnTime >= 0.5) e.state = e.kind === 'greaserat' ? 'chasing' : 'hopping';
+        } else if (e.kind === 'rotfrog' && e.state === 'hopping') {
             if (e.hopTimer > 0) {
                 e.hopTimer -= dt;
                 const t = 1 - Math.max(0, e.hopTimer / e.hopDuration);
@@ -1795,39 +1891,91 @@ function updateEnemies(dt, time) {
             } else if (e.waitTimer > 0) {
                 e.waitTimer -= dt;
             } else {
-                const dx = player.x - e.x, dy = player.y - e.y;
-                const dist = Math.hypot(dx, dy) || 0.0001;
-                if (dist > 34) {
-                    const hopDist = Math.max(20, Math.min(dist - 20, 55 + Math.random() * 35));
+                const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+                if (distToPlayer <= 34) {
+                    if (!INTRO_CHILL_SCENE && e.biteCooldown <= 0) {
+                        player.hp = Math.max(0, player.hp - 8);
+                        floatingTexts.push({
+                            text: '-8', x: player.x, y: player.y - 30,
+                            vx: (Math.random() - 0.5) * 20, vy: -40,
+                            life: 0.8, maxLife: 0.8, color: '#f87171'
+                        });
+                        e.biteCooldown = 1.0;
+                    }
+                    e.waitTimer = 0.3;
+                } else {
+                    const target = getApproachTarget(e, 0.2);
+                    const dx = target.x - e.x, dy = target.y - e.y;
+                    const dist = Math.hypot(dx, dy) || 0.0001;
+                    const hopDist = Math.max(20, Math.min(dist, 55 + Math.random() * 35));
                     e.startX = e.x;
                     e.startY = e.y;
                     e.targetX = e.x + (dx / dist) * hopDist;
                     e.targetY = e.y + (dy / dist) * hopDist;
                     e.hopTimer = e.hopDuration;
-                } else if (!INTRO_CHILL_SCENE && e.biteCooldown <= 0) {
-                    player.hp = Math.max(0, player.hp - 8);
-                    floatingTexts.push({
-                        text: '-8', x: player.x, y: player.y - 30,
-                        vx: (Math.random() - 0.5) * 20, vy: -40,
-                        life: 0.8, maxLife: 0.8, color: '#f87171'
-                    });
-                    e.biteCooldown = 1.0;
-                    e.waitTimer = 0.35;
-                } else {
-                    e.waitTimer = 0.2;
                 }
             }
+            applySeparation(e, dt);
+        } else if (e.kind === 'greaserat' && e.state !== 'emerging') {
+            if (!e.onFire) {
+                const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+                if (distToPlayer <= 24) {
+                    if (!INTRO_CHILL_SCENE && e.biteCooldown <= 0) {
+                        player.hp = Math.max(0, player.hp - 5);
+                        floatingTexts.push({
+                            text: '-5', x: player.x, y: player.y - 30,
+                            vx: (Math.random() - 0.5) * 20, vy: -40,
+                            life: 0.7, maxLife: 0.7, color: '#fbbf24'
+                        });
+                        e.biteCooldown = 0.8;
+                    }
+                } else {
+                    const target = getApproachTarget(e, 0.25);
+                    const dx = target.x - e.x, dy = target.y - e.y;
+                    const dist = Math.hypot(dx, dy) || 0.0001;
+                    e.zigzagPhase += dt * 9;
+                    const perpX = -dy / dist, perpY = dx / dist;
+                    const zigzag = Math.sin(e.zigzagPhase) * 24;
+                    const speed = 175;
+                    e.x += ((dx / dist) * speed + perpX * zigzag) * dt;
+                    e.y += ((dy / dist) * speed + perpY * zigzag) * dt;
+                }
+            } else {
+                // Panicking while it burns - random dashes, ignores the player entirely.
+                e.panicTimer -= dt;
+                if (e.panicTimer <= 0) {
+                    e.panicDir = Math.random() * Math.PI * 2;
+                    e.panicTimer = 0.25 + Math.random() * 0.35;
+                }
+                e.x += Math.cos(e.panicDir) * 230 * dt;
+                e.y += Math.sin(e.panicDir) * 230 * dt;
+            }
+            applySeparation(e, dt);
         }
 
         e.biteCooldown = Math.max(0, e.biteCooldown - dt);
 
-        if (e.state === 'hopping') {
+        if (e.state !== 'emerging') {
             let inFlame = false;
             for (let j = 0; j < particles.length; j++) {
                 const p = particles[j];
                 if (Math.hypot(p.x - e.x, p.y - (e.y - 6)) < 22 * e.scale) { inFlame = true; break; }
             }
-            if (inFlame) {
+            if (e.kind === 'greaserat') {
+                if (inFlame && !e.onFire) e.onFire = true; // catches fire easily, and stays lit
+                if (e.onFire) {
+                    e.hp -= 28 * dt;
+                    e.burnFlash = 0.12;
+                    if (Math.random() < 0.5) {
+                        ashParticles.push({
+                            x: e.x + (Math.random() - 0.5) * 10, y: e.y - 4,
+                            vx: (Math.random() - 0.5) * 50, vy: -25 - Math.random() * 25,
+                            life: 0.3 + Math.random() * 0.2, maxLife: 0.5,
+                            size: Math.random() * 4 + 2, isDust: true
+                        });
+                    }
+                }
+            } else if (inFlame) {
                 e.hp -= 65 * dt;
                 e.burnFlash = 0.12;
                 if (Math.random() < 0.4) {
@@ -1859,11 +2007,17 @@ function updateEnemies(dt, time) {
 function drawEnemies(ctx, time) {
     enemies.forEach(e => {
         if (e.state === 'emerging') {
-            const t = Math.min(1, (time - e.spawnTime) / 0.55);
+            const t = Math.min(1, (time - e.spawnTime) / 0.5);
             ctx.save();
             ctx.globalAlpha = t;
-            drawRotFrog(ctx, e.x, e.y + (1 - t) * 24, e.scale * (0.6 + t * 0.4), time * 1.3, false);
+            if (e.kind === 'greaserat') {
+                drawGreaseRat(ctx, e.x, e.y + (1 - t) * 20, e.scale * (0.6 + t * 0.4), time * 4, false);
+            } else {
+                drawRotFrog(ctx, e.x, e.y + (1 - t) * 24, e.scale * (0.6 + t * 0.4), time * 1.3, false);
+            }
             ctx.restore();
+        } else if (e.kind === 'greaserat') {
+            drawGreaseRat(ctx, e.x, e.y, e.scale, time * 4 + e.x, e.onFire);
         } else {
             drawRotFrog(ctx, e.x, e.y, e.scale, time * 1.3 + e.x, e.burnFlash > 0);
         }
@@ -2079,6 +2233,53 @@ function drawRotFrog(ctx, x, y, scale, phase, burning) {
     ctx.fillStyle = '#f8fafc';
     ctx.fillRect(-3, 1, 2, 3);
     ctx.fillRect(1, 1, 2, 3);
+    ctx.restore();
+}
+
+// A fast little rat with a greasy sheen. Catches fire almost instantly and
+// keeps burning - flame flicker and tint stick around persistently, not just
+// while it's actually touching the flame.
+function drawGreaseRat(ctx, x, y, scale, phase, onFire) {
+    const scurry = Math.sin(phase * 20) * 1.2;
+    ctx.save();
+    ctx.translate(x, y + scurry);
+    ctx.scale(scale, scale);
+
+    ctx.strokeStyle = onFire ? '#f97316' : '#7f5539';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-14, 2);
+    ctx.quadraticCurveTo(-24, 2 + Math.sin(phase * 14) * 6, -30, -2 + Math.sin(phase * 14 + 1) * 6);
+    ctx.stroke();
+
+    ctx.fillStyle = onFire ? '#ea580c' : '#57534e';
+    ctx.fillRect(-14, -6, 22, 12);
+    ctx.fillRect(6, -9,10, 8);
+
+    ctx.fillStyle = onFire ? 'rgba(254, 240, 138, 0.6)' : 'rgba(226, 232, 240, 0.35)';
+    ctx.fillRect(-10, -5, 12, 3);
+
+    ctx.fillStyle = onFire ? '#fb923c' : '#44403c';
+    ctx.fillRect(7, -13, 4, 4);
+    ctx.fillRect(13, -13, 4, 4);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(12, -7, 2, 2);
+
+    ctx.fillStyle = onFire ? '#c2410c' : '#3f3a36';
+    ctx.fillRect(-10, 5, 4, 3);
+    ctx.fillRect(0, 5, 4, 3);
+    ctx.fillRect(8, 5, 4, 3);
+
+    if (onFire) {
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(-2, -8);
+        ctx.lineTo(2, -8 - 6 - Math.sin(phase * 30) * 3);
+        ctx.lineTo(6, -8);
+        ctx.closePath();
+        ctx.fill();
+    }
     ctx.restore();
 }
 
