@@ -603,7 +603,7 @@ const player = {
     y: 0, 
     vx: 0, 
     vy: 0, 
-    speed: 2800, 
+    speed: 1900, 
     friction: 0.85, 
     landingEaseTimer: 0,
     slowTimer: 0,
@@ -2111,7 +2111,7 @@ function spawnRotFrog(time) {
         hp: 1, maxHp: 1,
         state: 'emerging',
         spawnTime: time,
-        scale: 0.92 + Math.random() * 0.2,
+        scale: 1.35 + Math.random() * 0.25,
         hopTimer: 0,
         hopDuration: 0.45 + Math.random() * 0.1,
         waitTimer: 0,
@@ -2133,7 +2133,7 @@ function spawnGreaseRat(time, x, y) {
         hp: 12, maxHp: 12,
         state: 'emerging',
         spawnTime: time,
-        scale: 0.72 + Math.random() * 0.14,
+        scale: 1.05 + Math.random() * 0.2,
         onFire: false,
         panicDir: 0,
         panicTimer: 0,
@@ -2154,7 +2154,7 @@ function spawnMudGobbler(time) {
         hp: 20, maxHp: 20,
         state: 'emerging',
         spawnTime: time,
-        scale: 1.05 + Math.random() * 0.15,
+        scale: 1.5 + Math.random() * 0.2,
         burnFlash: 0,
         spitCooldown: 1.2 + Math.random(),
         spitCharge: 0,
@@ -2172,7 +2172,7 @@ function spawnSnapTurtle(time) {
         hp: 55, maxHp: 55,
         state: 'emerging',
         spawnTime: time,
-        scale: 1.05 + Math.random() * 0.15,
+        scale: 1.5 + Math.random() * 0.2,
         wobblePhase: Math.random() * Math.PI * 2,
         biteCooldown: 0,
         burnFlash: 0,
@@ -2291,7 +2291,7 @@ function updateEnemies(dt, time) {
                     e.zigzagPhase += dt * 9;
                     const perpX = -dir.y, perpY = dir.x;
                     const zigzag = Math.sin(e.zigzagPhase) * 24;
-                    const speed = 175;
+                    const speed = 130;
                     e.x += (dir.x * speed + perpX * zigzag) * dt;
                     e.y += (dir.y * speed + perpY * zigzag) * dt;
                 }
@@ -3506,6 +3506,15 @@ function gameLoop(currentTime) {
         player.vy = 0;
     }
 
+    // The foreground treeline starts around y = -660 (see initForest) - it's
+    // just a visual backdrop with no collision of its own, so without an
+    // explicit stop here the player could walk straight through/over it.
+    const woodlineBoundaryY = -600;
+    if (player.y < woodlineBoundaryY) {
+        player.y = woodlineBoundaryY;
+        player.vy = 0;
+    }
+
     // The pond is now a toxic waste pond behind the duck - can't wade or run
     // back into it. Roughly approximated as an ellipse over its visible shape.
     if (!INTRO_CHILL_SCENE) {
@@ -3528,7 +3537,7 @@ function gameLoop(currentTime) {
         player.hp = player.maxHp; player.fuel = player.maxFuel;
         gameState.wave = 1; gameState.waveTimer = 0; gameState.waveDisplayTimer = 0;
         ashParticles.length = 0; floatingTexts.length = 0;
-        player.speed = 2800;
+        player.speed = 1900;
     }
 
     camX = player.x;
