@@ -3423,7 +3423,8 @@ function gameLoop(currentTime) {
     lastTime = currentTime;
     const timeSec = currentTime / 1000;
 
-    worldZoom = isTouchDevice ? Math.max(0.5, Math.min(1, Math.min(width, height) / 800)) : 1;
+    const zoomFactor = 1.35;
+    worldZoom = (isTouchDevice ? Math.max(0.5, Math.min(1, Math.min(width, height) / 800)) : 1) * zoomFactor;
     logicalWidth = width / worldZoom;
     logicalHeight = height / worldZoom;
 
@@ -3668,8 +3669,9 @@ function gameLoop(currentTime) {
     // --- DRAWING ---
     ctx.clearRect(0, 0, width, height);
     ctx.save();
-    ctx.translate(-camX + width / 2, -camY + height / 2);
+    ctx.translate(width / 2, height / 2);
     ctx.scale(worldZoom, worldZoom);
+    ctx.translate(-camX, -camY);
     
     ctx.fillStyle = groundPattern;
     ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
