@@ -608,6 +608,11 @@ const player = {
     landingEaseTimer: 0,
     slowTimer: 0,
     slowMult: 1,
+    xp: 0,
+    level: 1,
+    xpToNext: 10,
+    displayXp: 0,
+    coins: 0,
     flipX: false,
     isBlinking: false,
     fireCharge: 0,
@@ -1915,6 +1920,189 @@ function pondSteer(x, y, seekDx, seekDy) {
     return { x: combinedX / combinedLen, y: combinedY / combinedLen };
 }
 
+// --- XP GEMS & COINS ---
+// Every enemy drops the same haul when it dies: 1-2 XP gems and 2-9 coins.
+// They pop outward from the death spot, settle, then bob in place until the
+// player gets close, at which point they zip in and get collected.
+const pickups = [];
+
+function keepOutOfPond(x, y, marginRx, marginRy) {
+    const ex = (x - pondSpawnEllipse.cx) / marginRx;
+    const ey = (y - pondSpawnEllipse.cy) / marginRy;
+    const d = Math.hypot(ex, ey);
+    if (d < 1) {
+        const dn = d || 0.0001;
+        return {
+            x: pondSpawnEllipse.cx + (ex / dn) * marginRx,
+            y: pondSpawnEllipse.cy + (ey / dn) * marginRy
+        };
+    }
+    return { x, y };
+}
+
+function makePickup(x, y, kind) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 70 + Math.random() * 110;
+    return {
+        kind, // 'xp' or 'coin'
+        x, y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        settleTimer: 0.3 + Math.random() * 0.2,
+        bobPhase: Math.random() * Math.PI * 2,
+        magnetized: false
+    };
+}
+
+function spawnDrop(x, y) {
+    const marginRx = pondSpawnEllipse.rx + 20;
+    const marginRy = pondSpawnEllipse.ry + 20;
+    const safe = keepOutOfPond(x, y, marginRx, marginRy);
+    const xpCount = randInt(1, 2);
+    const coinCount = randInt(2, 9);
+    for (let i = 0; i < xpCount; i++) pickups.push(makePickup(safe.x, safe.y, 'xp'));
+    for (let i = 0; i < coinCount; i++) pickups.push(makePickup(safe.x, safe.y, 'coin'));
+}
+
+function gainXp(amount) {
+    player.xp += amount;
+    while (player.xp >= player.xpToNext) {
+        player.xp -= player.xpToNext;
+        player.level += 1;
+        player.xpToNext = Math.round(player.xpToNext * 1.22 + 4);
+        floatingTexts.push({
+            text: 'LEVEL ' + player.level + '!', x: player.x, y: player.y - 50,
+            vx: 0, vy: -45, life: 1.2, maxLife: 1.2, color: '#facc15'
+        });
+    }
+}
+
+function updatePickups(dt, time) {
+    const marginRx = pondSpawnEllipse.rx + 20;
+    const marginRy = pondSpawnEllipse.ry + 20;
+    for (let i = pickups.length - 1; i >= 0; i--) {
+        const p = pickups[i];
+
+        if (p.settleTimer > 0) {
+            p.settleTimer -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= 0.9;
+            p.vy *= 0.9;
+            const safe = keepOutOfPond(p.x, p.y, marginRx, marginRy);
+            p.x = safe.x;
+            p.y = safe.y;
+        }
+
+        const dx = player.x - p.x, dy = player.y - p.y;
+        const dist = Math.hypot(dx, dy) || 0.0001;
+        const magnetRange = INTRO_CHILL_SCENE ? 0 : (p.kind === 'coin' ? 100 : 120);
+
+        if (!p.magnetized && dist < magnetRange) p.magnetized = true;
+
+        if (p.magnetized) {
+            const pullSpeed = 420 + (1 - Math.min(1, dist / magnetRange)) * 500;
+            p.x += (dx / dist) * pullSpeed * dt;
+            p.y += (dy / dist) * pullSpeed * dt;
+        }
+
+        if (!INTRO_CHILL_SCENE && dist < 24) {
+            if (p.kind === 'xp') {
+                gainXp(1);
+            } else {
+                player.coins += 1;
+            }
+            for (let k = 0; k < 5; k++) {
+                ashParticles.push({
+                    x: p.x, y: p.y,
+                    vx: (Math.random() - 0.5) * 90, vy: (Math.random() - 0.5) * 90 - 20,
+                    life: 0.25 + Math.random() * 0.15, maxLife: 0.4,
+                    size: Math.random() * 3 + 2, isDust: false,
+                    color: p.kind === 'xp' ? '#4ade80' : '#7dd3fc'
+                });
+            }
+            pickups.splice(i, 1);
+        }
+    }
+}
+
+function drawPickups(ctx, time) {
+    pickups.forEach(p => {
+        const bob = p.settleTimer <= 0 ? Math.sin(time * 3 + p.bobPhase) * 3 : 0;
+        const spin = time * 2.4 + p.bobPhase;
+        const pulse = 0.75 + 0.25 * Math.sin(time * 5 + p.bobPhase);
+
+        ctx.save();
+        ctx.translate(p.x, p.y + bob);
+
+        if (p.kind === 'xp') {
+            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 16 * pulse);
+            glow.addColorStop(0, 'rgba(74, 222, 128, 0.65)');
+            glow.addColorStop(1, 'rgba(74, 222, 128, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, 0, 16 * pulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.save();
+            ctx.rotate(spin * 0.3);
+            const squishX = Math.max(0.3, Math.abs(Math.cos(spin)));
+            ctx.scale(squishX, 1);
+            ctx.fillStyle = '#166534';
+            ctx.beginPath();
+            ctx.moveTo(0, -8);
+            ctx.lineTo(6, 0);
+            ctx.lineTo(0, 8);
+            ctx.lineTo(-6, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.moveTo(0, -6);
+            ctx.lineTo(4.2, 0);
+            ctx.lineTo(0, 6);
+            ctx.lineTo(-4.2, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = 'rgba(240, 253, 244, 0.85)';
+            ctx.beginPath();
+            ctx.moveTo(-1.5, -4);
+            ctx.lineTo(1, -1);
+            ctx.lineTo(-1.5, 1.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        } else {
+            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 13 * pulse);
+            glow.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
+            glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, 0, 13 * pulse, 0, Math.PI * 2);
+            ctx.fill();
+
+            const squish = Math.max(0.35, Math.abs(Math.cos(spin)));
+            ctx.save();
+            ctx.scale(squish, 1);
+            ctx.fillStyle = '#0369a1';
+            ctx.beginPath();
+            ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(0, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(224, 242, 254, 0.9)';
+            ctx.beginPath();
+            ctx.arc(-1.5, -1.5, 1.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        ctx.restore();
+    });
+}
+
 function spawnRotFrog(time) {
     const p = randomPondPoint(0.82);
     enemies.push({
@@ -2137,8 +2325,8 @@ function updateEnemies(dt, time) {
             if (e.spitCooldown <= 0 && dist < preferredMax + 80) {
                 e.spitCharge = Math.min(1, e.spitCharge + dt * 1.6);
                 if (e.spitCharge >= 1) {
-                    const shots = 7;
-                    const spreadArc = Math.PI / 2.6; // ~70 degree fan
+                    const shots = 2;
+                    const spreadArc = Math.PI / 9; // narrow twin-shot spread
                     const leadTime = dist / 320;
                     const aimX = player.x + player.vx * leadTime - e.x;
                     const aimY = player.y + player.vy * leadTime - e.y;
@@ -2260,6 +2448,7 @@ function updateEnemies(dt, time) {
                     size: Math.random() * 6 + 3, isDust: true
                 });
             }
+            spawnDrop(e.x, e.y);
             enemies.splice(i, 1);
         }
     }
@@ -3138,6 +3327,79 @@ function drawUI(ctx, time, dt) {
     ctx.fillRect(sideMargin + shineOffset, 0, 100, height);
     ctx.restore();
 
+    if (player.displayXp < player.xp) {
+        player.displayXp = Math.min(player.xp, player.displayXp + player.xpToNext * 2 * dt);
+    } else if (player.displayXp > player.xp) {
+        player.displayXp = player.xp;
+    }
+    const xpRatio = Math.max(0, Math.min(1, player.xp / player.xpToNext));
+    const xpDisplayRatio = Math.max(0, Math.min(1, player.displayXp / player.xpToNext));
+    const xpY = fuelY + fuelHeight + spacing;
+    const xpPulse = 0.5 + 0.5 * Math.sin(time * 3);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(sideMargin - borderPad, xpY - borderPad, barWidth + borderPad * 2, xpHeight + borderPad * 2);
+    ctx.fillStyle = '#052e16';
+    ctx.fillRect(sideMargin, xpY, barWidth, xpHeight);
+
+    const xpGrad = ctx.createLinearGradient(sideMargin, xpY, sideMargin + barWidth, xpY);
+    xpGrad.addColorStop(0, '#166534');
+    xpGrad.addColorStop(0.5, '#4ade80');
+    xpGrad.addColorStop(1, '#86efac');
+    ctx.fillStyle = xpGrad;
+    ctx.fillRect(sideMargin, xpY, barWidth * xpDisplayRatio, xpHeight);
+    ctx.fillStyle = `rgba(220, 252, 231, ${0.35 + 0.25 * xpPulse})`;
+    ctx.fillRect(sideMargin, xpY, barWidth * xpRatio, Math.max(2, xpHeight * 0.3));
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(sideMargin, xpY, barWidth, xpHeight);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.transform(1, 0, -0.6, 1, 0, 0);
+    ctx.fillRect(sideMargin + shineOffset, 0, 100, height);
+    ctx.restore();
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold ${13 * hudScale}px sans-serif`;
+    ctx.fillStyle = '#f0fdf4';
+    ctx.fillText('Lv.' + player.level, sideMargin + 6 * hudScale, xpY + xpHeight / 2 + 0.5);
+
+    // Coin counter, glowing pixel coin icon + count, tucked under the bars.
+    const coinY = xpY + xpHeight + spacing + 4 * hudScale;
+    const coinIconR = 8 * hudScale;
+    ctx.save();
+    const coinGlow = ctx.createRadialGradient(
+        sideMargin + coinIconR, coinY + coinIconR, 1,
+        sideMargin + coinIconR, coinY + coinIconR, coinIconR * 2.2
+    );
+    coinGlow.addColorStop(0, 'rgba(56, 189, 248, 0.5)');
+    coinGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+    ctx.fillStyle = coinGlow;
+    ctx.beginPath();
+    ctx.arc(sideMargin + coinIconR, coinY + coinIconR, coinIconR * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0369a1';
+    ctx.beginPath();
+    ctx.arc(sideMargin + coinIconR, coinY + coinIconR, coinIconR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(sideMargin + coinIconR, coinY + coinIconR, coinIconR * 0.72, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(224, 242, 254, 0.9)';
+    ctx.beginPath();
+    ctx.arc(sideMargin + coinIconR - coinIconR * 0.25, coinY + coinIconR - coinIconR * 0.25, coinIconR * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f0f9ff';
+    ctx.font = `bold ${14 * hudScale}px sans-serif`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(player.coins), sideMargin + coinIconR * 2 + 8 * hudScale, coinY + coinIconR);
+    ctx.restore();
+    ctx.textBaseline = 'alphabetic';
+
     if (gameState.waveDisplayTimer > 0) {
         const wt = gameState.waveDisplayTimer;
         const alpha = wt > 0.4 ? 1 : wt / 0.4;
@@ -3191,6 +3453,7 @@ function gameLoop(currentTime) {
         updateQte(dt, timeSec);
     }
     updateEnemies(dt, timeSec);
+    updatePickups(dt, timeSec);
 
     if (ax !== 0 && ay !== 0) {
         const len = Math.sqrt(ax * ax + ay * ay);
@@ -3458,6 +3721,7 @@ function gameLoop(currentTime) {
     
     drawPlayer(ctx, timeSec, dt);
     drawEnemies(ctx, timeSec);
+    drawPickups(ctx, timeSec);
     drawMudSpits(ctx, timeSec);
     
     drawGrass(ctx, timeSec, grassFront);
