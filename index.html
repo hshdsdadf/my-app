@@ -2265,7 +2265,7 @@ function spawnMudGobbler(time) {
     enemies.push({
         kind: 'mudgobbler',
         x: p.x, y: p.y,
-        hp: 20, maxHp: 20,
+        hp: 9, maxHp: 9,
         state: 'emerging',
         spawnTime: time,
         scale: 1.5 + Math.random() * 0.2,
@@ -2283,7 +2283,7 @@ function spawnSnapTurtle(time) {
     enemies.push({
         kind: 'snapturtle',
         x: p.x, y: p.y,
-        hp: 55, maxHp: 55,
+        hp: 22, maxHp: 22,
         state: 'emerging',
         spawnTime: time,
         scale: 1.5 + Math.random() * 0.2,
@@ -3371,11 +3371,11 @@ function drawUI(ctx, time, dt) {
     const hudScale = isTouchDevice ? Math.max(0.55, Math.min(1, width / 700)) : 1;
     const topMargin = 15 * hudScale + safeAreaTop;  
     const sideMargin = 30 * hudScale; 
-    const barWidth = width - sideMargin * 2;
-    const hpHeight = 22 * hudScale;
-    const xpHeight = 12 * hudScale;
-    const spacing = 8 * hudScale;
-    const borderPad = 4 * hudScale;
+    const barWidth = Math.min(300, width - sideMargin * 2);
+    const hpHeight = 13 * hudScale;
+    const xpHeight = 7 * hudScale;
+    const spacing = 5 * hudScale;
+    const borderPad = 3 * hudScale;
     const startY = topMargin;
 
     if (player.displayHp > player.hp) {
@@ -3410,10 +3410,10 @@ function drawUI(ctx, time, dt) {
     ctx.fillRect(sideMargin, startY, barWidth * hpRatio, hpHeight);
     
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-    ctx.fillRect(sideMargin, startY, barWidth * hpRatio, 5);
+    ctx.fillRect(sideMargin, startY, barWidth * hpRatio, 3);
 
     const fuelY = startY + hpHeight + spacing;
-    const fuelHeight = 12 * hudScale;
+    const fuelHeight = 8 * hudScale;
     ctx.fillStyle = '#000000';
     ctx.fillRect(sideMargin - borderPad, fuelY - borderPad, barWidth + borderPad * 2, fuelHeight + borderPad * 2);
     ctx.fillStyle = '#000000';
@@ -3482,7 +3482,7 @@ function drawUI(ctx, time, dt) {
 
     // Coin counter, glowing pixel coin icon + count, tucked under the bars.
     const coinY = xpY + xpHeight + spacing + 4 * hudScale;
-    const coinIconR = 8 * hudScale;
+    const coinIconR = 6 * hudScale;
     ctx.save();
     const coinGlow = ctx.createRadialGradient(
         sideMargin + coinIconR, coinY + coinIconR, 1,
@@ -3646,6 +3646,21 @@ function gameLoop(currentTime) {
             player.vy = 0;
         }
     }
+
+    // Solid trunks - the trees were purely decorative before, so nothing
+    // stopped the player from just walking straight over them.
+    mapTrees.forEach(t => {
+        const trunkRadius = 16 * (t.scale / 5);
+        const dx = player.x - t.x, dy = player.y - t.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < trunkRadius && dist > 0.0001) {
+            const nx = dx / dist, ny = dy / dist;
+            player.x = t.x + nx * trunkRadius;
+            player.y = t.y + ny * trunkRadius;
+            player.vx = 0;
+            player.vy = 0;
+        }
+    });
 
     if (player.hp <= 0) {
         player.hp = player.maxHp; player.fuel = player.maxFuel;
