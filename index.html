@@ -1692,6 +1692,13 @@ function handleQteTap() {
 function skipIntro(time) {
     if (!INTRO_CHILL_SCENE || qte.phase === 'jumping' || qte.phase === 'done') return;
 
+    // The truck/door/sludge timeline runs off real elapsed time since
+    // introState.startTime, independent of INTRO_CHILL_SCENE - rewinding it
+    // this far back makes every phase (arrival, contamination, departure)
+    // register as already complete, so nothing keeps playing out in the
+    // background after the skip.
+    introState.startTime = time - 500;
+
     if (!floatyRing.left) {
         floatyRing.left = true;
         floatyRing.leftAt = time - 4;
@@ -1741,7 +1748,7 @@ function drawSkipButton(ctx) {
     ctx.font = 'bold 15px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Skip \u23ED', r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.fillText('SKIP >>', r.x + r.w / 2, r.y + r.h / 2 + 1);
     ctx.restore();
 }
 
@@ -1823,6 +1830,84 @@ function randomPondPoint(spread) {
         x: pondSpawnEllipse.cx + Math.cos(angle) * pondSpawnEllipse.rx * r,
         y: pondSpawnEllipse.cy + Math.sin(angle) * pondSpawnEllipse.ry * r
     };
+}
+
+// A scattering of standalone trees and mud puddles across the open area -
+// keeps clear of the pond and the woodline boundary so they don't crowd
+// either landmark.
+function randomFieldSpot(minDist, maxDist) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = minDist + Math.random() * (maxDist - minDist);
+    let x = Math.cos(angle) * dist;
+    let y = Math.sin(angle) * dist;
+    const pondDist = Math.hypot(x - pondSpawnEllipse.cx, y - pondSpawnEllipse.cy);
+    if (pondDist < 260) {
+        const s = 260 / Math.max(1, pondDist);
+        x *= s;
+        y *= s;
+    }
+    if (y < -560) y = -560 - Math.random() * 40;
+    return { x, y };
+}
+
+const mapTrees = [];
+for (let i = 0; i < 5; i++) {
+    const spot = randomFieldSpot(350, 1100);
+    mapTrees.push({
+        x: spot.x, y: spot.y,
+        type: Math.floor(Math.random() * 3),
+        scale: 4.5 + Math.random() * 2,
+        sway: Math.random() * Math.PI * 2
+    });
+}
+
+const mudHoles = [];
+for (let i = 0; i < 8; i++) {
+    const spot = randomFieldSpot(250, 1150);
+    mudHoles.push({
+        x: spot.x, y: spot.y,
+        rx: 28 + Math.random() * 22,
+        ry: 15 + Math.random() * 12,
+        seed: Math.random() * 10
+    });
+}
+
+function drawMapTrees(ctx, time) {
+    mapTrees.forEach(t => {
+        const sprite = treeSprites[t.type];
+        if (!sprite) return;
+        const baseSway = Math.sin(time * 0.7 + t.sway) * 0.02;
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.fillStyle = 'rgba(2, 44, 34, 0.4)';
+        ctx.beginPath();
+        ctx.ellipse(0, 4, 20 * t.scale * 0.16, 6 * t.scale * 0.16, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.transform(1, 0, baseSway, 1, 0, 0);
+        ctx.drawImage(sprite, -32 * t.scale * 0.4, -80 * t.scale * 0.4, 64 * t.scale * 0.4, 80 * t.scale * 0.4);
+        ctx.restore();
+    });
+}
+
+function drawMudHoles(ctx, time) {
+    mudHoles.forEach(m => {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.fillStyle = 'rgba(30, 20, 10, 0.55)';
+        ctx.beginPath();
+        ctx.ellipse(0, 3, m.rx, m.ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3f2d1f';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, m.rx * 0.86, m.ry * 0.86, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const shine = 0.15 + 0.08 * Math.sin(time * 0.8 + m.seed);
+        ctx.fillStyle = `rgba(120, 100, 70, ${shine})`;
+        ctx.beginPath();
+        ctx.ellipse(-m.rx * 0.2, -m.ry * 0.25, m.rx * 0.4, m.ry * 0.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
 }
 
 function randInt(min, max) { return min + Math.floor(Math.random() * (max - min + 1)); }
@@ -1940,11 +2025,12 @@ function keepOutOfPond(x, y, marginRx, marginRy) {
     return { x, y };
 }
 
-function makePickup(x, y, kind) {
+function makePickup(x, y, kind, value) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 70 + Math.random() * 110;
     return {
         kind, // 'xp' or 'coin'
+        value,
         x, y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
@@ -1954,14 +2040,37 @@ function makePickup(x, y, kind) {
     };
 }
 
+// Split a total reward pool across only 1-2 physical pickups instead of
+// spawning one object per point - far fewer objects on screen at once
+// (which was causing lag during big waves), but each one is worth more.
+function splitIntoShares(total, count) {
+    const shares = [];
+    let remaining = total;
+    for (let i = 0; i < count; i++) {
+        const isLast = i === count - 1;
+        const share = isLast ? remaining : Math.max(1, Math.round(total / count));
+        shares.push(share);
+        remaining -= share;
+    }
+    return shares;
+}
+
 function spawnDrop(x, y) {
     const marginRx = pondSpawnEllipse.rx + 20;
     const marginRy = pondSpawnEllipse.ry + 20;
     const safe = keepOutOfPond(x, y, marginRx, marginRy);
-    const xpCount = randInt(1, 2);
-    const coinCount = randInt(2, 9);
-    for (let i = 0; i < xpCount; i++) pickups.push(makePickup(safe.x, safe.y, 'xp'));
-    for (let i = 0; i < coinCount; i++) pickups.push(makePickup(safe.x, safe.y, 'coin'));
+
+    const xpDropCount = randInt(1, 2);
+    const xpTotal = randInt(2, 5);
+    splitIntoShares(xpTotal, xpDropCount).forEach(share => {
+        pickups.push(makePickup(safe.x, safe.y, 'xp', share));
+    });
+
+    const coinDropCount = randInt(1, 2);
+    const coinTotal = randInt(3, 9);
+    splitIntoShares(coinTotal, coinDropCount).forEach(share => {
+        pickups.push(makePickup(safe.x, safe.y, 'coin', share));
+    });
 }
 
 function gainXp(amount) {
@@ -2008,9 +2117,9 @@ function updatePickups(dt, time) {
 
         if (!INTRO_CHILL_SCENE && dist < 24) {
             if (p.kind === 'xp') {
-                gainXp(1);
+                gainXp(p.value);
             } else {
-                player.coins += 1;
+                player.coins += p.value;
             }
             for (let k = 0; k < 5; k++) {
                 ashParticles.push({
@@ -2026,76 +2135,81 @@ function updatePickups(dt, time) {
     }
 }
 
+// Simple pixel-grid icon renderer - keeps things crisp/blocky (no rotation,
+// since rotating axis-aligned blocks at arbitrary angles just blurs them).
+function drawPixelGrid(ctx, grid, colorMap, block) {
+    const rows = grid.length;
+    const cols = grid[0].length;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+            const ch = grid[r][c];
+            if (ch === ' ' || !colorMap[ch]) continue;
+            ctx.fillStyle = colorMap[ch];
+            ctx.fillRect((c - cols / 2) * block, (r - rows / 2) * block, block + 0.6, block + 0.6);
+        }
+    }
+}
+
+const GEM_GRID = [
+    '   D   ',
+    '  DGD  ',
+    ' DGgGD ',
+    'DGgWgGD',
+    ' DGgGD ',
+    '  DGD  ',
+    '   D   '
+];
+const GEM_COLORS = { D: '#0b3d20', G: '#15803d', g: '#4ade80', W: '#ecfccb' };
+
+const COIN_GRID = [
+    '  DDD  ',
+    ' DBbBD ',
+    'DBbWbBD',
+    'DBWbWBD',
+    'DBbWbBD',
+    ' DBbBD ',
+    '  DDD  '
+];
+const COIN_COLORS = { D: '#0c4a6e', B: '#0369a1', b: '#38bdf8', W: '#e0f2fe' };
+
 function drawPickups(ctx, time) {
     pickups.forEach(p => {
         const bob = p.settleTimer <= 0 ? Math.sin(time * 3 + p.bobPhase) * 3 : 0;
-        const spin = time * 2.4 + p.bobPhase;
         const pulse = 0.75 + 0.25 * Math.sin(time * 5 + p.bobPhase);
+        const flip = Math.max(0.25, Math.abs(Math.cos(time * 2.4 + p.bobPhase)));
+        const sizeMult = p.kind === 'xp'
+            ? 1 + Math.min(0.5, (p.value - 1) * 0.18)
+            : 1 + Math.min(0.5, (p.value - 1) * 0.08);
+        const block = (p.kind === 'xp' ? 3.4 : 3.1) * sizeMult;
 
         ctx.save();
         ctx.translate(p.x, p.y + bob);
 
         if (p.kind === 'xp') {
-            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 16 * pulse);
+            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 17 * pulse * sizeMult);
             glow.addColorStop(0, 'rgba(74, 222, 128, 0.65)');
             glow.addColorStop(1, 'rgba(74, 222, 128, 0)');
             ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(0, 0, 16 * pulse, 0, Math.PI * 2);
+            ctx.arc(0, 0, 17 * pulse * sizeMult, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.save();
-            ctx.rotate(spin * 0.3);
-            const squishX = Math.max(0.3, Math.abs(Math.cos(spin)));
-            ctx.scale(squishX, 1);
-            ctx.fillStyle = '#166534';
-            ctx.beginPath();
-            ctx.moveTo(0, -8);
-            ctx.lineTo(6, 0);
-            ctx.lineTo(0, 8);
-            ctx.lineTo(-6, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = '#4ade80';
-            ctx.beginPath();
-            ctx.moveTo(0, -6);
-            ctx.lineTo(4.2, 0);
-            ctx.lineTo(0, 6);
-            ctx.lineTo(-4.2, 0);
-            ctx.closePath();
-            ctx.fill();
-            ctx.fillStyle = 'rgba(240, 253, 244, 0.85)';
-            ctx.beginPath();
-            ctx.moveTo(-1.5, -4);
-            ctx.lineTo(1, -1);
-            ctx.lineTo(-1.5, 1.5);
-            ctx.closePath();
-            ctx.fill();
+            ctx.scale(flip, 1);
+            drawPixelGrid(ctx, GEM_GRID, GEM_COLORS, block);
             ctx.restore();
         } else {
-            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 13 * pulse);
+            const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 14 * pulse * sizeMult);
             glow.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
             glow.addColorStop(1, 'rgba(56, 189, 248, 0)');
             ctx.fillStyle = glow;
             ctx.beginPath();
-            ctx.arc(0, 0, 13 * pulse, 0, Math.PI * 2);
+            ctx.arc(0, 0, 14 * pulse * sizeMult, 0, Math.PI * 2);
             ctx.fill();
 
-            const squish = Math.max(0.35, Math.abs(Math.cos(spin)));
             ctx.save();
-            ctx.scale(squish, 1);
-            ctx.fillStyle = '#0369a1';
-            ctx.beginPath();
-            ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#38bdf8';
-            ctx.beginPath();
-            ctx.arc(0, 0, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = 'rgba(224, 242, 254, 0.9)';
-            ctx.beginPath();
-            ctx.arc(-1.5, -1.5, 1.6, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.scale(flip, 1);
+            drawPixelGrid(ctx, COIN_GRID, COIN_COLORS, block);
             ctx.restore();
         }
 
@@ -3706,6 +3820,8 @@ function gameLoop(currentTime) {
         ctx.fillRect(camX - logicalWidth/2, camY - logicalHeight/2, logicalWidth, logicalHeight);
     }
 
+    drawMudHoles(ctx, timeSec);
+
     const activeGrassBlades = gameState.currentScene === 'battle' ? battleGrassBlades : safeGrassBlades;
     const grassBehind = []; const grassFront = [];
     for(let i = 0; i < activeGrassBlades.length; i++) {
@@ -3714,6 +3830,7 @@ function gameLoop(currentTime) {
     }
 
     drawGrass(ctx, timeSec, grassBehind);
+    drawMapTrees(ctx, timeSec);
     drawWoodline(ctx, timeSec);
     drawFeastCorpTruck(ctx, timeSec);
     drawFeastCorpWorkers(ctx, timeSec);
