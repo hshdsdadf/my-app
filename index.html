@@ -758,11 +758,11 @@ canvas.addEventListener('touchmove', e => {
             const dx = touch.clientX - touchState.aim.startX;
             const dy = touch.clientY - touchState.aim.startY;
             const dist = Math.hypot(dx, dy);
-            const deadzone = 10;
+            const deadzone = 14;
             if (dist > deadzone) {
                 const targetDx = dx / dist;
                 const targetDy = dy / dist;
-                const smoothing = 0.5;
+                const smoothing = 0.28;
                 touchState.aim.dx += (targetDx - touchState.aim.dx) * smoothing;
                 touchState.aim.dy += (targetDy - touchState.aim.dy) * smoothing;
                 const aimLen = Math.hypot(touchState.aim.dx, touchState.aim.dy);
@@ -1793,7 +1793,7 @@ function drawSinkingFrogs(ctx, time) {
 // the player instead of stacking on one spot.
 const enemies = [];
 const mudSpits = [];
-const waveConfig = { enemiesPerWave: 10, ratsPerWave: 8, gobblersPerWave: 5, turtlesPerWave: 6, waveDuration: 20 };
+const waveConfig = { enemiesPerWave: 14, ratsPerWave: 10, gobblersPerWave: 7, turtlesPerWave: 8, waveDuration: 20 };
 let waveActive = false;
 let frogSpawnedCount = 0;
 let frogNextSpawnAt = 0;
@@ -1909,7 +1909,7 @@ function spawnRotFrog(time) {
     enemies.push({
         kind: 'rotfrog',
         x: p.x, y: p.y,
-        hp: 20, maxHp: 20,
+        hp: 12, maxHp: 12,
         state: 'emerging',
         spawnTime: time,
         scale: 0.92 + Math.random() * 0.2,
@@ -1952,7 +1952,7 @@ function spawnMudGobbler(time) {
     enemies.push({
         kind: 'mudgobbler',
         x: p.x, y: p.y,
-        hp: 34, maxHp: 34,
+        hp: 20, maxHp: 20,
         state: 'emerging',
         spawnTime: time,
         scale: 1.05 + Math.random() * 0.15,
@@ -1994,7 +1994,7 @@ function updateEnemies(dt, time) {
             const burst = Math.min(remaining, 1 + Math.floor(Math.random() * 3));
             for (let i = 0; i < burst; i++) spawnRotFrog(time);
             frogSpawnedCount += burst;
-            frogNextSpawnAt = time + 2.2 + Math.random() * 2.0;
+            frogNextSpawnAt = time + 1.6 + Math.random() * 1.6;
         }
 
         while (ratScheduleIndex < ratSpawnSchedule.length && time >= ratSpawnSchedule[ratScheduleIndex].time) {
@@ -2009,13 +2009,13 @@ function updateEnemies(dt, time) {
         if (gobblerSpawnedCount < waveConfig.gobblersPerWave && time >= gobblerNextSpawnAt) {
             spawnMudGobbler(time);
             gobblerSpawnedCount += 1;
-            gobblerNextSpawnAt = time + 3.2 + Math.random() * 2.2;
+            gobblerNextSpawnAt = time + 2.0 + Math.random() * 1.6;
         }
 
         if (turtleSpawnedCount < waveConfig.turtlesPerWave && time >= turtleNextSpawnAt) {
             spawnSnapTurtle(time);
             turtleSpawnedCount += 1;
-            turtleNextSpawnAt = time + 2.6 + Math.random() * 1.8;
+            turtleNextSpawnAt = time + 1.8 + Math.random() * 1.4;
         }
 
         if (gameState.waveTimer >= waveConfig.waveDuration) {
@@ -2273,7 +2273,7 @@ function updateEnemies(dt, time) {
 
         const hitDist = Math.hypot(player.x - s.x, player.y - s.y);
         if (!INTRO_CHILL_SCENE && hitDist < 26) {
-            player.hp = Math.max(0, player.hp - 4);
+            player.hp = Math.max(0, player.hp - 2);
             player.slowTimer = 2.2;
             player.slowMult = 0.45;
             floatingTexts.push({
@@ -3302,7 +3302,7 @@ function gameLoop(currentTime) {
     if (!INTRO_CHILL_SCENE && mouse.isDown && player.fuel > 0) {
         if (!fireSoundSource && audioCtx.state !== 'suspended') startFireSound();
         
-        player.fuel -= 8 * dt; 
+        player.fuel -= 3.2 * dt; 
         if (player.fuel <= 0) {
             player.fuel = 0; 
             stopFireSound();
