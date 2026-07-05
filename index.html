@@ -680,7 +680,8 @@ window.addEventListener('mousemove', e => {
     mouse.y = e.clientY;
 });
 
-window.addEventListener('mousedown', () => {
+window.addEventListener('mousedown', e => {
+    if (isInSkipButton(e.clientX, e.clientY)) { skipIntro(performance.now() / 1000); return; }
     if (handleQteTap()) return;
     mouse.isDown = true;
     if (player.fuel > 0) startFireSound();
@@ -697,6 +698,8 @@ canvas.addEventListener('touchstart', e => {
     if (handleQteTap()) return;
     for (const touch of e.changedTouches) {
         const tx = touch.clientX, ty = touch.clientY;
+
+        if (isInSkipButton(tx, ty)) { skipIntro(performance.now() / 1000); continue; }
 
         if (tx < width / 2) {
             if (!touchState.move.active) {
@@ -1679,6 +1682,64 @@ function handleQteTap() {
     return true;
 }
 
+// Lets an impatient player skip straight past the whole cutscene (truck,
+// sludge, silence, jump-timing meter) and drop right into gameplay on land.
+function skipIntro(time) {
+    if (!INTRO_CHILL_SCENE || qte.phase === 'jumping' || qte.phase === 'done') return;
+
+    if (!floatyRing.left) {
+        floatyRing.left = true;
+        floatyRing.leftAt = time - 4;
+        floatyRing.x = player.x;
+        floatyRing.y = player.y;
+    }
+    if (!frogsSinkTriggered) {
+        triggerFrogSink(time - 4);
+    }
+
+    player.x = qte.endX;
+    player.y = qte.endY;
+    player.vx = 0;
+    player.vy = 0;
+    player.landingEaseTimer = 0.6;
+
+    qte.unlocked = true;
+    qte.phase = 'done';
+    INTRO_CHILL_SCENE = false;
+
+    if (!waveActive) startWave(time);
+}
+
+function getSkipButtonRect() {
+    const w = 118, h = 42;
+    const margin = 16;
+    return { x: width - w - margin, y: margin + safeAreaTop, w, h };
+}
+
+function isInSkipButton(x, y) {
+    if (!INTRO_CHILL_SCENE || qte.phase === 'jumping' || qte.phase === 'done') return false;
+    const r = getSkipButtonRect();
+    return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+}
+
+function drawSkipButton(ctx) {
+    if (!INTRO_CHILL_SCENE || qte.phase === 'jumping' || qte.phase === 'done') return;
+    ctx.resetTransform();
+    const r = getSkipButtonRect();
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.68)';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = 'rgba(248, 250, 252, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Skip \u23ED', r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.restore();
+}
+
 // The three pond frogs, mutated by the sludge. Since there's nothing the
 // player can do about them yet, they just sink under the surface and vanish
 // the instant the duck jumps for shore, rather than following it out.
@@ -1722,7 +1783,9 @@ function drawSinkingFrogs(ctx, time) {
 // in random directions while they burn down instead of fleeing sensibly.
 // Starting wave 4, Mud Gobblers join in too - slow, one at a time, and they
 // keep their distance, lobbing mud that slows the player instead of closing
-// in for melee.
+// in for melee. Starting wave 8, Snap Turtles join in - fast, one at a time,
+// wobbling side to side as they close the distance, with a hard shell that
+// shrugs off flame damage far better than anything else.
 //
 // All types "aim" for a spot orbiting the player (not the player's exact
 // tile) with a bit of predictive lead based on the player's velocity, and
@@ -1730,7 +1793,7 @@ function drawSinkingFrogs(ctx, time) {
 // the player instead of stacking on one spot.
 const enemies = [];
 const mudSpits = [];
-const waveConfig = { enemiesPerWave: 10, ratsPerWave: 8, gobblersPerWave: 5, waveDuration: 20 };
+const waveConfig = { enemiesPerWave: 10, ratsPerWave: 8, gobblersPerWave: 5, turtlesPerWave: 6, waveDuration: 20 };
 let waveActive = false;
 let frogSpawnedCount = 0;
 let frogNextSpawnAt = 0;
@@ -1738,6 +1801,8 @@ let ratSpawnSchedule = [];
 let ratScheduleIndex = 0;
 let gobblerSpawnedCount = 0;
 let gobblerNextSpawnAt = 0;
+let turtleSpawnedCount = 0;
+let turtleNextSpawnAt = 0;
 
 // Roughly the same ellipse used for the player's pond-collision, so spawns
 // land visibly in the water.
@@ -1777,6 +1842,9 @@ function startWave(time) {
 
     gobblerSpawnedCount = 0;
     gobblerNextSpawnAt = gameState.wave >= 4 ? time + 1.5 + Math.random() * 1.5 : Infinity;
+
+    turtleSpawnedCount = 0;
+    turtleNextSpawnAt = gameState.wave >= 8 ? time + 1.2 + Math.random() * 1.5 : Infinity;
 }
 
 // A shared "approach point" orbiting the player rather than the player's
@@ -1808,6 +1876,32 @@ function applySeparation(e, dt) {
     }
     e.x += pushX * 45 * dt;
     e.y += pushY * 45 * dt;
+}
+
+// Bends a seek direction (dx,dy, need not be normalized) around the pond
+// instead of straight through it. Used once enemies are actually out and
+// chasing - they should route around the water, not hop back into it.
+function pondSteer(x, y, seekDx, seekDy) {
+    const marginX = pondSpawnEllipse.rx + 55;
+    const marginY = pondSpawnEllipse.ry + 55;
+    const ex = (x - pondSpawnEllipse.cx) / marginX;
+    const ey = (y - pondSpawnEllipse.cy) / marginY;
+    const d = Math.hypot(ex, ey);
+    const seekLen = Math.hypot(seekDx, seekDy) || 1;
+    const nx = seekDx / seekLen, ny = seekDy / seekLen;
+    if (d >= 1) return { x: nx, y: ny };
+
+    const depth = 1 - d;
+    const dn = d || 0.0001;
+    const outX = ex / dn, outY = ey / dn;
+    const tangentX = -outY, tangentY = outX;
+    const tangentSign = (nx * tangentX + ny * tangentY) >= 0 ? 1 : -1;
+    const avoidX = outX * depth * 1.7 + tangentX * tangentSign * depth * 1.2;
+    const avoidY = outY * depth * 1.7 + tangentY * tangentSign * depth * 1.2;
+    const combinedX = nx + avoidX;
+    const combinedY = ny + avoidY;
+    const combinedLen = Math.hypot(combinedX, combinedY) || 1;
+    return { x: combinedX / combinedLen, y: combinedY / combinedLen };
 }
 
 function spawnRotFrog(time) {
@@ -1871,6 +1965,24 @@ function spawnMudGobbler(time) {
     });
 }
 
+function spawnSnapTurtle(time) {
+    const p = randomPondPoint(0.78);
+    enemies.push({
+        kind: 'snapturtle',
+        x: p.x, y: p.y,
+        hp: 55, maxHp: 55,
+        state: 'emerging',
+        spawnTime: time,
+        scale: 1.05 + Math.random() * 0.15,
+        wobblePhase: Math.random() * Math.PI * 2,
+        biteCooldown: 0,
+        burnFlash: 0,
+        surroundAngle: Math.random() * Math.PI * 2,
+        surroundRadius: 32 + Math.random() * 18,
+        surroundSpin: (Math.random() < 0.5 ? 1 : -1) * (0.15 + Math.random() * 0.15)
+    });
+}
+
 function updateEnemies(dt, time) {
     if (gameState.waveDisplayTimer > 0) gameState.waveDisplayTimer = Math.max(0, gameState.waveDisplayTimer - dt);
 
@@ -1900,6 +2012,12 @@ function updateEnemies(dt, time) {
             gobblerNextSpawnAt = time + 3.2 + Math.random() * 2.2;
         }
 
+        if (turtleSpawnedCount < waveConfig.turtlesPerWave && time >= turtleNextSpawnAt) {
+            spawnSnapTurtle(time);
+            turtleSpawnedCount += 1;
+            turtleNextSpawnAt = time + 2.6 + Math.random() * 1.8;
+        }
+
         if (gameState.waveTimer >= waveConfig.waveDuration) {
             gameState.wave += 1;
             startWave(time);
@@ -1912,7 +2030,7 @@ function updateEnemies(dt, time) {
 
         if (e.state === 'emerging') {
             if (time - e.spawnTime >= 0.5) {
-                e.state = e.kind === 'greaserat' ? 'chasing' : (e.kind === 'mudgobbler' ? 'lurking' : 'hopping');
+                e.state = (e.kind === 'greaserat' || e.kind === 'snapturtle') ? 'chasing' : (e.kind === 'mudgobbler' ? 'lurking' : 'hopping');
             }
         } else if (e.kind === 'rotfrog' && e.state === 'hopping') {
             if (e.hopTimer > 0) {
@@ -1942,13 +2060,14 @@ function updateEnemies(dt, time) {
                     e.waitTimer = 0.3;
                 } else {
                     const target = getApproachTarget(e, 0.2);
-                    const dx = target.x - e.x, dy = target.y - e.y;
-                    const dist = Math.hypot(dx, dy) || 0.0001;
+                    const rawDx = target.x - e.x, rawDy = target.y - e.y;
+                    const dist = Math.hypot(rawDx, rawDy) || 0.0001;
+                    const dir = pondSteer(e.x, e.y, rawDx, rawDy);
                     const hopDist = Math.max(20, Math.min(dist, 55 + Math.random() * 35));
                     e.startX = e.x;
                     e.startY = e.y;
-                    e.targetX = e.x + (dx / dist) * hopDist;
-                    e.targetY = e.y + (dy / dist) * hopDist;
+                    e.targetX = e.x + dir.x * hopDist;
+                    e.targetY = e.y + dir.y * hopDist;
                     e.hopTimer = e.hopDuration;
                 }
             }
@@ -1968,14 +2087,14 @@ function updateEnemies(dt, time) {
                     }
                 } else {
                     const target = getApproachTarget(e, 0.25);
-                    const dx = target.x - e.x, dy = target.y - e.y;
-                    const dist = Math.hypot(dx, dy) || 0.0001;
+                    const rawDx = target.x - e.x, rawDy = target.y - e.y;
+                    const dir = pondSteer(e.x, e.y, rawDx, rawDy);
                     e.zigzagPhase += dt * 9;
-                    const perpX = -dy / dist, perpY = dx / dist;
+                    const perpX = -dir.y, perpY = dir.x;
                     const zigzag = Math.sin(e.zigzagPhase) * 24;
                     const speed = 175;
-                    e.x += ((dx / dist) * speed + perpX * zigzag) * dt;
-                    e.y += ((dy / dist) * speed + perpY * zigzag) * dt;
+                    e.x += (dir.x * speed + perpX * zigzag) * dt;
+                    e.y += (dir.y * speed + perpY * zigzag) * dt;
                 }
             } else {
                 // Panicking while it burns - random dashes, ignores the player entirely.
@@ -1994,33 +2113,66 @@ function updateEnemies(dt, time) {
             const preferredMin = 190, preferredMax = 300;
             const speed = 45; // slow swamp brute
             if (dist < preferredMin) {
-                e.x -= (dx / dist) * speed * dt;
-                e.y -= (dy / dist) * speed * dt;
+                const dir = pondSteer(e.x, e.y, -dx, -dy);
+                e.x += dir.x * speed * dt;
+                e.y += dir.y * speed * dt;
             } else if (dist > preferredMax) {
-                e.x += (dx / dist) * speed * dt;
-                e.y += (dy / dist) * speed * dt;
+                const dir = pondSteer(e.x, e.y, dx, dy);
+                e.x += dir.x * speed * dt;
+                e.y += dir.y * speed * dt;
             }
 
             e.spitCooldown -= dt;
-            if (e.spitCooldown <= 0 && dist < preferredMax + 60) {
-                e.spitCharge = Math.min(1, e.spitCharge + dt * 4);
+            if (e.spitCooldown <= 0 && dist < preferredMax + 80) {
+                e.spitCharge = Math.min(1, e.spitCharge + dt * 1.6);
                 if (e.spitCharge >= 1) {
-                    const leadTime = dist / 260;
+                    const shots = 7;
+                    const spreadArc = Math.PI / 2.6; // ~70 degree fan
+                    const leadTime = dist / 320;
                     const aimX = player.x + player.vx * leadTime - e.x;
                     const aimY = player.y + player.vy * leadTime - e.y;
-                    const aimDist = Math.hypot(aimX, aimY) || 0.0001;
-                    const spitSpeed = 260;
-                    mudSpits.push({
-                        x: e.x, y: e.y - 8,
-                        vx: (aimX / aimDist) * spitSpeed,
-                        vy: (aimY / aimDist) * spitSpeed,
-                        life: 0, maxLife: 2.2
-                    });
+                    const baseAngle = Math.atan2(aimY, aimX);
+                    const spitSpeed = 320;
+                    for (let s = 0; s < shots; s++) {
+                        const t = s / (shots - 1);
+                        const angle = baseAngle - spreadArc / 2 + spreadArc * t;
+                        mudSpits.push({
+                            x: e.x, y: e.y - 10,
+                            vx: Math.cos(angle) * spitSpeed,
+                            vy: Math.sin(angle) * spitSpeed,
+                            life: 0, maxLife: 2.4,
+                            trailTimer: 0
+                        });
+                    }
                     e.spitCharge = 0;
-                    e.spitCooldown = 2.6 + Math.random() * 1.4;
+                    e.spitCooldown = 4.2 + Math.random() * 1.4;
                 }
             } else {
                 e.spitCharge = Math.max(0, e.spitCharge - dt * 2);
+            }
+            applySeparation(e, dt);
+        } else if (e.kind === 'snapturtle' && e.state === 'chasing') {
+            const distToPlayer = Math.hypot(player.x - e.x, player.y - e.y);
+            if (distToPlayer <= 32) {
+                if (!INTRO_CHILL_SCENE && e.biteCooldown <= 0) {
+                    player.hp = Math.max(0, player.hp - 10);
+                    floatingTexts.push({
+                        text: '-10', x: player.x, y: player.y - 30,
+                        vx: (Math.random() - 0.5) * 20, vy: -40,
+                        life: 0.8, maxLife: 0.8, color: '#f87171'
+                    });
+                    e.biteCooldown = 1.1;
+                }
+            } else {
+                const target = getApproachTarget(e, 0.22);
+                const rawDx = target.x - e.x, rawDy = target.y - e.y;
+                const dir = pondSteer(e.x, e.y, rawDx, rawDy);
+                e.wobblePhase += dt * 11;
+                const perpX = -dir.y, perpY = dir.x;
+                const wobble = Math.sin(e.wobblePhase) * 32;
+                const speed = 205; // fast for its size
+                e.x += (dir.x * speed + perpX * wobble) * dt;
+                e.y += (dir.y * speed + perpY * wobble) * dt;
             }
             applySeparation(e, dt);
         }
@@ -2060,6 +2212,19 @@ function updateEnemies(dt, time) {
                         });
                     }
                 }
+            } else if (e.kind === 'snapturtle') {
+                if (inFlame) {
+                    e.hp -= 16 * dt; // hard shell shrugs off most of the flame
+                    e.burnFlash = 0.12;
+                    if (Math.random() < 0.2) {
+                        ashParticles.push({
+                            x: e.x + (Math.random() - 0.5) * 18, y: e.y - 8,
+                            vx: (Math.random() - 0.5) * 25, vy: -15 - Math.random() * 15,
+                            life: 0.25 + Math.random() * 0.15, maxLife: 0.4,
+                            size: Math.random() * 4 + 2, isDust: true
+                        });
+                    }
+                }
             } else if (inFlame) {
                 e.hp -= 65 * dt;
                 e.burnFlash = 0.12;
@@ -2094,6 +2259,18 @@ function updateEnemies(dt, time) {
         s.x += s.vx * dt;
         s.y += s.vy * dt;
 
+        s.trailTimer -= dt;
+        if (s.trailTimer <= 0) {
+            s.trailTimer = 0.02;
+            ashParticles.push({
+                x: s.x, y: s.y,
+                vx: -s.vx * 0.08 + (Math.random() - 0.5) * 20,
+                vy: -s.vy * 0.08 + (Math.random() - 0.5) * 20,
+                life: 0.2 + Math.random() * 0.1, maxLife: 0.3,
+                size: Math.random() * 5 + 4, isDust: false, color: '#65a30d'
+            });
+        }
+
         const hitDist = Math.hypot(player.x - s.x, player.y - s.y);
         if (!INTRO_CHILL_SCENE && hitDist < 26) {
             player.hp = Math.max(0, player.hp - 4);
@@ -2103,12 +2280,12 @@ function updateEnemies(dt, time) {
                 text: 'SLOWED', x: player.x, y: player.y - 34,
                 vx: 0, vy: -35, life: 0.9, maxLife: 0.9, color: '#a16207'
             });
-            for (let k = 0; k < 6; k++) {
+            for (let k = 0; k < 12; k++) {
                 ashParticles.push({
                     x: s.x, y: s.y,
-                    vx: (Math.random() - 0.5) * 90, vy: (Math.random() - 0.5) * 90,
-                    life: 0.25 + Math.random() * 0.2, maxLife: 0.45,
-                    size: Math.random() * 4 + 2, isDust: true
+                    vx: (Math.random() - 0.5) * 160, vy: (Math.random() - 0.5) * 160,
+                    life: 0.3 + Math.random() * 0.25, maxLife: 0.55,
+                    size: Math.random() * 6 + 3, isDust: true
                 });
             }
             mudSpits.splice(i, 1);
@@ -2116,6 +2293,14 @@ function updateEnemies(dt, time) {
         }
 
         if (s.life >= s.maxLife) {
+            for (let k = 0; k < 6; k++) {
+                ashParticles.push({
+                    x: s.x, y: s.y,
+                    vx: (Math.random() - 0.5) * 80, vy: (Math.random() - 0.5) * 80,
+                    life: 0.2 + Math.random() * 0.2, maxLife: 0.4,
+                    size: Math.random() * 5 + 2, isDust: true
+                });
+            }
             mudSpits.splice(i, 1);
         }
     }
@@ -2131,6 +2316,8 @@ function drawEnemies(ctx, time) {
                 drawGreaseRat(ctx, e.x, e.y + (1 - t) * 20, e.scale * (0.6 + t * 0.4), time * 4, false);
             } else if (e.kind === 'mudgobbler') {
                 drawMudGobbler(ctx, e.x, e.y + (1 - t) * 26, e.scale * (0.6 + t * 0.4), time, false, 0);
+            } else if (e.kind === 'snapturtle') {
+                drawSnapTurtle(ctx, e.x, e.y + (1 - t) * 26, e.scale * (0.6 + t * 0.4), time * 4, false);
             } else {
                 drawRotFrog(ctx, e.x, e.y + (1 - t) * 24, e.scale * (0.6 + t * 0.4), time * 1.3, false);
             }
@@ -2139,6 +2326,8 @@ function drawEnemies(ctx, time) {
             drawGreaseRat(ctx, e.x, e.y, e.scale, time * 4 + e.x, e.onFire);
         } else if (e.kind === 'mudgobbler') {
             drawMudGobbler(ctx, e.x, e.y, e.scale, time + e.x, e.burnFlash > 0, e.spitCharge);
+        } else if (e.kind === 'snapturtle') {
+            drawSnapTurtle(ctx, e.x, e.y, e.scale, time * 4 + e.x, e.burnFlash > 0);
         } else {
             drawRotFrog(ctx, e.x, e.y, e.scale, time * 1.3 + e.x, e.burnFlash > 0);
         }
@@ -2333,10 +2522,6 @@ function drawRotFrog(ctx, x, y, scale, phase, burning) {
 
     ctx.scale(scale, scale);
 
-    // Bold dark silhouette behind the whole body so it reads clearly against grass.
-    ctx.fillStyle = '#14210a';
-    ctx.fillRect(-17, -15, 34, 29);
-
     ctx.fillStyle = '#1a2e05';
     ctx.fillRect(-13, -4, 26, 14);
     ctx.fillRect(-9, -10, 18, 8);
@@ -2393,10 +2578,6 @@ function drawGreaseRat(ctx, x, y, scale, phase, onFire) {
     ctx.quadraticCurveTo(-24, 2 + Math.sin(phase * 14) * 6, -30, -2 + Math.sin(phase * 14 + 1) * 6);
     ctx.stroke();
 
-    // Bold dark silhouette behind the whole body so it doesn't blend into grass.
-    ctx.fillStyle = '#0c0a09';
-    ctx.fillRect(-16, -15, 35, 25);
-
     ctx.fillStyle = onFire ? '#ea580c' : '#a8a29e';
     ctx.fillRect(-14, -6, 22, 12);
     ctx.fillRect(6, -9, 10, 8);
@@ -2446,9 +2627,6 @@ function drawMudGobbler(ctx, x, y, scale, phase, burning, spitCharge) {
 
     ctx.scale(scale, scale);
 
-    ctx.fillStyle = '#1c1917';
-    ctx.fillRect(-24, -20, 48, 40);
-
     ctx.fillStyle = burning ? '#c2410c' : '#44403c';
     ctx.fillRect(-20, -6, 40, 24);
     ctx.fillRect(-14, -18, 28, 14);
@@ -2480,22 +2658,96 @@ function drawMudGobbler(ctx, x, y, scale, phase, burning, spitCharge) {
     ctx.restore();
 }
 
+// Fast and wobbly, with a big hard shell that shrugs off most of the flame.
+// Same footprint as the Mud Gobbler so it reads as similarly heavy/dangerous.
+function drawSnapTurtle(ctx, x, y, scale, phase, burning) {
+    const wobble = Math.sin(phase * 7) * 0.16;
+    const bob = Math.sin(phase * 7) * 2;
+    ctx.save();
+    ctx.translate(x, y + bob);
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, 20 * scale, 24 * scale, 8 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.scale(scale, scale);
+    ctx.rotate(wobble);
+
+    ctx.fillStyle = burning ? '#c2410c' : '#3f6212';
+    ctx.fillRect(-23, 3, 10, 11);
+    ctx.fillRect(13, 3, 10, 11);
+    ctx.fillRect(-23, -11, 10, 9);
+    ctx.fillRect(13, -11, 10, 9);
+
+    ctx.fillStyle = burning ? '#f97316' : '#4d7c0f';
+    ctx.fillRect(14, -7, 13, 11);
+    ctx.fillStyle = '#fef08a';
+    ctx.fillRect(22, -5, 3, 3);
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(23, -4, 1.5, 1.5);
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(25, -1, 6, 3);
+
+    ctx.fillStyle = burning ? '#ea580c' : '#365314';
+    ctx.beginPath();
+    ctx.ellipse(0, -3, 23, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = burning ? '#fb923c' : '#65a30d';
+    ctx.beginPath();
+    ctx.ellipse(0, -5, 18, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(20, 40, 10, 0.55)';
+    ctx.fillRect(-11, -10, 9, 7);
+    ctx.fillRect(2, -10, 9, 7);
+    ctx.fillRect(-4, -1, 9, 7);
+    ctx.fillStyle = 'rgba(217, 249, 157, 0.4)';
+    ctx.fillRect(-9, -12, 5, 3);
+    ctx.fillRect(4, -12, 5, 3);
+
+    ctx.restore();
+}
+
 // A glob of mud arcing toward the player - leaves a small trail and splats
 // with a spray of pixel debris on impact.
 function drawMudSpit(ctx, x, y, vx, vy) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(Math.atan2(vy, vx));
-    ctx.fillStyle = '#57402a';
+
+    // Toxic glow halo
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 20);
+    glow.addColorStop(0, 'rgba(163, 230, 53, 0.55)');
+    glow.addColorStop(1, 'rgba(163, 230, 53, 0)');
+    ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.ellipse(0, 0, 9, 7, 0, 0, Math.PI * 2);
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(120, 90, 60, 0.6)';
+
+    // Streaking trail
+    ctx.fillStyle = 'rgba(87, 64, 42, 0.55)';
     ctx.beginPath();
-    ctx.ellipse(-8, 0, 7, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(-16, 0, 14, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(214, 191, 156, 0.5)';
-    ctx.fillRect(-3, -3, 3, 3);
+    ctx.fillStyle = 'rgba(101, 163, 13, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-10, 0, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main sludge bolt
+    ctx.fillStyle = '#3f2d1f';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 13, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#65a30d';
+    ctx.beginPath();
+    ctx.ellipse(1, -1, 9, 6.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(217, 249, 157, 0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-2, -3, 3.5, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
 }
 
@@ -3258,6 +3510,7 @@ function gameLoop(currentTime) {
     
     drawUI(ctx, timeSec, dt);
     drawQteMeter(ctx, timeSec);
+    drawSkipButton(ctx);
 
     requestAnimationFrame(gameLoop);
 }
