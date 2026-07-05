@@ -3491,27 +3491,18 @@ function gameLoop(currentTime) {
     player.x += player.vx * dt;
     player.y += player.vy * dt;
 
-    const arenaBoundsX = logicalWidth / 2;
-    const arenaBoundsY = logicalHeight / 2 - 20;
-
-    if (gameState.currentScene === 'battle') {
-        if (player.x < -arenaBoundsX + 20) { player.x = -arenaBoundsX + 20; player.vx = 0; }
-        if (player.y < -arenaBoundsY) { player.y = -arenaBoundsY; player.vy = 0; }
-        if (player.y > arenaBoundsY) { player.y = arenaBoundsY; player.vy = 0; }
-        
-        if (player.x > arenaBoundsX) {
-            gameState.currentScene = 'safe';
-            player.x = -arenaBoundsX + 30; 
-        }
-    } else if (gameState.currentScene === 'safe') {
-        if (player.x > arenaBoundsX - 20) { player.x = arenaBoundsX - 20; player.vx = 0; }
-        if (player.y < -arenaBoundsY) { player.y = -arenaBoundsY; player.vy = 0; }
-        if (player.y > arenaBoundsY) { player.y = arenaBoundsY; player.vy = 0; }
-        
-        if (player.x < -arenaBoundsX) {
-            gameState.currentScene = 'battle';
-            player.x = arenaBoundsX - 30; 
-        }
+    // A big open area to roam, bounded by an invisible circular border far
+    // past the edge of any one screen - the camera now follows the player,
+    // so there's no more need for a single-screen "arena" or the old
+    // battle/safe room-swap at the edges.
+    const worldBoundaryRadius = 1300;
+    const distFromCenter = Math.hypot(player.x, player.y);
+    if (distFromCenter > worldBoundaryRadius) {
+        const nx = player.x / distFromCenter, ny = player.y / distFromCenter;
+        player.x = nx * worldBoundaryRadius;
+        player.y = ny * worldBoundaryRadius;
+        player.vx = 0;
+        player.vy = 0;
     }
 
     // The pond is now a toxic waste pond behind the duck - can't wade or run
@@ -3539,9 +3530,11 @@ function gameLoop(currentTime) {
         player.speed = 2800;
     }
 
-    camX = 0;
-    camY = 0;
+    camX = player.x;
+    camY = player.y;
     if (INTRO_CHILL_SCENE) {
+        camX = 0;
+        camY = 0;
         if (introState.startTime === null) introState.startTime = timeSec;
         const introElapsed = timeSec - introState.startTime;
         const flyProgress = Math.max(0, Math.min(1, (introElapsed - introState.cameraHold) / introState.cameraDuration));
