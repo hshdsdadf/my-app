@@ -613,6 +613,11 @@ const player = {
     xpToNext: 10,
     displayXp: 0,
     coins: 0,
+    hasNapalmFlame: false,
+    napalmDropCooldown: 0,
+    pullTimer: 0,
+    pullToX: 0,
+    pullToY: 0,
     flipX: false,
     isBlinking: false,
     fireCharge: 0,
@@ -1818,6 +1823,7 @@ let gobblerTarget = 0;
 let turtleSpawnedCount = 0;
 let turtleNextSpawnAt = 0;
 let turtleTarget = 0;
+let bossTriggered = false;
 
 // Roughly the same ellipse used for the player's pond-collision, so spawns
 // land visibly in the water.
@@ -2331,7 +2337,15 @@ function updateEnemies(dt, time) {
             turtleNextSpawnAt = time + 1.0 + Math.random() * 0.8;
         }
 
-        if (gameState.waveTimer >= waveConfig.waveDuration) {
+        const wave4FullySpawned = frogSpawnedCount >= frogTarget && ratScheduleIndex >= ratSpawnSchedule.length && gobblerSpawnedCount >= gobblerTarget;
+
+        if (gameState.wave === 4 && !bossTriggered) {
+            if (wave4FullySpawned && enemies.length === 0 && gameState.waveTimer > 2) {
+                bossTriggered = true;
+                waveActive = false;
+                startBossIntro(time);
+            }
+        } else if (gameState.waveTimer >= waveConfig.waveDuration) {
             gameState.wave += 1;
             startWave(time);
         }
@@ -2646,6 +2660,842 @@ function drawEnemies(ctx, time) {
             drawRotFrog(ctx, e.x, e.y, e.scale, time * 1.3 + e.x, e.burnFlash > 0);
         }
     });
+}
+
+// ================= BOSS: BIG MAMA FROG =================
+// Triggers when wave 4 is fully cleared. One big scripted intro, then a
+// six-attack phase-1 kit, a phase-2 power-up past 50% HP, a death sequence,
+// and an upgrade drop (Napalm Flame) on victory.
+let boss = null;
+const decoyFrogs = [];
+const poisonPuddles = [];
+const frogEggs = [];
+const bossProjectiles = [];
+const napalmPuddles = [];
+
+function isPointInFlame(x, y, radius) {
+    for (let j = 0; j < particles.length; j++) {
+        if (Math.hypot(particles[j].x - x, particles[j].y - y) < radius) return true;
+    }
+    return false;
+}
+
+function startBossIntro(time) {
+    const bx = pondSpawnEllipse.cx, by = pondSpawnEllipse.cy - 30;
+    boss = {
+        active: true,
+        state: 'intro',
+        introStart: time,
+        x: bx, y: by,
+        hp: 260, maxHp: 260,
+        phase: 1,
+        attack: null,
+        attackTimer: 0,
+        attackSub: '',
+        cooldownTimer: 2.5,
+        lastAttack: null,
+        squish: 1,
+        eyeGlow: 0,
+        mouthOpen: 0,
+        emergeT: 0,
+        shakeTimer: 0,
+        tongueLen: 0,
+        tongueAngle: 0,
+        tongueHitDone: false,
+        jumpOffset: 0,
+        comboCount: 0,
+        deathTimer: 0,
+        deathState: '',
+        boils: []
+    };
+    for (let i = 0; i < 6; i++) {
+        boss.boils.push({
+            angle: (i / 6) * Math.PI * 2,
+            dist: 38 + Math.random() * 10,
+            pulsePhase: Math.random() * Math.PI * 2,
+            popTimer: 0,
+            popped: false
+        });
+    }
+    decoyFrogs.length = 0;
+    for (let i = 0; i < 3; i++) {
+        const p = randomPondPoint(0.7);
+        decoyFrogs.push({
+            startX: p.x, startY: p.y,
+            x: p.x, y: p.y,
+            jumpDelay: 0.3 + i * 0.35,
+            jumped: false,
+            frozen: false
+        });
+    }
+}
+
+function updateBossIntro(dt, time) {
+    const t = time - boss.introStart;
+
+    decoyFrogs.forEach(f => {
+        if (!f.jumped && t >= f.jumpDelay) {
+            f.jumped = true;
+        }
+        if (f.jumped && !f.frozen) {
+            f.y -= 40 * dt;
+            if (t >= f.jumpDelay + 0.5) f.frozen = true;
+        }
+    });
+
+    // ~1.8s bubbling/frogs, ~1.0s water rise, ~1.2s hand slap, ~1.8s emerge
+    const handAt = 2.8;
+    const emergeAt = 4.0;
+    const fightAt = 5.8;
+
+    if (t >= handAt && t < emergeAt) {
+        boss.shakeTimer = Math.max(boss.shakeTimer, 0.15);
+    }
+
+    if (t >= emergeAt) {
+        boss.emergeT = Math.min(1, (t - emergeAt) / (fightAt - emergeAt));
+        if (boss.emergeT >= 1 && boss.state === 'intro') {
+            boss.state = 'fight';
+            boss.shakeTimer = 0.5;
+            floatingTexts.push({
+                text: 'BIG MAMA FROG', x: boss.x, y: boss.y - 160,
+                vx: 0, vy: -20, life: 2.2, maxLife: 2.2, color: '#4ade80'
+            });
+            decoyFrogs.length = 0;
+        }
+    }
+}
+
+function startBossAttack(time) {
+    const pool1 = ['bellyslam', 'tonguewhip', 'toxicspit', 'eggdrop', 'swampsuck', 'boilburst'];
+    const pool2 = pool1.concat(['mutantleap']);
+    const pool = boss.phase === 2 ? pool2 : pool1;
+    let pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pick === boss.lastAttack && Math.random() < 0.7) {
+        pick = pool[Math.floor(Math.random() * pool.length)];
+    }
+    boss.attack = pick;
+    boss.lastAttack = pick;
+    boss.attackTimer = 0;
+    boss.attackSub = 'start';
+    boss.tongueHitDone = false;
+    boss.comboCount = 0;
+    if (pick === 'bellyslam' || pick === 'mutantleap') {
+        boss.targetX = player.x;
+        boss.targetY = player.y;
+        boss.startX = boss.x;
+        boss.startY = boss.y;
+    }
+}
+
+function runBossAttack(dt, time) {
+    boss.attackTimer += dt;
+    const t = boss.attackTimer;
+    const speedMult = boss.phase === 2 ? 0.72 : 1;
+
+    if (boss.attack === 'bellyslam' || boss.attack === 'mutantleap') {
+        const riseDur = 0.5 * speedMult, hangDur = 0.25, fallDur = 0.35 * speedMult;
+        if (boss.attackSub === 'start') {
+            boss.attackSub = 'rise';
+            boss.attackTimer = 0;
+        } else if (boss.attackSub === 'rise') {
+            const rt = Math.min(1, boss.attackTimer / riseDur);
+            boss.jumpOffset = -Math.sin(rt * Math.PI / 2) * 120;
+            boss.squish = 1 - rt * 0.25;
+            if (rt >= 1) { boss.attackSub = 'hang'; boss.attackTimer = 0; }
+        } else if (boss.attackSub === 'hang') {
+            boss.jumpOffset = -120;
+            if (boss.attackTimer >= hangDur) { boss.attackSub = 'fall'; boss.attackTimer = 0; }
+        } else if (boss.attackSub === 'fall') {
+            const ft = Math.min(1, boss.attackTimer / fallDur);
+            boss.jumpOffset = -120 * (1 - ft * ft);
+            boss.x = boss.startX + (boss.targetX - boss.startX) * ft;
+            boss.y = boss.startY + (boss.targetY - boss.startY) * ft;
+            if (ft >= 1) {
+                boss.jumpOffset = 0;
+                boss.squish = 1.35;
+                boss.shakeTimer = 0.35;
+                const shockDist = Math.hypot(player.x - boss.x, player.y - boss.y);
+                if (shockDist < 130 && !INTRO_CHILL_SCENE) {
+                    player.hp = Math.max(0, player.hp - 16);
+                    floatingTexts.push({ text: '-16', x: player.x, y: player.y - 30, vx: 0, vy: -40, life: 0.8, maxLife: 0.8, color: '#f87171' });
+                }
+                bossProjectiles.push({ kind: 'shockwave', x: boss.x, y: boss.y, r: 0, maxR: 150, life: 0, maxLife: 0.5 });
+                boss.attackSub = 'recover';
+                boss.attackTimer = 0;
+            }
+        } else if (boss.attackSub === 'recover') {
+            boss.squish += (1 - boss.squish) * 0.15;
+            if (boss.attackTimer >= 0.35) {
+                if (boss.attack === 'mutantleap' && boss.comboCount < 2) {
+                    boss.comboCount++;
+                    boss.targetX = player.x;
+                    boss.targetY = player.y;
+                    boss.startX = boss.x;
+                    boss.startY = boss.y;
+                    boss.attackSub = 'start';
+                    boss.attackTimer = 0;
+                } else {
+                    endBossAttack(time);
+                }
+            }
+        }
+    } else if (boss.attack === 'tonguewhip') {
+        if (boss.attackSub === 'start') {
+            boss.tongueAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+            boss.attackSub = 'windup';
+            boss.mouthOpen = 1;
+        } else if (boss.attackSub === 'windup') {
+            if (t >= 0.35) { boss.attackSub = 'extend'; boss.attackTimer = 0; }
+        } else if (boss.attackSub === 'extend') {
+            boss.tongueLen = Math.min(340, (t / 0.22) * 340);
+            if (!boss.tongueHitDone && !INTRO_CHILL_SCENE) {
+                const tx = boss.x + Math.cos(boss.tongueAngle) * boss.tongueLen;
+                const ty = boss.y + Math.sin(boss.tongueAngle) * boss.tongueLen;
+                if (Math.hypot(player.x - tx, player.y - ty) < 40) {
+                    boss.tongueHitDone = true;
+                    player.hp = Math.max(0, player.hp - 12);
+                    player.pullToX = boss.x; player.pullToY = boss.y; player.pullTimer = 0.35;
+                    floatingTexts.push({ text: '-12', x: player.x, y: player.y - 30, vx: 0, vy: -40, life: 0.8, maxLife: 0.8, color: '#f87171' });
+                }
+            }
+            if (boss.tongueLen >= 340) { boss.attackSub = 'hold'; boss.attackTimer = 0; }
+        } else if (boss.attackSub === 'hold') {
+            if (t >= 0.2) { boss.attackSub = 'retract'; boss.attackTimer = 0; }
+        } else if (boss.attackSub === 'retract') {
+            boss.tongueLen = Math.max(0, 340 - (t / 0.25) * 340);
+            if (boss.tongueLen <= 0) { boss.mouthOpen = 0; endBossAttack(time); }
+        }
+    } else if (boss.attack === 'toxicspit') {
+        if (boss.attackSub === 'start') {
+            boss.spitsRemaining = 3;
+            boss.spitTimer = 0;
+            boss.attackSub = 'spitting';
+            boss.mouthOpen = 1;
+        } else if (boss.attackSub === 'spitting') {
+            boss.spitTimer -= dt;
+            if (boss.spitTimer <= 0 && boss.spitsRemaining > 0) {
+                const ang = Math.atan2(player.y - boss.y, player.x - boss.x) + (Math.random() - 0.5) * 0.5;
+                const dist = 150 + Math.random() * 120;
+                bossProjectiles.push({
+                    kind: 'toxicspit', x: boss.x, y: boss.y,
+                    targetX: boss.x + Math.cos(ang) * dist, targetY: boss.y + Math.sin(ang) * dist,
+                    life: 0, maxLife: 0.7
+                });
+                boss.spitsRemaining--;
+                boss.spitTimer = 0.35;
+            }
+            if (boss.spitsRemaining <= 0 && boss.spitTimer <= -0.3) {
+                boss.mouthOpen = 0;
+                endBossAttack(time);
+            }
+        }
+    } else if (boss.attack === 'eggdrop') {
+        if (boss.attackSub === 'start') {
+            boss.mouthOpen = 1;
+            boss.attackSub = 'cough';
+        } else if (boss.attackSub === 'cough') {
+            if (t >= 0.6) {
+                const eggCount = 3 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < eggCount; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const dist = 80 + Math.random() * 240;
+                    const ex = boss.x + Math.cos(ang) * dist;
+                    const ey = boss.y + Math.sin(ang) * dist;
+                    frogEggs.push({ x: ex, y: ey, hatchTimer: 6.5, wobble: Math.random() * 10 });
+                }
+                boss.mouthOpen = 0;
+                endBossAttack(time);
+            }
+        }
+    } else if (boss.attack === 'swampsuck') {
+        if (boss.attackSub === 'start') {
+            boss.attackSub = 'inhale';
+            boss.suckSpawned = 0;
+            boss.mouthOpen = 0.6;
+        } else if (boss.attackSub === 'inhale') {
+            if (!INTRO_CHILL_SCENE) {
+                const dx = boss.x - player.x, dy = boss.y - player.y;
+                const d = Math.hypot(dx, dy) || 1;
+                player.x += (dx / d) * 55 * dt;
+                player.y += (dy / d) * 55 * dt;
+            }
+            if (boss.suckSpawned < 2 && t > boss.suckSpawned * 0.9 + 0.4) {
+                spawnRotFrog(time);
+                boss.suckSpawned++;
+            }
+            if (t >= 2.0) { boss.mouthOpen = 0; endBossAttack(time); }
+        }
+    } else if (boss.attack === 'boilburst') {
+        if (boss.attackSub === 'start') {
+            boss.popsRemaining = 4;
+            boss.popTimer = 0;
+            boss.attackSub = 'popping';
+        } else if (boss.attackSub === 'popping') {
+            boss.popTimer -= dt;
+            if (boss.popTimer <= 0 && boss.popsRemaining > 0) {
+                const b = boss.boils[Math.floor(Math.random() * boss.boils.length)];
+                b.popped = true;
+                b.popTimer = 0.4;
+                const bx = boss.x + Math.cos(b.angle) * b.dist;
+                const by = boss.y - 30 + Math.sin(b.angle) * b.dist * 0.5;
+                const ang = Math.random() * Math.PI * 2;
+                bossProjectiles.push({
+                    kind: 'boilslime', x: bx, y: by,
+                    vx: Math.cos(ang) * 220, vy: Math.sin(ang) * 220,
+                    life: 0, maxLife: 1.4
+                });
+                boss.popsRemaining--;
+                boss.popTimer = 0.25;
+            }
+            if (boss.popsRemaining <= 0 && boss.popTimer <= -0.3) endBossAttack(time);
+        }
+    }
+}
+
+function endBossAttack(time) {
+    boss.attack = null;
+    boss.attackSub = '';
+    boss.cooldownTimer = 1.4 + Math.random() * 1.2;
+}
+
+function triggerBossDeath(time) {
+    boss.state = 'dying';
+    boss.deathTimer = 0;
+    boss.deathState = 'swell';
+    boss.attack = null;
+}
+
+function updateBossDeath(dt, time) {
+    boss.deathTimer += dt;
+    if (boss.deathState === 'swell') {
+        boss.squish = 1 + Math.min(0.7, boss.deathTimer * 0.5);
+        if (boss.deathTimer >= 1.4) {
+            boss.deathState = 'croak';
+            boss.deathTimer = 0;
+            floatingTexts.push({ text: '...ribbit', x: boss.x, y: boss.y - 140, vx: 0, vy: -20, life: 1, maxLife: 1, color: '#a3e635' });
+        }
+    } else if (boss.deathState === 'croak') {
+        if (boss.deathTimer >= 0.6) {
+            boss.deathState = 'explode';
+            boss.deathTimer = 0;
+            for (let i = 0; i < 40; i++) {
+                ashParticles.push({
+                    x: boss.x, y: boss.y - 30,
+                    vx: (Math.random() - 0.5) * 340, vy: (Math.random() - 0.5) * 340 - 60,
+                    life: 0.5 + Math.random() * 0.5, maxLife: 1.0,
+                    size: Math.random() * 10 + 5, isDust: false, color: '#4ade80'
+                });
+            }
+            boss.shakeTimer = 0.6;
+            spawnDrop(boss.x, boss.y);
+            spawnDrop(boss.x + 40, boss.y + 20);
+            spawnDrop(boss.x - 40, boss.y - 20);
+        }
+    } else if (boss.deathState === 'explode') {
+        if (boss.deathTimer >= 0.5) {
+            boss.state = 'dead';
+            boss.active = false;
+            player.hasNapalmFlame = true;
+            floatingTexts.push({
+                text: 'NAPALM FLAME UNLOCKED!', x: player.x, y: player.y - 60,
+                vx: 0, vy: -30, life: 2.5, maxLife: 2.5, color: '#fb923c'
+            });
+            gameState.wave = 5;
+            startWave(time);
+        }
+    }
+}
+
+function updateBoss(dt, time) {
+    if (!boss || !boss.active) return;
+    boss.shakeTimer = Math.max(0, boss.shakeTimer - dt);
+    boss.boils.forEach(b => {
+        b.pulsePhase += dt * 2;
+        if (b.popped) {
+            b.popTimer -= dt;
+            if (b.popTimer <= 0) b.popped = false;
+        }
+    });
+
+    if (boss.state === 'intro') { updateBossIntro(dt, time); return; }
+    if (boss.state === 'dying') { updateBossDeath(dt, time); return; }
+    if (boss.state !== 'fight') return;
+
+    if (boss.phase === 1 && boss.hp <= boss.maxHp * 0.5) {
+        boss.phase = 2;
+        boss.shakeTimer = 0.4;
+        floatingTexts.push({
+            text: 'BIG MAMA FROG IS ENRAGED!', x: boss.x, y: boss.y - 160,
+            vx: 0, vy: -20, life: 1.8, maxLife: 1.8, color: '#f87171'
+        });
+    }
+
+    boss.eyeGlow += ((boss.phase === 2 ? 1 : 0.4) - boss.eyeGlow) * 0.05;
+
+    if (!boss.attack) {
+        boss.cooldownTimer -= dt;
+        if (boss.cooldownTimer <= 0) startBossAttack(time);
+    } else {
+        runBossAttack(dt, time);
+    }
+
+    if (isPointInFlame(boss.x, boss.y - 30, 95)) {
+        boss.hp = Math.max(0, boss.hp - 40 * dt);
+        if (boss.hp <= 0) triggerBossDeath(time);
+    }
+}
+
+function updatePoisonPuddles(dt, time) {
+    for (let i = poisonPuddles.length - 1; i >= 0; i--) {
+        const p = poisonPuddles[i];
+        p.life -= dt;
+        if (p.life <= 0) { poisonPuddles.splice(i, 1); continue; }
+        if (!INTRO_CHILL_SCENE && Math.hypot(player.x - p.x, player.y - p.y) < p.r) {
+            p.tickTimer = (p.tickTimer || 0) - dt;
+            if (p.tickTimer <= 0) {
+                p.tickTimer = 0.5;
+                player.hp = Math.max(0, player.hp - 4);
+                floatingTexts.push({ text: '-4', x: player.x, y: player.y - 26, vx: 0, vy: -30, life: 0.6, maxLife: 0.6, color: '#84cc16' });
+            }
+        }
+    }
+}
+
+function updateFrogEggs(dt, time) {
+    for (let i = frogEggs.length - 1; i >= 0; i--) {
+        const e = frogEggs[i];
+        e.hatchTimer -= dt;
+
+        if (isPointInFlame(e.x, e.y, 26)) {
+            e.burnProgress = (e.burnProgress || 0) + dt;
+            if (Math.random() < 0.6) {
+                ashParticles.push({
+                    x: e.x + (Math.random() - 0.5) * 10, y: e.y - 4,
+                    vx: (Math.random() - 0.5) * 40, vy: -20 - Math.random() * 20,
+                    life: 0.2 + Math.random() * 0.15, maxLife: 0.35, size: Math.random() * 4 + 2, isDust: true
+                });
+            }
+            if (e.burnProgress >= 0.45) {
+                for (let k = 0; k < 6; k++) {
+                    ashParticles.push({
+                        x: e.x, y: e.y,
+                        vx: (Math.random() - 0.5) * 100, vy: (Math.random() - 0.5) * 100 - 20,
+                        life: 0.25 + Math.random() * 0.2, maxLife: 0.45,
+                        size: Math.random() * 4 + 2, isDust: false, color: '#4ade80'
+                    });
+                }
+                frogEggs.splice(i, 1);
+                continue;
+            }
+        }
+
+        if (e.hatchTimer <= 0) {
+            enemies.push({
+                kind: 'rotfrog', x: e.x, y: e.y, hp: 1, maxHp: 1, state: 'emerging', spawnTime: time,
+                scale: 1.1 + Math.random() * 0.2, hopTimer: 0, hopDuration: 0.45, waitTimer: 0,
+                startX: e.x, startY: e.y, targetX: e.x, targetY: e.y, biteCooldown: 0, burnFlash: 0, onFire: false,
+                surroundAngle: Math.random() * Math.PI * 2, surroundRadius: 44 + Math.random() * 26,
+                surroundSpin: (Math.random() < 0.5 ? 1 : -1) * 0.15
+            });
+            frogEggs.splice(i, 1);
+        }
+    }
+}
+
+function updateBossProjectiles(dt, time) {
+    for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+        const p = bossProjectiles[i];
+        p.life += dt;
+
+        if (p.kind === 'shockwave') {
+            p.r = p.maxR * Math.min(1, p.life / p.maxLife);
+            if (p.life >= p.maxLife) bossProjectiles.splice(i, 1);
+            continue;
+        }
+
+        if (p.kind === 'toxicspit') {
+            const t = Math.min(1, p.life / p.maxLife);
+            p.drawX = p.x + (p.targetX - p.x) * t;
+            p.drawY = p.y + (p.targetY - p.y) * t - Math.sin(t * Math.PI) * 60;
+            if (t >= 1) {
+                const puddleLife = boss.phase === 2 ? 6.5 : 4;
+                poisonPuddles.push({ x: p.targetX, y: p.targetY, r: 55, life: puddleLife, tickTimer: 0 });
+                bossProjectiles.splice(i, 1);
+            }
+            continue;
+        }
+
+        if (p.kind === 'boilslime') {
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= 0.96;
+            p.vy *= 0.96;
+            if (!INTRO_CHILL_SCENE && Math.hypot(player.x - p.x, player.y - p.y) < 22) {
+                player.hp = Math.max(0, player.hp - 8);
+                floatingTexts.push({ text: '-8', x: player.x, y: player.y - 30, vx: 0, vy: -40, life: 0.7, maxLife: 0.7, color: '#a3e635' });
+                bossProjectiles.splice(i, 1);
+                continue;
+            }
+            if (p.life >= p.maxLife) bossProjectiles.splice(i, 1);
+        }
+    }
+}
+
+function updateNapalmPuddles(dt, time) {
+    if (player.hasNapalmFlame) {
+        player.napalmDropCooldown -= dt;
+        if (mouse.isDown && player.fuel > 0 && !INTRO_CHILL_SCENE && player.napalmDropCooldown <= 0) {
+            napalmPuddles.push({ x: player.gunTipWorldX, y: player.gunTipWorldY, r: 30, life: 2.6, maxLife: 2.6, tickTimer: 0 });
+            player.napalmDropCooldown = 0.22;
+        }
+    }
+    for (let i = napalmPuddles.length - 1; i >= 0; i--) {
+        const p = napalmPuddles[i];
+        p.life -= dt;
+        if (p.life <= 0) { napalmPuddles.splice(i, 1); continue; }
+        p.tickTimer -= dt;
+        if (p.tickTimer <= 0) {
+            p.tickTimer = 0.2;
+            enemies.forEach(e => {
+                if (Math.hypot(e.x - p.x, e.y - p.y) < p.r) {
+                    e.hp -= 3;
+                    if (e.kind === 'greaserat') e.onFire = true;
+                }
+            });
+            if (boss && boss.active && boss.state === 'fight' && Math.hypot(boss.x - p.x, boss.y - 30 - p.y) < p.r + 60) {
+                boss.hp = Math.max(0, boss.hp - 3);
+                if (boss.hp <= 0) triggerBossDeath(time);
+            }
+        }
+    }
+}
+
+function drawPoisonPuddles(ctx, time) {
+    poisonPuddles.forEach(p => {
+        const pulse = 0.6 + 0.2 * Math.sin(time * 3 + p.x);
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, p.life / 0.6) * 0.85;
+        ctx.fillStyle = `rgba(101, 163, 13, ${0.35 * pulse})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.r, p.r * 0.55, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(163, 230, 53, ${0.4 * pulse})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.r * 0.6, p.r * 0.33, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawFrogEggs(ctx, time) {
+    frogEggs.forEach(e => {
+        const wob = Math.sin(time * 5 + e.wobble) * 3;
+        ctx.save();
+        ctx.translate(e.x + wob, e.y);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(0, 10, 12, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, 16);
+        glow.addColorStop(0, 'rgba(163, 230, 53, 0.5)');
+        glow.addColorStop(1, 'rgba(163, 230, 53, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#365314';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 11, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#84cc16';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(217, 249, 157, 0.7)';
+        ctx.beginPath();
+        ctx.arc(-2, -3, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawBossProjectiles(ctx, time) {
+    bossProjectiles.forEach(p => {
+        if (p.kind === 'shockwave') {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, 1 - p.life / p.maxLife);
+            ctx.strokeStyle = '#4ade80';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        } else if (p.kind === 'toxicspit') {
+            ctx.save();
+            ctx.translate(p.drawX || p.x, p.drawY || p.y);
+            ctx.fillStyle = '#365314';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 10, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#84cc16';
+            ctx.beginPath();
+            ctx.ellipse(-1, -1, 6, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        } else if (p.kind === 'boilslime') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.fillStyle = '#4d7c0f';
+            ctx.beginPath();
+            ctx.arc(0, 0, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#a3e635';
+            ctx.beginPath();
+            ctx.arc(-1, -1, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    });
+}
+
+function drawNapalmPuddles(ctx, time) {
+    napalmPuddles.forEach(p => {
+        const flick = 0.7 + 0.3 * Math.sin(time * 12 + p.x);
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, p.life / p.maxLife);
+        ctx.fillStyle = `rgba(154, 52, 18, 0.5)`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.r, p.r * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(249, 115, 22, ${0.55 * flick})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.r * 0.65, p.r * 0.33, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(253, 224, 71, ${0.5 * flick})`;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y - 2, p.r * 0.3, p.r * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    });
+}
+
+function drawDecoyFrogs(ctx, time) {
+    decoyFrogs.forEach((f, i) => {
+        drawPixelFrog(ctx, f.x, f.y, 0.85, time * 1.2 + i, f.frozen ? 0.3 : 0);
+    });
+}
+
+// The giant clawed hand that slaps onto the shore during the boss intro.
+function drawBossIntroHand(ctx, time, t) {
+    const handStart = 2.8, handEnd = 4.0;
+    if (t < handStart || t > handEnd + 0.4) return;
+    const local = Math.min(1, Math.max(0, (t - handStart) / 0.35));
+    const rise = 1 - Math.pow(local, 0.5);
+    const hx = pondSpawnEllipse.cx + 70, hy = pondSpawnEllipse.cy + 40;
+    ctx.save();
+    ctx.translate(hx, hy + rise * -160);
+    ctx.fillStyle = '#166534';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 46, 36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    for (let i = 0; i < 4; i++) {
+        ctx.save();
+        ctx.rotate((i - 1.5) * 0.22);
+        ctx.fillStyle = '#166534';
+        ctx.fillRect(-10, -70, 20, 46);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(-6, -74, 12, 8);
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+function drawBoss(ctx, time) {
+    if (!boss) return;
+
+    if (boss.state === 'intro') {
+        drawDecoyFrogs(ctx, time);
+        drawBossIntroHand(ctx, time, time - boss.introStart);
+        if (boss.emergeT > 0) {
+            drawBigMamaFrog(ctx, boss.x, boss.y, boss.emergeT, time, boss);
+        }
+        return;
+    }
+
+    const scale = boss.state === 'dying' ? boss.squish : 1;
+    drawBigMamaFrog(ctx, boss.x, boss.y + boss.jumpOffset, scale, time, boss);
+}
+
+// The huge, gross, cartoony toxic mutant frog boss - warty green hide, glowing
+// eyes, sludge-dripping mouth, glowing boils on her back (a few popping
+// during the fight), and a torn FeastCorp barrel-ring collar.
+function drawBigMamaFrog(ctx, x, y, scale, time, b) {
+    if (scale <= 0) return;
+    const bob = b.state === 'fight' && !b.attack ? Math.sin(time * 1.4) * 4 : 0;
+    ctx.save();
+    ctx.translate(x, y + bob);
+    ctx.scale(scale, scale);
+    ctx.scale(1, b.squish || 1);
+
+    // Ground shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(0, 92, 130, 34, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Back legs
+    ctx.fillStyle = '#365314';
+    ctx.beginPath();
+    ctx.ellipse(-95, 45, 42, 55, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(95, 45, 42, 55, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Torn barrel-ring collar (drawn behind the body, peeking out the sides)
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.ellipse(0, 24, 122, 30, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-118, 14, 26, 10);
+    ctx.fillRect(92, 18, 24, 8);
+    ctx.fillStyle = '#451a03';
+    ctx.beginPath();
+    ctx.moveTo(-30, 40); ctx.lineTo(-10, 20); ctx.lineTo(5, 42);
+    ctx.closePath();
+    ctx.fill();
+
+    // Big fat belly/body
+    const bellyGrad = ctx.createRadialGradient(-30, -20, 20, 0, 10, 150);
+    bellyGrad.addColorStop(0, '#65a30d');
+    bellyGrad.addColorStop(0.6, '#4d7c0f');
+    bellyGrad.addColorStop(1, '#365314');
+    ctx.fillStyle = bellyGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 118, 100, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Warty texture blotches
+    ctx.fillStyle = 'rgba(54, 83, 20, 0.55)';
+    [[-60, -10, 16], [40, -30, 12], [70, 20, 18], [-30, 40, 14], [10, -55, 10]].forEach(w => {
+        ctx.beginPath();
+        ctx.arc(w[0], w[1], w[2], 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.fillStyle = 'rgba(20, 40, 6, 0.4)';
+    [[-20, -15], [30, 5], [-55, 30], [55, -20], [0, 30], [-80, -5]].forEach(w => {
+        ctx.beginPath();
+        ctx.arc(w[0], w[1], 6, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Glowing boils on her back
+    b.boils.forEach(boil => {
+        const bx = Math.cos(boil.angle) * boil.dist * 1.4;
+        const by = -55 + Math.sin(boil.angle) * boil.dist * 0.5;
+        const pop = boil.popped ? 1.6 : 1;
+        const pulse = 0.7 + 0.3 * Math.sin(boil.pulsePhase);
+        const glow = ctx.createRadialGradient(bx, by, 1, bx, by, 16 * pop);
+        glow.addColorStop(0, `rgba(163, 230, 53, ${0.55 * pulse})`);
+        glow.addColorStop(1, 'rgba(163, 230, 53, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(bx, by, 16 * pop, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = boil.popped ? '#365314' : '#4d7c0f';
+        ctx.beginPath();
+        ctx.arc(bx, by, (boil.popped ? 4 : 9) * (boil.popped ? 1 : pulse), 0, Math.PI * 2);
+        ctx.fill();
+        if (!boil.popped) {
+            ctx.fillStyle = '#a3e635';
+            ctx.beginPath();
+            ctx.arc(bx - 2, by - 2, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+
+    // Front legs / hands
+    ctx.fillStyle = '#4d7c0f';
+    ctx.beginPath();
+    ctx.ellipse(-85, 70, 24, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(85, 70, 24, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#65a30d';
+    ctx.beginPath();
+    ctx.ellipse(0, -55, 70, 46, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glowing eyes
+    const eyeGlowAmt = 0.4 + (b.eyeGlow || 0) * 0.6;
+    [-1, 1].forEach(side => {
+        const ex = side * 38, ey = -85;
+        const eg = ctx.createRadialGradient(ex, ey, 1, ex, ey, 22);
+        eg.addColorStop(0, `rgba(74, 222, 128, ${0.8 * eyeGlowAmt})`);
+        eg.addColorStop(1, 'rgba(74, 222, 128, 0)');
+        ctx.fillStyle = eg;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 22, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#166534';
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, 16, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = (b.phase === 2) ? '#bbf7d0' : '#86efac';
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, 11, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#052e16';
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, 4.5, 9, 0, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Mouth - opens for tongue/spit/cough, drips sludge always
+    const mouthOpen = 6 + (b.mouthOpen || 0) * 28;
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath();
+    ctx.ellipse(0, -34, 46, mouthOpen, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#052e16';
+    ctx.beginPath();
+    ctx.ellipse(0, -30, 40, mouthOpen * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dripping toxic sludge from the mouth
+    for (let i = 0; i < 3; i++) {
+        const dripPhase = (time * 0.6 + i * 1.7) % 1;
+        const dx = -24 + i * 24;
+        const dy = -20 + dripPhase * 40;
+        ctx.fillStyle = `rgba(101, 163, 13, ${0.8 * (1 - dripPhase)})`;
+        ctx.beginPath();
+        ctx.ellipse(dx, dy, 4 - dripPhase * 2, 7 - dripPhase * 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    ctx.restore();
+
+    // Tongue (drawn outside the scaled body transform, in world space)
+    if (b.tongueLen > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineWidth = 22;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 34 * scale + bob);
+        ctx.lineTo(x + Math.cos(b.tongueAngle) * b.tongueLen, (y - 34 * scale + bob) + Math.sin(b.tongueAngle) * b.tongueLen);
+        ctx.stroke();
+        ctx.fillStyle = '#fb7185';
+        ctx.beginPath();
+        ctx.arc(x + Math.cos(b.tongueAngle) * b.tongueLen, (y - 34 * scale + bob) + Math.sin(b.tongueAngle) * b.tongueLen, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 function drawMudSpits(ctx, time) {
@@ -3305,6 +4155,46 @@ function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
 // The tap-timing meter for hopping out of the pond: a pixel bar with a red
 // miss zone, a green hit zone in the middle, and an indicator sliding back
 // and forth across it.
+// Big red boss health bar across the top of the screen once she's up and
+// fighting - shows her name and flashes/shifts color when phase 2 kicks in.
+function drawBossBar(ctx, time) {
+    if (!boss || !boss.active) return;
+    if (boss.state !== 'fight' && boss.state !== 'dying') return;
+
+    ctx.resetTransform();
+    const barW = Math.min(460, width * 0.82);
+    const barH = 20;
+    const barX = width / 2 - barW / 2;
+    const barY = 20 + safeAreaTop;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+    ctx.fillRect(barX - 8, barY - 26, barW + 16, barH + 34);
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px "Impact", sans-serif';
+    ctx.fillStyle = boss.phase === 2 ? '#f87171' : '#f8fafc';
+    ctx.fillText('BIG MAMA FROG' + (boss.phase === 2 ? '  -  ENRAGED' : ''), width / 2, barY - 8);
+
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(barX, barY, barW, barH);
+    const hpRatio = Math.max(0, boss.hp / boss.maxHp);
+    const grad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+    if (boss.phase === 2) {
+        grad.addColorStop(0, '#7f1d1d');
+        grad.addColorStop(1, '#f87171');
+    } else {
+        grad.addColorStop(0, '#365314');
+        grad.addColorStop(1, '#84cc16');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(barX, barY, barW, barH);
+    ctx.restore();
+}
+
 function drawQteMeter(ctx, time) {
     if (!qte.unlocked || qte.phase === 'jumping' || qte.phase === 'done') return;
 
@@ -3569,6 +4459,11 @@ function gameLoop(currentTime) {
     }
     updateEnemies(dt, timeSec);
     updatePickups(dt, timeSec);
+    updateBoss(dt, timeSec);
+    updatePoisonPuddles(dt, timeSec);
+    updateFrogEggs(dt, timeSec);
+    updateBossProjectiles(dt, timeSec);
+    updateNapalmPuddles(dt, timeSec);
 
     if (ax !== 0 && ay !== 0) {
         const len = Math.sqrt(ax * ax + ay * ay);
@@ -3586,6 +4481,16 @@ function gameLoop(currentTime) {
         if (player.slowTimer <= 0) player.slowMult = 1;
     }
     const speedMult = landingEaseMult * player.slowMult;
+
+    if (player.pullTimer > 0) {
+        player.pullTimer -= dt;
+        const dx = player.pullToX - player.x, dy = player.pullToY - player.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 60) {
+            player.x += (dx / d) * 260 * dt;
+            player.y += (dy / d) * 260 * dt;
+        }
+    }
 
     if (player.isRolling) {
         player.vx = player.dashDx * 1100;
@@ -3671,6 +4576,10 @@ function gameLoop(currentTime) {
 
     camX = player.x;
     camY = player.y;
+    if (boss && boss.active && boss.shakeTimer > 0) {
+        camX += (Math.random() - 0.5) * 18 * boss.shakeTimer;
+        camY += (Math.random() - 0.5) * 18 * boss.shakeTimer;
+    }
     if (INTRO_CHILL_SCENE) {
         camX = 0;
         camY = 0;
@@ -3858,6 +4767,11 @@ function gameLoop(currentTime) {
     drawPlayer(ctx, timeSec, dt);
     drawEnemies(ctx, timeSec);
     drawPickups(ctx, timeSec);
+    drawFrogEggs(ctx, timeSec);
+    drawPoisonPuddles(ctx, timeSec);
+    drawNapalmPuddles(ctx, timeSec);
+    drawBoss(ctx, timeSec);
+    drawBossProjectiles(ctx, timeSec);
     drawMudSpits(ctx, timeSec);
     
     drawGrass(ctx, timeSec, grassFront);
@@ -3921,6 +4835,7 @@ function gameLoop(currentTime) {
     
     drawUI(ctx, timeSec, dt);
     drawQteMeter(ctx, timeSec);
+    drawBossBar(ctx, timeSec);
     drawSkipButton(ctx);
 
     requestAnimationFrame(gameLoop);
