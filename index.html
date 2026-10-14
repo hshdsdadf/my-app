@@ -156,7 +156,7 @@
         .cs-input.bad { border-color: #dc2626; background: #fee2e2; animation: csShake 0.3s steps(4); }
 
         /* coach stage */
-        .cs-stage { position: relative; height: 190px; border: 4px solid var(--cs-ink); overflow: hidden; background: #0b1226; display: flex; justify-content: center; align-items: flex-end; }
+        .cs-stage { position: relative; height: 190px; border: 4px solid var(--cs-ink); overflow: hidden; background: #facc15; display: flex; justify-content: center; align-items: flex-end; }
         .cs-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
         .cs-sprite-big { position: relative; width: 142px; z-index: 1; margin-bottom: -2px; }
         .cs-sprite-big svg, .cs-av svg, .cs-mini svg { width: 100%; height: auto; display: block; shape-rendering: crispEdges; }
@@ -213,6 +213,83 @@
         @keyframes csShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
         @keyframes csPulse { 0%,100% { box-shadow: 0 4px 0 rgba(20,33,61,0.25), 0 0 0 0 rgba(74,222,128,0.0); } 50% { box-shadow: 0 4px 0 rgba(20,33,61,0.25), 0 0 0 4px rgba(74,222,128,0.55); } }
         @media (prefers-reduced-motion: reduce) { #career-screen *, #cs-hired * { animation: none !important; } }
+
+        /* ===== PIXEL TUTORIAL + OFFICE ROSTER ===== */
+        .pxfont { font-family: 'Press Start 2P', monospace; }
+        #tut-backdrop { position: fixed; inset: 0; z-index: 2600; background: rgba(2,6,23,0.42); display: none; align-items: flex-end; justify-content: center; padding: 16px 20px max(24px, env(safe-area-inset-bottom)); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        #tut-dialog { width: min(100%, 620px); background: #0f172a; padding: 18px; display: flex; flex-direction: column; gap: 14px; font-family: 'Press Start 2P', monospace; margin: 4px;
+            box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff, 10px 14px 0 0 rgba(0,0,0,0.6); animation: tutRise 0.24s steps(4) both; }
+        #tut-top { display: flex; gap: 16px; align-items: flex-start; }
+        #tut-avatar { flex: 0 0 auto; width: clamp(74px, 21vw, 108px); height: clamp(74px, 21vw, 108px); background: #c7d2fe; margin: 4px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+            box-shadow: 0 -4px 0 0 #fff, 0 4px 0 0 #fff, -4px 0 0 0 #fff, 4px 0 0 0 #fff; background-image: linear-gradient(45deg, rgba(255,255,255,.35) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.35) 75%), linear-gradient(45deg, rgba(255,255,255,.35) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.35) 75%); background-size: 12px 12px; background-position: 0 0, 6px 6px; }
+        #tut-avatar svg { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+        #tut-name { color: #facc15; font-size: clamp(11px, 3.3vw, 15px); text-shadow: 3px 3px 0 #000; margin: 6px 0 14px; }
+        #tut-text { color: #fff; font-size: clamp(9px, 2.7vw, 12px); line-height: 2; text-shadow: 2px 2px 0 #000; min-height: 10em; }
+        #tut-foot { color: #facc15; font-size: 9px; text-align: right; text-shadow: 2px 2px 0 #000; padding-top: 12px; border-top: 4px solid #334155; animation: tutBlink 1s steps(2) infinite; }
+        @keyframes tutRise { from { transform: translateY(32px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes tutBlink { 50% { opacity: 0.2; } }
+        .hub-tab.tut-dim { opacity: 0.32; filter: grayscale(0.5); pointer-events: none; }
+        .hub-tab.tut-glow { animation: tutGlow 0.9s steps(2) infinite; position: relative; z-index: 2; }
+        @keyframes tutGlow { 0%,100% { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 0 0 rgba(250,204,21,1); } 50% { box-shadow: inset 0 -4px 0 rgba(0,0,0,0.2), 0 0 0 8px rgba(250,204,21,0.9); } }
+        #tut-pointer { position: fixed; z-index: 2700; width: 64px; pointer-events: none; display: none; animation: tutBob 0.6s steps(2) infinite; filter: drop-shadow(0 5px 0 rgba(0,0,0,0.55)); }
+        #tut-pointer svg { width: 100%; display: block; image-rendering: pixelated; }
+        @keyframes tutBob { 0%,100% { margin-top: 0; } 50% { margin-top: 12px; } }
+        #tut-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 2550; display: none; justify-content: center; padding: 14px 18px max(16px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(2,6,23,0.9) 40%); font-family: 'Press Start 2P', monospace; }
+        #tut-bar-in { width: min(100%, 600px); display: flex; align-items: center; gap: 12px; background: #0f172a; padding: 12px; margin: 4px;
+            box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 8px 10px 0 0 rgba(0,0,0,0.6); }
+        #tut-bar-msg { flex: 1; color: #fff; font-size: clamp(7px, 2.2vw, 9px); line-height: 2; text-align: left; text-shadow: 2px 2px 0 #000; } #tut-bar-msg b { color: #facc15; font-weight: normal; }
+        #tut-continue { padding: 12px 14px; font-size: clamp(9px, 2.8vw, 12px); }
+        #tut-continue:disabled { opacity: 0.4; filter: grayscale(1); cursor: default; }
+        #tut-continue.ready { background-color: #16a34a; animation: tutGlow 0.9s steps(2) infinite; }
+
+        /* office */
+        .of-wrap { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 18px; text-align: left; font-family: 'Press Start 2P', monospace; }
+        .of-title { text-align: center; color: #facc15; font-size: clamp(16px, 5vw, 22px); text-shadow: 3px 3px 0 #000; }
+        .of-school { text-align: center; font-size: 8px; color: #94a3b8; line-height: 1.8; margin-top: -8px; }
+        .of-rate { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: center; flex-wrap: wrap; padding: 4px; }
+        .of-plate { flex: 1 1 0; min-width: 0; max-width: 128px; background: #0b1220; padding: 10px 4px 9px; text-align: center; margin: 3px; box-shadow: 0 -3px 0 0 #475569, 0 3px 0 0 #475569, -3px 0 0 0 #475569, 3px 0 0 0 #475569, 4px 6px 0 0 rgba(0,0,0,.6); }
+        .of-plate.big { box-shadow: 0 -3px 0 0 #facc15, 0 3px 0 0 #facc15, -3px 0 0 0 #facc15, 3px 0 0 0 #facc15, 4px 6px 0 0 rgba(0,0,0,.6); }
+        .of-plate b { display: block; font-weight: normal; font-size: clamp(14px, 4.4vw, 22px); margin-bottom: 8px; text-shadow: 3px 3px 0 #000; } .of-plate i { font-style: normal; font-size: 7px; color: #94a3b8; }
+        .of-sec { display: flex; justify-content: space-between; align-items: center; color: #facc15; font-size: clamp(10px, 3vw, 12px); text-shadow: 2px 2px 0 #000; border-bottom: 4px solid #1e293b; padding-bottom: 8px; }
+        .of-sec small { color: #64748b; font-size: 8px; text-shadow: none; }
+        .of-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 18px 14px; padding: 4px; }
+
+        .pc { --tc: #38bdf8; --tc2: #0c4a6e; --sb: #1e293b; position: relative; background: #0b1220; border: 0; padding: 6px 6px 8px; cursor: pointer; font-family: 'Press Start 2P', monospace; color: #fff; display: flex; flex-direction: column; gap: 7px; align-items: stretch; text-align: center; margin: 3px; overflow: visible;
+            box-shadow: 0 -3px 0 0 var(--tc), 0 3px 0 0 var(--tc), -3px 0 0 0 var(--tc), 3px 0 0 0 var(--tc), 5px 7px 0 0 rgba(0,0,0,.6); }
+        .pc:active { transform: translate(3px, 3px); box-shadow: 0 -3px 0 0 var(--tc), 0 3px 0 0 var(--tc), -3px 0 0 0 var(--tc), 3px 0 0 0 var(--tc), 2px 3px 0 0 rgba(0,0,0,.6); }
+        .pc.seen::after { content: '✔'; position: absolute; right: -6px; bottom: -8px; background: #16a34a; color: #fff; font-size: 8px; padding: 4px 4px 3px; box-shadow: 0 0 0 3px #0b1220; }
+        .pc-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+        .pc-ovr { background: var(--tc); color: #0b1220; font-size: 13px; padding: 6px 5px 4px; min-width: 32px; text-shadow: none; box-shadow: inset -3px -3px 0 rgba(0,0,0,.28), inset 3px 3px 0 rgba(255,255,255,.4); }
+        .pc-pos { font-size: 8px; color: var(--tc); text-shadow: 2px 2px 0 #000; }
+        .pc-stage { position: relative; height: 70px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; background-color: var(--sb);
+            background-image: linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%), linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%); background-size: 12px 12px; background-position: 0 0, 6px 6px; box-shadow: inset 0 -6px 0 0 rgba(0,0,0,.28); }
+        .pc-stage img { width: 70px; height: 60px; image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+        .pc-num { position: absolute; left: 4px; top: 5px; font-size: 7px; color: #fff; text-shadow: 2px 2px 0 #000; }
+        .pc-name { font-size: 7px; line-height: 1.6; min-height: 2.4em; color: #e2e8f0; text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
+        .pc-tag { font-size: 6px; line-height: 1.4; padding: 5px 2px 4px; background: var(--tc2); color: var(--tc); }
+        .pc.t-gold::before, .md-stage.t-gold::before { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.28) 48%, rgba(255,255,255,.28) 52%, transparent 60%); background-size: 300% 100%; animation: pcShine 2.4s steps(10) infinite; }
+        @keyframes pcShine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+        .of-hl .pc { animation: pcPulse 1.1s steps(2) infinite; }
+        @keyframes pcPulse { 50% { transform: translateY(-3px); } }
+
+        /* player sheet */
+        #of-modal { position: fixed; inset: 0; z-index: 2650; background: rgba(2,6,23,0.78); display: none; align-items: center; justify-content: center; padding: 22px 18px; font-family: 'Press Start 2P', monospace; }
+        #of-panel { --tc: #38bdf8; --tc2: #0c4a6e; --sb: #1e293b; width: min(100%, 460px); max-height: 92vh; overflow-y: auto; overflow-x: hidden; background: #0b1220; color: #fff; text-align: left; margin: 4px;
+            box-shadow: 0 -4px 0 0 var(--tc), 0 4px 0 0 var(--tc), -4px 0 0 0 var(--tc), 4px 0 0 0 var(--tc), 10px 14px 0 0 rgba(0,0,0,.7); animation: tutRise 0.22s steps(4) both; }
+        .md-stage { position: relative; height: 190px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; background-color: var(--sb);
+            background-image: linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%), linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%); background-size: 20px 20px; background-position: 0 0, 10px 10px; box-shadow: inset 0 -10px 0 0 rgba(0,0,0,.3); border-bottom: 4px solid var(--tc); }
+        .md-stage img { width: 140px; height: 120px; margin-bottom: 0; image-rendering: pixelated; image-rendering: crisp-edges; position: relative; z-index: 2; }
+        .md-ovr { position: absolute; left: 12px; top: 12px; z-index: 4; background: var(--tc); color: #0b1220; text-align: center; padding: 10px 10px 8px; font-size: 24px; box-shadow: inset -4px -4px 0 rgba(0,0,0,.3), inset 4px 4px 0 rgba(255,255,255,.4), 4px 5px 0 rgba(0,0,0,.5); } .md-ovr i { display: block; font-style: normal; font-size: 7px; margin-top: 6px; }
+        .md-tier { position: absolute; right: 12px; top: 12px; z-index: 4; background: #0b1220; color: var(--tc); font-size: 8px; padding: 7px 8px 6px; box-shadow: 0 0 0 3px var(--tc); }
+        .md-num { position: absolute; right: 12px; bottom: 14px; z-index: 4; color: #fff; font-size: 16px; text-shadow: 3px 3px 0 #000; }
+        .md-body { padding: 16px 16px 4px; display: flex; flex-direction: column; gap: 16px; }
+        .md-name { font-size: clamp(11px, 3.4vw, 14px); line-height: 1.6; text-shadow: 3px 3px 0 #000; } .md-sub { font-size: 8px; color: var(--tc); line-height: 1.9; margin-top: 8px; }
+        .md-traits { display: flex; flex-wrap: wrap; gap: 8px; } .md-traits span { font-size: 7px; padding: 6px 7px 5px; background: var(--tc2); color: var(--tc); box-shadow: 0 0 0 2px var(--tc); }
+        .md-h { font-size: 9px; color: #facc15; text-shadow: 2px 2px 0 #000; padding-bottom: 7px; border-bottom: 4px solid #1e293b; margin-bottom: 4px; }
+        .md-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; font-size: 8px; line-height: 1.6; margin-top: 12px; } .md-row b { font-weight: normal; font-size: 11px; text-shadow: 2px 2px 0 #000; }
+        .md-seg { grid-column: 1 / 3; display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 10px; } .md-seg i { background: #1e293b; } .md-seg i.on { background: var(--c); box-shadow: inset 0 -3px 0 rgba(0,0,0,.3); }
+        .md-fx { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 7px; line-height: 1.8; padding: 9px 8px 8px; margin-top: 8px; background: #0f172a; box-shadow: inset 4px 0 0 0 var(--tc); } .md-fx span { color: #cbd5e1; } .md-fx b { font-weight: normal; color: var(--tc); text-align: right; white-space: nowrap; } .md-fx b.up { color: #4ade80; } .md-fx b.dn { color: #f87171; }
+        #of-close { margin: 14px 16px 18px; width: calc(100% - 32px); }
     </style>
 </head>
 <body>
@@ -332,7 +409,6 @@
         <!-- 1. WELCOME -->
         <div class="cs-step active" id="cs-welcome">
             <div class="cs-hero">
-                <div class="cs-versus"><div class="cs-hl cs-float" id="cs-hl-a"></div><div class="cs-ballicon" id="cs-ballicon"></div><div class="cs-hl cs-float flip" id="cs-hl-b"></div></div>
                 <div class="cs-logo-small">WELCOME,</div>
                 <div class="cs-logo-big">COACH</div>
                 <div class="cs-tagline">Your coaching career starts here.</div>
@@ -346,7 +422,7 @@
                 <div class="cs-hd"><span>CHOOSE YOUR COACH</span><span class="cs-pips"><i class="on"></i><i class="on"></i><i></i></span></div>
                 <div class="cs-body">
                     <div class="cs-stage"><canvas id="cs-stagebg"></canvas><div class="cs-sprite-big cs-bob" id="cs-preview"></div></div>
-                    <div class="cs-plate"><div id="cs-plate-name" class="empty">YOUR NAME</div><div id="cs-plate-title"></div></div>
+                    <div class="cs-plate"><div id="cs-plate-name" class="empty">YOUR NAME</div></div>
                     <label class="cs-lab" for="cs-name">Coach name</label>
                     <input id="cs-name" class="cs-input" maxlength="14" placeholder="ENTER NAME" autocomplete="off" spellcheck="false" oninput="csNameInput()">
                     <div class="cs-lab">Appearance</div>
@@ -1419,7 +1495,7 @@
         }
 
         function triggerTackle(carrier, hitter) {
-            if (gameState !== 'PLAYING') return; gameState = 'TACKLED'; isAimingPass = false; aimPointerId = null; carrier.tackleTimer = 0; carrier.isDiving = false; carrier.hitDirX = carrier.x - hitter.x; carrier.hitDirY = carrier.y - hitter.y;
+            if (gameState !== 'PLAYING') return; if (StatsBridge.tackleMiss(carrier, hitter)) return; gameState = 'TACKLED'; isAimingPass = false; aimPointerId = null; carrier.tackleTimer = 0; carrier.isDiving = false; carrier.hitDirX = carrier.x - hitter.x; carrier.hitDirY = carrier.y - hitter.y;
             let hLen = Math.sqrt(carrier.hitDirX * carrier.hitDirX + carrier.hitDirY * carrier.hitDirY) || 1; carrier.hitDirX /= hLen; carrier.hitDirY /= hLen;
             let gangTacklers = players.filter(pl => pl !== hitter && pl !== carrier && pl.isCPU !== carrier.isCPU && Math.sqrt(Math.pow(pl.x - carrier.x, 2) + Math.pow(pl.y - carrier.y, 2)) < 1.6);
             [hitter, ...gangTacklers].forEach(t => { let dx = carrier.x - t.x, dy = carrier.y - t.y; let len = Math.sqrt(dx * dx + dy * dy) || 1; t.tackleHitDirX = dx / len; t.tackleHitDirY = dy / len; t.isTackling = true; t.tackleAnimTimer = 0; t.isLunging = false; t.isMissedTackle = false; t.isDiving = false; });
@@ -1598,7 +1674,9 @@
             if (window._mpMirror) dx = -dx;
             let qbScreen = toScreen(player.x, player.y); let targetScreenX = qbScreen.x + (dx * 3.5); let targetScreenY = qbScreen.y + (dy * 3.5); let worldPos = screenToWorldGround(targetScreenX, targetScreenY);
             projectedDestX = Math.max(-5, Math.min(FIELD_LENGTH_YARDS + 5, worldPos.x)); projectedDestY = Math.max(-(FIELD_WIDTH_YARDS/2) - 5, Math.min((FIELD_WIDTH_YARDS/2) + 5, worldPos.y));
-            let actualDist = Math.sqrt(Math.pow(projectedDestX - player.x, 2) + Math.pow(projectedDestY - player.y, 2)); projectedHangTime = Math.max(45, actualDist * 2.5);
+            let actualDist = Math.sqrt(Math.pow(projectedDestX - player.x, 2) + Math.pow(projectedDestY - player.y, 2));
+            { const _rg = StatsBridge.throwRange(player); if (actualDist > _rg) { const _k = _rg / actualDist; projectedDestX = player.x + (projectedDestX - player.x) * _k; projectedDestY = player.y + (projectedDestY - player.y) * _k; actualDist = _rg; } }
+            projectedHangTime = Math.max(38, Math.max(45, actualDist * 2.5) * StatsBridge.hangMul(player));
         }
 
         function executePass() {
@@ -1618,6 +1696,7 @@
             let qb = players.find(p => p.hasBall); if (!qb) return;
             let dragDist = Math.sqrt(Math.pow(aimStartX - aimCurrentX, 2) + Math.pow(aimStartY - aimCurrentY, 2)); if (dragDist < 15) return; 
             qb.hasBall = false; ball.isBadPass = false; ball.destX = projectedDestX; ball.destY = projectedDestY; let hangTime = projectedHangTime;
+            { const _sc = StatsBridge.scatter(qb, Math.hypot(ball.destX - qb.x, ball.destY - qb.y)); if (_sc > 0) { const _a = Math.random() * Math.PI * 2, _r = Math.sqrt(Math.random()) * _sc; ball.destX += Math.cos(_a) * _r; ball.destY += Math.sin(_a) * _r; } }
             ball.vx = (ball.destX - ball.x) / hangTime; ball.vy = (ball.destY - ball.y) / hangTime;
             let z0 = 1.2; let zTarget = 1.0; let g = 0.008; ball.vz = ((zTarget - z0) / hangTime) + (g * hangTime / 2) + (g / 2);
             ball.z = z0; ball.isDeadPass = false; ball.pbuMessage = ""; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
@@ -1679,10 +1758,12 @@
         function formatClock(sec) { sec = Math.max(0, Math.ceil(sec)); let m = Math.floor(sec / 60); let s = sec % 60; return m + ':' + (s < 10 ? '0' : '') + s; }
 
         function finalizePlayers() {
+            StatsBridge.assign();
             players.forEach(p => {
                 if (p.isLineman) { p.speed = 0.052 + Math.random() * 0.01; p.girth = 1.35 + Math.random() * 0.45; } 
                 else { if (!p.girth || p.girth === 1.0) p.girth = 0.95 + Math.random() * 0.15; if (!p.speedModified) { p.speed = 0.082 + (Math.random() * 0.008); p.speedModified = true; } }
                 if (p === player) { p.speed = 0.086; if (!p.skinTone) p.skinTone = SKIN_TONES[2]; } else if (p.isCPU && cpuDifficulty !== 0) { p.speed *= (1 + cpuDifficulty * 0.09); }
+                if (p.st) { p.speed = StatsBridge.speedFor(p); p.girth = p.rp.girth; p.skinTone = p.rp.skin; }
             });
             
             if (isMultiplayer && isMpHost) {
@@ -1787,10 +1868,11 @@
         function kickAimLimit() { return isFieldGoalPlay ? 1 : 0.45; } // max sideways aim for kickoffs / punts
         function kickTheBall(power, direction) {
             if (!isFieldGoalPlay) direction = Math.max(-kickAimLimit(), Math.min(kickAimLimit(), direction));
+            const _kk = players.find(pl => pl.isKicker); const _km = StatsBridge.kickMul(_kk); direction += (Math.random() * 2 - 1) * StatsBridge.kickScatter(_kk);
             let dirX = (playState === 'KICK') ? -1 : 1; if (isPAT) dirX = offenseDirection;
-            if (isFieldGoalPlay) { ball.vx = dirX * ((power / 100) * 0.283); ball.vz = 0.65; } 
-            else if (isPuntPlay) { ball.vx = dirX * ((power / 100) * 0.09 + 0.16); ball.vz = (power / 100) * 0.24 + 0.62; } 
-            else { ball.vx = dirX * ((power / 100) * 0.20 + 0.30); ball.vz = (power / 100) * 0.16 + 0.48; }
+            if (isFieldGoalPlay) { ball.vx = dirX * ((power / 100) * 0.283) * _km; ball.vz = 0.65; } 
+            else if (isPuntPlay) { ball.vx = dirX * ((power / 100) * 0.09 + 0.16) * _km; ball.vz = (power / 100) * 0.24 + 0.62; } 
+            else { ball.vx = dirX * ((power / 100) * 0.20 + 0.30) * _km; ball.vz = (power / 100) * 0.16 + 0.48; }
             ball.vy = direction * dirX * 0.22; ball.isKicked = true; ball.destX = ball.x; ball.destY = ball.y;
             let tempZ = ball.z, tempVz = ball.vz;
             while (tempZ >= 0) { ball.destX += ball.vx; ball.destY += ball.vy; tempZ += tempVz; tempVz -= 0.008; }
@@ -2539,12 +2621,12 @@
                             let contestingDefenders = potentialCatchers.filter(c => c.isIntercepter); let closestDef = null, closestSep = Infinity;
                             contestingDefenders.forEach(d => { let sep = Math.hypot(d.x - intendedTarget.x, d.y - intendedTarget.y); if (sep < closestSep) { closestSep = sep; closestDef = d; } });
                             if (closestDef) {
-                                let coverageFactor = Math.max(0, 2.6 - closestSep); let diffAdj = (closestDef.isCPU ? cpuDifficulty : -cpuDifficulty); let catchProb = 0.94 - coverageFactor * 0.26;
+                                let coverageFactor = Math.max(0, 2.6 - closestSep - StatsBridge.sepBonus(intendedTarget, closestDef)); let diffAdj = (closestDef.isCPU ? cpuDifficulty : -cpuDifficulty); let catchProb = 0.94 - coverageFactor * 0.26 + StatsBridge.catchAdj(intendedTarget, closestDef);
                                 if (ball.isBadPass) catchProb -= 0.15; catchProb -= diffAdj * 0.20; catchProb = Math.max(0.08, Math.min(0.94, catchProb));
                                 if (Math.random() < catchProb) { winner = intendedTarget; outcome = 'CATCH'; } 
-                                else { let intChance = Math.min(0.65, 0.28 + coverageFactor * 0.13 + (ball.isBadPass ? 0.15 : 0)); intChance += diffAdj * 0.16; intChance = Math.max(0.05, Math.min(0.75, intChance)); if (Math.random() < intChance) { winner = closestDef; outcome = 'INT'; } else { winner = null; outcome = 'PBU'; } }
+                                else { let intChance = Math.min(0.65, 0.28 + coverageFactor * 0.13 + (ball.isBadPass ? 0.15 : 0)); intChance += diffAdj * 0.16 + StatsBridge.intAdj(closestDef); intChance = Math.max(0.05, Math.min(0.75, intChance)); if (Math.random() < intChance) { winner = closestDef; outcome = 'INT'; } else { winner = null; outcome = 'PBU'; } }
                             } else {
-                                let catchProb = ball.isBadPass ? 0.82 : 0.95; catchProb += (intendedTarget.isCPU ? cpuDifficulty : -cpuDifficulty) * 0.05; catchProb = Math.max(0.5, Math.min(0.97, catchProb));
+                                let catchProb = (ball.isBadPass ? 0.82 : 0.95) + StatsBridge.handsAdj(intendedTarget); catchProb += (intendedTarget.isCPU ? cpuDifficulty : -cpuDifficulty) * 0.05; catchProb = Math.max(0.5, Math.min(0.97, catchProb));
                                 if (Math.random() < catchProb) { winner = intendedTarget; outcome = 'CATCH'; } else { winner = null; outcome = 'PBU'; }
                             }
                         } else {
@@ -2580,7 +2662,7 @@
                         if (dist > 2.0 || gameState === 'TACKLED') { p.isBlocking = false; p.blockTarget = null; } 
                         else {
                             p.blockTimer++; p.animTimer = 0; 
-                            if (isDefending) { let shedDiff = (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20; let shedTime = Math.max(20, (p.superShedder ? 15 : 70) - shedDiff); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
+                            if (isDefending) { let shedDiff = StatsBridge.shedDiff(p, p.blockTarget, (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20); let shedTime = Math.max(20, (p.superShedder ? 15 : 70) - shedDiff); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
                             else {
                                 p.x += p.facing * (p.speed * 0.1); let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU;
                                 if (isOffense && p.isLineman) { if (currentOffensePlay === 'INSIDE_RUN') { if (p.blockTarget) { let pushDir = (p.blockTarget.y < 0) ? -1 : 1; p.blockTarget.y += pushDir * (p.speed * 0.15); p.y += pushDir * (p.speed * 0.15); } } else if (currentOffensePlay === 'SWEEP_RIGHT') { if (p.blockTarget) { p.blockTarget.y += p.speed * 0.15; p.y += p.speed * 0.15; } } else if (currentOffensePlay === 'SWEEP_LEFT') { if (p.blockTarget) { p.blockTarget.y -= p.speed * 0.15; p.y -= p.speed * 0.15; } } }
@@ -2664,10 +2746,11 @@
                                         if (targetWR) {
                                             p.hasBall = false; let hangTime = 55; let leadX = targetWR.x + (targetWR.facing * targetWR.speed * hangTime * 0.7); let leadY = targetWR.y;
                                             if (currentOffensePlay === 'OUTS' && Math.abs(targetWR.y) > 8) leadY += (targetWR.y < 0 ? -1 : 1) * targetWR.speed * hangTime * 0.8;
-                                            let nearestRusher = players.filter(pl => pl.isCPU !== p.isCPU && pl.isLineman).sort((a,b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0]; let underPressure = nearestRusher && Math.hypot(nearestRusher.x - p.x, nearestRusher.y - p.y) < 3.5; let cleanBadRate = Math.max(0.03, Math.min(0.6, 0.28 - cpuDifficulty * 0.18)); let pressureBadRate = Math.max(0.1, Math.min(0.95, 0.45 - cpuDifficulty * 0.35)); ball.isBadPass = Math.random() < (underPressure ? pressureBadRate : cleanBadRate);
+                                            let nearestRusher = players.filter(pl => pl.isCPU !== p.isCPU && pl.isLineman).sort((a,b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0]; let underPressure = nearestRusher && Math.hypot(nearestRusher.x - p.x, nearestRusher.y - p.y) < 3.5; const _qd = StatsBridge.qbDiff(p); let cleanBadRate = Math.max(0.03, Math.min(0.6, 0.28 - _qd * 0.18)); let pressureBadRate = Math.max(0.1, Math.min(0.95, 0.45 - _qd * 0.35)); ball.isBadPass = Math.random() < (underPressure ? pressureBadRate : cleanBadRate);
                                             if (ball.isBadPass) { let missDist = 6 + Math.random() * 8; let missAngle = Math.random() * Math.PI * 2; leadX += Math.cos(missAngle) * missDist; leadY += Math.sin(missAngle) * missDist; }
                                             ball.destX = leadX; ball.destY = Math.max(-(FIELD_WIDTH_YARDS/2) - 3, Math.min((FIELD_WIDTH_YARDS/2) + 3, leadY));
-                                            let actualDist = Math.sqrt(Math.pow(ball.destX - p.x, 2) + Math.pow(ball.destY - p.y, 2)); hangTime = Math.max(35, actualDist * 2.5);
+                                            if (p.st) { const _dx = ball.destX - p.x, _dy = ball.destY - p.y, _d = Math.hypot(_dx, _dy) || 1, _rg = StatsBridge.throwRange(p); if (_d > _rg) { ball.destX = p.x + _dx * _rg / _d; ball.destY = p.y + _dy * _rg / _d; } const _sc = StatsBridge.scatter(p, Math.min(_d, _rg)); if (_sc > 0) { const _a = Math.random() * Math.PI * 2, _r = Math.sqrt(Math.random()) * _sc; ball.destX += Math.cos(_a) * _r; ball.destY += Math.sin(_a) * _r; } }
+                                            let actualDist = Math.sqrt(Math.pow(ball.destX - p.x, 2) + Math.pow(ball.destY - p.y, 2)); hangTime = Math.max(32, actualDist * 2.5 * StatsBridge.hangMul(p));
                                             ball.vx = (ball.destX - p.x) / hangTime; ball.vy = (ball.destY - p.y) / hangTime; let z0 = 1.2; let g = 0.008; ball.vz = ((1.0 - z0) / hangTime) + (g * hangTime / 2) + (g / 2); ball.z = z0; ball.x = p.x; ball.y = p.y; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
                                             players.forEach(pl => { pl.isTargetReceiver = false; pl.isIntercepter = false; }); targetWR.isTargetReceiver = true;
                                             let COVERAGE_RADIUS = ball.isBadPass ? 4.5 : 2.6; players.filter(pl => pl.isCPU !== p.isCPU && !pl.isLineman && !pl.isQB).forEach(def => { if (Math.sqrt(Math.pow(def.x - ball.destX, 2) + Math.pow(def.y - ball.destY, 2)) < COVERAGE_RADIUS) def.isIntercepter = true; });
@@ -4507,25 +4590,13 @@ const PXS = (function () {
             const cv = document.getElementById('cs-stagebg'); if (!cv || !cv.parentElement.clientWidth) return;
             const SC = 5, W = Math.max(40, Math.round(cv.parentElement.clientWidth / SC)), H = Math.round(cv.parentElement.clientHeight / SC);
             cv.width = W; cv.height = H; const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
-            const P = (x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
-            let seed = 5; const r = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
-            const sky = ['#070b16', '#0b1226', '#101a36', '#1a2542'];
-            for (let y = 0; y < 14; y++) { const b = Math.min(3, (y / 4) | 0); if (y % 4 === 3 && b < 3) { for (let x = 0; x < W; x++) P(x, y, 1, 1, ((x + y) & 1) ? sky[b + 1] : sky[b]); } else P(0, y, W, 1, sky[b]); }
-            for (let i = 0; i < 22; i++) P((r() * W) | 0, (r() * 9) | 0, 1, 1, '#e2e8f0');
-            P(0, 12, W, 1, '#cbd5e1'); P(0, 13, W, 1, '#64748b'); P(0, 14, W, 10, '#334155');
-            const cols = ['#e5e7eb', '#f8fafc', '#94a3b8', '#cbd5e1', '#fbbf24', '#f87171', '#60a5fa'];
-            for (let y = 15; y < 23; y += 2) { P(0, y + 1, W, 1, '#2a3548'); for (let x = (y % 4 ? 1 : 0); x < W; x += 2) if (r() < 0.7) P(x, y, 1, 2, cols[(r() * cols.length) | 0]); }
-            [10, W - 11].forEach(x => { P(x, 1, 1, 12, '#1e293b'); P(x - 2, 0, 5, 3, '#fff3b0'); P(x - 3, 0, 1, 3, '#fde68a'); P(x + 3, 0, 1, 3, '#fde68a'); });
-            P(0, 24, W, 1, '#e8d5c8'); P(0, 25, W, 3, '#a8432a'); P(0, 28, W, 1, '#7c2d1a');
-            let y = 29, i = 0; while (y < H) { const h = 3; P(0, y, W, Math.min(h, H - y), i % 2 ? '#1f9a48' : '#188a3c'); y += h; i++; }
-            P(0, 31, W, 1, '#e5f5e8'); for (let x = 2; x < W; x += 6) P(x, 35, 2, 1, '#e5f5e8');
+            for (let y = 0; y < H; y += 4) for (let x = 0; x < W; x += 4) { c.fillStyle = (((x >> 2) + (y >> 2)) & 1) ? '#eab308' : '#facc15'; c.fillRect(x, y, 4, 4); }
         }
         window.addEventListener('resize', () => { if (document.getElementById('cs-coach').classList.contains('active')) csDrawStageBG(); });
 
         // ---- step 2: coach ----
         function csBuildCoachForm() {
             document.getElementById('cs-preview').innerHTML = csSpriteSVG(csAvatars[csSel.avatar]);
-            document.getElementById('cs-plate-title').textContent = csAvatars[csSel.avatar].title;
             document.getElementById('cs-avatars').innerHTML = csAvatars.map((a, i) => `<button type="button" class="cs-av ${i === csSel.avatar ? 'sel' : ''}" aria-label="${a.title}" onclick="csPickAvatar(${i})">${csSpriteSVG(a)}</button>`).join('');
             document.getElementById('cs-styles').innerHTML = Object.keys(csStyles).map(k => {
                 const s = csStyles[k]; const pips = (n, cls) => `<span class="cs-pp ${cls}">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</span>`;
@@ -4604,17 +4675,323 @@ const PXS = (function () {
                     CsScene.stop(); document.getElementById('cs-hired').style.display = 'none'; document.getElementById('career-screen').style.display = 'none';
                     const hub = document.getElementById('hub-container'); if (hub) hub.style.display = 'flex'; switchHubTab('HOME');
                     setTimeout(() => { overlay.style.opacity = '0'; setTimeout(() => { overlay.style.pointerEvents = 'none'; }, 500); }, 300);
+                    setTimeout(() => { if (window.startTutorial) window.startTutorial(); }, 1000);
                 }, 500);
             }, 1700);
         };
 
         function showCareerSetup() {
             csBuildCoachForm(); csGo('cs-welcome');
-            document.getElementById('cs-hl-a').innerHTML = csHelmet(qpTeams[0]);
-            document.getElementById('cs-hl-b').innerHTML = csHelmet(qpTeams[1]);
-            document.getElementById('cs-ballicon').innerHTML = csBallHTML();
             document.getElementById('career-screen').style.display = 'flex'; CsScene.start();
         }
+
+        // ===================================================================
+        //  PRINCIPAL HARRIS TUTORIAL + OFFICE ROSTER + RATINGS THAT DRIVE THE GAME
+        // ===================================================================
+        (function () {
+            const INK = '#10111f';
+            //@@PURE_START
+            const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+            const gv = (a, k, d) => (a && a[k] != null ? a[k] : d);
+            function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+            const FIRST = ['Marcus','Devon','Tyrell','Caleb','Jaylen','Brandon','Cooper','Mason','Isaiah','Trey','Landon','Xavier','Roman','Dante','Hunter','Gavin','Darius','Eli','Micah','Jalen','Cody','Reggie','Terrance','Silas','Beau','Omar','Colt','Declan','Rashad','Wyatt','Jamal','Tucker','Andre','Preston','Zane','Malik','Gage','Kendrick','Boone','Nico'];
+            const LAST = ['Carter','Brooks','Washington','Reed','Dawson','Hayes','Sutton','Rivers','Mitchell','Coleman','Foster','Lawson','Patterson','Bishop','Ramirez','Jenkins','Holloway','Crawford','Tate','Monroe','Whitfield','Bennett','Calloway','Daniels','Pruitt','Henderson','Maddox','Sparks','Gibson','Rollins','Barnes','Stokes','Ellis','Vaughn','Kemp','Boyd','Marshall','Lockett','Pierce','Hollis'];
+
+            // [key, label, weight]  ->  overall = weighted average of the position's attributes
+            const POS = {
+                QB: { full: 'QUARTERBACK',   a: [['THP','ARM STRENGTH',.27],['THA','ACCURACY',.30],['AWR','AWARENESS',.22],['SPD','SPEED',.11],['AGI','AGILITY',.10]] },
+                WR: { full: 'WIDE RECEIVER', a: [['HND','HANDS',.27],['SPD','SPEED',.25],['RTE','ROUTES',.17],['AGI','AGILITY',.15],['JMP','LEAPING',.08],['STR','STRENGTH',.08]] },
+                OL: { full: 'OFFENSIVE LINE',a: [['PBK','PASS BLOCK',.27],['RBK','RUN BLOCK',.27],['STR','STRENGTH',.24],['AWR','AWARENESS',.16],['SPD','SPEED',.06]] },
+                DL: { full: 'DEFENSIVE LINE',a: [['PRS','PASS RUSH',.27],['STR','STRENGTH',.25],['TKL','TACKLING',.25],['SPD','SPEED',.13],['AGI','AGILITY',.10]] },
+                LB: { full: 'LINEBACKER',    a: [['TKL','TACKLING',.28],['SPD','SPEED',.20],['AWR','AWARENESS',.17],['STR','STRENGTH',.15],['COV','COVERAGE',.12],['AGI','AGILITY',.08]] },
+                CB: { full: 'CORNERBACK',    a: [['COV','COVERAGE',.30],['SPD','SPEED',.24],['AGI','AGILITY',.16],['INT','BALL SKILLS',.14],['TKL','TACKLING',.10],['STR','STRENGTH',.06]] },
+                K:  { full: 'KICKER',        a: [['KPW','KICK POWER',.42],['KAC','KICK ACCURACY',.43],['CLU','CLUTCH',.15]] }
+            };
+            // exactly the bodies the game puts on the field: QB + 2 WR + 4 OL  |  4 DL + 2 CB + MLB  |  kicker
+            const SLOTS = [
+                ['off','QB','QB'],['off','WR','WR'],['off','WR','WR'],['off','OL','C'],['off','OL','RG'],['off','OL','LG'],['off','OL','RT'],
+                ['def','DL','NT'],['def','DL','DT'],['def','DL','DE'],['def','DL','DE'],['def','CB','CB'],['def','CB','CB'],['def','LB','MLB'],
+                ['st','K','K']
+            ];
+            const OFFS = { OL: { SPD: -17, AGI: -14 }, DL: { SPD: -8 }, QB: { SPD: -8, AGI: -6 }, WR: { STR: -18 }, CB: { TKL: -12, STR: -18 }, LB: { COV: -8 } };
+            const NUM_RANGE = { QB:[1,19], WR:[80,89], OL:[60,79], DL:[90,99], LB:[40,59], CB:[20,39], K:[1,19] };
+            const calcOvr = p => Math.round(POS[p.pos].a.reduce((s, [k,,w]) => s + p.attrs[k] * w, 0));
+
+            // ---- how every rating really changes the game (the game code calls these same formulas) ----
+            const FX = {
+                speed: (a, line, base) => { const s = gv(a, 'SPD', 78); return line ? 0.052 * (1 + (s - 62) * 0.011) : base * (1 + (s - 78) * (s >= 78 ? 0.0085 : 0.0095)); },
+                throwRange: a => 18 + (gv(a, 'THP', 78) - 40) * 0.88,                       // yards
+                hangMul: a => clamp(1 - (gv(a, 'THP', 78) - 78) * 0.0045, 0.85, 1.15),       // ball flight time
+                scatter: (a, dist, pressured) => Math.max(0, 99 - gv(a, 'THA', 78)) * 0.045 * (0.5 + dist / 40) * (pressured ? clamp(1.7 - (gv(a, 'AWR', 78) - 60) * 0.012, 1.0, 2.2) : 1),
+                qbDiff: a => clamp(((gv(a, 'THA', 78) + gv(a, 'AWR', 78)) / 2 - 78) / 14, -1.2, 1.2),
+                kickMul: a => { const s = gv(a, 'KPW', 78); return s >= 78 ? 1 + (s - 78) * 0.0038 : 1 + (s - 78) * 0.0058; },
+                kickScatter: (a, q4) => { let k = gv(a, 'KAC', 78); if (q4) k += (gv(a, 'CLU', 78) - 78) * 0.4; return Math.max(0, 100 - k) * 0.0016; },
+                catchAdj: (w, d) => clamp((gv(w, 'HND', 78) - 78) * 0.004 + (gv(w, 'JMP', 78) - 78) * 0.0015 - (gv(d, 'COV', 78) - 78) * 0.004, -0.25, 0.2),
+                handsAdj: w => (gv(w, 'HND', 78) - 78) * 0.002,
+                sepBonus: (w, d) => clamp((gv(w, 'RTE', 78) - 78) * 0.008 + (gv(w, 'AGI', 70) - gv(d, 'AGI', 70)) * 0.004, -0.6, 0.6),
+                intAdj: d => (gv(d, 'INT', gv(d, 'AWR', 70)) - 78) * 0.004,
+                blockRating: (a, pass) => a && a.PBK != null ? (pass ? a.PBK : a.RBK) * 0.55 + gv(a, 'STR', 60) * 0.30 + gv(a, 'AWR', 70) * 0.15 : 60,
+                shedRating: (a, pass) => a && a.PRS != null ? (pass ? a.PRS : a.STR) * 0.7 + a.STR * 0.3 : (a && a.TKL != null && a.STR != null && a.AWR != null ? (a.TKL + a.STR) / 2 : 55),
+                shedFrames: (d, b, pass) => clamp((FX.shedRating(d, pass) - FX.blockRating(b, pass)) * 0.9, -30, 30),
+                whiff: (c, h) => clamp(0.08 + ((gv(c, 'AGI', 60) + gv(c, 'STR', 55)) / 2 - gv(h, 'TKL', 60)) * 0.011, 0.02, 0.45)
+            };
+
+            const TIERS = [
+                { min: 90, name: 'LEGEND',  c: '#fbbf24', c2: '#78350f', cls: 't-gold' },
+                { min: 82, name: 'ELITE',   c: '#c084fc', c2: '#3b0764', cls: 't-purple' },
+                { min: 74, name: 'PRO',     c: '#38bdf8', c2: '#0c4a6e', cls: 't-blue' },
+                { min: 65, name: 'STARTER', c: '#4ade80', c2: '#14532d', cls: 't-green' },
+                { min: 0,  name: 'ROOKIE',  c: '#94a3b8', c2: '#1e293b', cls: 't-gray' }
+            ];
+            const tierOf = o => TIERS.find(t => o >= t.min);
+            const TRAITS = {
+                QB: [['THP',90,'CANNON ARM'],['THA',90,'SNIPER'],['SPD',82,'DUAL THREAT'],['AWR',90,'FIELD GENERAL']],
+                WR: [['HND',90,'VELCRO HANDS'],['SPD',92,'BURNER'],['RTE',90,'ROUTE ARTIST'],['JMP',90,'HIGH FLYER']],
+                OL: [['PBK',90,'BRICK WALL'],['RBK',90,'ROAD GRADER'],['STR',92,'IMMOVABLE']],
+                DL: [['PRS',90,'SACK MASTER'],['TKL',90,'HIT STICK'],['STR',92,'BULL RUSH'],['SPD',78,'QUICK FIRST STEP']],
+                LB: [['TKL',90,'HIT STICK'],['AWR',90,'QB OF THE D'],['SPD',90,'SIDELINE TO SIDELINE'],['COV',85,'COVERS TE']],
+                CB: [['COV',90,'LOCKDOWN'],['INT',90,'BALL HAWK'],['SPD',92,'JET'],['TKL',80,'SURE TACKLER']],
+                K:  [['KPW',90,'CANNON LEG'],['KAC',90,'ICE COLD'],['CLU',90,'CLUTCH']]
+            };
+            function traitsOf(p) { const out = (TRAITS[p.pos] || []).filter(([k, v]) => p.attrs[k] >= v).map(t => t[2]).slice(0, 2); if (!out.length) out.push(p.ovr >= 74 ? 'SOLID STARTER' : p.ovr >= 65 ? 'GRINDER' : 'DEVELOPING'); return out; }
+
+            function buildRoster(teamIdx, seed) {
+                const t = qpTeams[teamIdx]; let h = teamIdx * 9973 + 17; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) | 0;
+                const rnd = mulberry(h), pick = a => a[Math.floor(rnd() * a.length)];
+                const usedNames = new Set(), usedNums = new Set(); const target = { off: t.off, def: t.def, st: t.ovr };
+                const roster = SLOTS.map(([grp, pos, role], i) => {
+                    let name; do { name = pick(FIRST) + ' ' + pick(LAST); } while (usedNames.has(name)); usedNames.add(name);
+                    const [lo, hi] = NUM_RANGE[pos]; let num, g = 0; do { num = lo + Math.floor(rnd() * (hi - lo + 1)); } while (usedNums.has(num) && g++ < 80); usedNums.add(num);
+                    const base = target[grp] + (rnd() * 12 - 6), attrs = {}, off = OFFS[pos] || {};
+                    POS[pos].a.forEach(([k,,w]) => { attrs[k] = clamp(Math.round(base + (off[k] || 0) + (rnd() * 16 - 8) + (w >= .25 ? 3 : 0)), 30, 99); });
+                    const girth = (pos === 'OL') ? 1.45 + rnd() * 0.25 : (pos === 'DL') ? 1.35 + rnd() * 0.22 : (pos === 'LB') ? 1.08 + rnd() * 0.1 : 0.95 + rnd() * 0.14;
+                    return { id: 'p' + i, name, pos, role, grp, num, skin: SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)], girth, attrs };
+                });
+                // nudge each unit so its average lands on the school's real offense / defense / kicker rating
+                ['off','def','st'].forEach(grp => {
+                    const list = roster.filter(p => p.grp === grp);
+                    for (let n = 0; n < 8; n++) {
+                        const avg = list.reduce((s, p) => s + calcOvr(p), 0) / list.length, d = Math.round(target[grp] - avg); if (!d) break;
+                        list.forEach(p => Object.keys(p.attrs).forEach(k => { p.attrs[k] = clamp(p.attrs[k] + d, 30, 99); }));
+                    }
+                });
+                roster.forEach(p => { p.ovr = calcOvr(p); });
+                return roster;
+            }
+            const pct = (v, d) => (v >= 0 ? '+' : '') + (v).toFixed(d == null ? 0 : d) + '%';
+            // the "in-game impact" lines on a player's sheet: [label, value, tone]
+            function impactOf(p) {
+                const a = p.attrs, line = p.pos === 'OL' || p.pos === 'DL', base = line ? 0.052 : 0.082, out = [];
+                const spdPct = (FX.speed(a, line, base) / (line ? 0.052 : 0.082) - 1) * 100; const tone = v => v > 0.4 ? 'up' : v < -0.4 ? 'dn' : '';
+                if (p.pos === 'QB') {
+                    out.push(['MAX THROW', Math.round(FX.throwRange(a)) + ' YDS', tone(FX.throwRange(a) - 52)]);
+                    out.push(['ACCURACY (30 YD)', '±' + FX.scatter(a, 30, false).toFixed(1) + ' YD', tone(1.3 - FX.scatter(a, 30, false))]);
+                    out.push(['UNDER PRESSURE', '±' + FX.scatter(a, 30, true).toFixed(1) + ' YD', tone(1.9 - FX.scatter(a, 30, true))]);
+                    out.push(['BALL SPEED', pct((1 - FX.hangMul(a)) * 100), tone(1 - FX.hangMul(a))]);
+                }
+                if (p.pos === 'WR') {
+                    out.push(['CATCH CHANCE', pct(((FX.catchAdj(a, { COV: 78 })) * 100), 0), tone(FX.catchAdj(a, { COV: 78 }))]);
+                    out.push(['SEPARATION', (FX.sepBonus(a, { AGI: 70 }) >= 0 ? '+' : '') + FX.sepBonus(a, { AGI: 70 }).toFixed(1) + ' YD', tone(FX.sepBonus(a, { AGI: 70 }))]);
+                    out.push(['BREAKS TACKLES', Math.round(FX.whiff(a, { TKL: 75 }) * 100) + '%', tone(FX.whiff(a, { TKL: 75 }) - 0.11)]);
+                }
+                if (p.pos === 'OL') { const f = FX.shedFrames({ PRS: 75, STR: 75 }, a, true); out.push(['HOLDS BLOCK', pct((-f / 70) * 100), tone(-f)]); out.push(['VS RUN: HOLDS', pct((-FX.shedFrames({ PRS: 75, STR: 75 }, a, false) / 70) * 100), tone(-FX.shedFrames({ PRS: 75, STR: 75 }, a, false))]); }
+                if (p.pos === 'DL') { const f = FX.shedFrames(a, { PBK: 75, RBK: 75, STR: 75, AWR: 70 }, true); out.push(['SHEDS BLOCKS', pct((f / 70) * 100) + ' FASTER', tone(f)]); out.push(['TACKLE WHIFF', Math.round(FX.whiff({ AGI: 70, STR: 60 }, a) * 100) + '%', tone(0.11 - FX.whiff({ AGI: 70, STR: 60 }, a))]); }
+                if (p.pos === 'LB') { const f = FX.shedFrames(a, { PBK: 75, RBK: 75, STR: 75, AWR: 70 }, false); out.push(['SHEDS BLOCKS', pct((f / 70) * 100) + ' FASTER', tone(f)]); out.push(['TACKLE WHIFF', Math.round(FX.whiff({ AGI: 70, STR: 60 }, a) * 100) + '%', tone(0.11 - FX.whiff({ AGI: 70, STR: 60 }, a))]); out.push(['PASS COVERAGE', pct(-(FX.catchAdj({ HND: 78, JMP: 78 }, a)) * 100), tone(-FX.catchAdj({ HND: 78, JMP: 78 }, a))]); }
+                if (p.pos === 'CB') { out.push(['PASS COVERAGE', pct(-(FX.catchAdj({ HND: 78, JMP: 78 }, a)) * 100) + ' CATCHES', tone(-FX.catchAdj({ HND: 78, JMP: 78 }, a))]); out.push(['INTERCEPTS', pct(FX.intAdj(a) * 100), tone(FX.intAdj(a))]); out.push(['TACKLE WHIFF', Math.round(FX.whiff({ AGI: 70, STR: 60 }, a) * 100) + '%', tone(0.11 - FX.whiff({ AGI: 70, STR: 60 }, a))]); }
+                if (p.pos === 'K') {
+                    out.push(['KICK DISTANCE', pct((FX.kickMul(a) - 1) * 100), tone(FX.kickMul(a) - 1)]);
+                    out.push(['AIM MISS (40 YD)', '±' + (FX.kickScatter(a, false) * 35.6).toFixed(1) + ' YD', tone(1.3 - FX.kickScatter(a, false) * 35.6)]);
+                    out.push(['4TH QTR AIM MISS', '±' + (FX.kickScatter(a, true) * 35.6).toFixed(1) + ' YD', tone(FX.kickScatter(a, false) - FX.kickScatter(a, true))]);
+                }
+                if (p.pos !== 'K') out.push(['RUN SPEED', pct(spdPct), tone(spdPct)]);
+                return out;
+            }
+            //@@PURE_END
+
+            // ================= sprites: the game's OWN player sprite engine (PXS), cropped to the upper body =================
+            const SPR = {};
+            function bust(p, t) {
+                const key = [p.id, p.skin, t.c1, t.c2, p.girth.toFixed(2), p.pos].join('|'); if (SPR[key]) return SPR[key];
+                let url = '';
+                try {
+                    const seed = ((p.num * 37 + p.name.length * 13) % 100) / 100; let pose, hasBall = false;
+                    if (p.pos === 'K') pose = PXS.stance({ isKicker: true }, seed);
+                    else if (p.pos === 'QB') { pose = PXS.idle(0.25); hasBall = true; }
+                    else if (p.pos === 'OL' || p.pos === 'DL') pose = PXS.stance({ isLineman: true }, 0.5);
+                    else if (p.pos === 'LB') pose = PXS.stance({ isMLB: true }, seed);
+                    else pose = PXS.stance({}, seed);
+                    const a2 = hasBall ? 0.1 : pose.armA2, b2 = hasBall ? 2.0 : pose.armB2;
+                    const cv = PXS.cached({ facing: 1, girth: p.girth, isRef: false, hasFlag: false, hasBall, skin: p.skin, jersey: t.c1, pants: t.c2, helmet: t.c2, jerseyDetail: '#ffffff', helmetStripe: t.c1, pantsStripe: t.c1,
+                        pitch: pose.pitch, lean: 0, plant: true, bob: 0, breath: 0, armA1: pose.armA1, armA2: a2, armB1: pose.armB1, armB2: b2, legA1: pose.legA1, legA2: pose.legA2, legK1: pose.legK1, legK2: pose.legK2 });
+                    const W = cv.width, H = cv.height, d = cv.getContext('2d').getImageData(0, 0, W, H).data; let x0 = W, x1 = -1, y0 = H;
+                    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (d[(y * W + x) * 4 + 3] > 0) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; }
+                    const out = document.createElement('canvas'); out.width = 14; out.height = 12; const c = out.getContext('2d'); c.imageSmoothingEnabled = false;
+                    c.drawImage(cv, Math.round((x0 + x1) / 2) - 7, y0 - 1, 14, 12, 0, 0, 14, 12); url = out.toDataURL();
+                } catch (e) { url = ''; }
+                return (SPR[key] = url);
+            }
+            function pxSVG(g) {
+                const H = g.length, W = g[0].length; const O = Array.from({ length: H + 2 }, () => Array(W + 2).fill(null));
+                for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) O[y + 1][x + 1] = g[y][x]; const out = O.map(r => r.slice());
+                for (let y = 0; y < H + 2; y++) for (let x = 0; x < W + 2; x++) if (!O[y][x]) { if ((y > 0 && O[y-1][x]) || (y < H+1 && O[y+1][x]) || (x > 0 && O[y][x-1]) || (x < W+1 && O[y][x+1])) out[y][x] = INK; }
+                return csRunsSVG(out, W + 2, H + 2);
+            }
+            function mkGrid(W, H) { const g = Array.from({ length: H }, () => Array(W).fill(null)); const R = (x, y, w, h, c) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (j >= 0 && j < H && i >= 0 && i < W) g[j][i] = c; }; return { g, R }; }
+            function harrisSVG() {
+                const { g, R } = mkGrid(16, 20); const skin = '#a8643a', skinDk = '#7d4626', hair = '#3a2213', suit = '#141a2e';
+                R(2, 14, 12, 6, suit); R(1, 15, 1, 5, suit); R(14, 15, 1, 5, suit); R(6, 14, 4, 6, '#f1f5f9'); R(7, 15, 2, 5, '#1d4ed8'); R(5, 14, 1, 4, '#0b0e1a'); R(10, 14, 1, 4, '#0b0e1a');
+                R(6, 12, 4, 2, skinDk); R(4, 3, 8, 9, skin); R(3, 5, 1, 4, skin); R(12, 5, 1, 4, skin);
+                R(4, 1, 8, 3, hair); R(3, 2, 1, 3, hair); R(12, 2, 1, 3, hair); R(5, 0, 6, 1, hair); R(11, 3, 1, 2, hair);
+                R(3, 6, 4, 3, INK); R(9, 6, 4, 3, INK); R(7, 6, 2, 1, INK); R(4, 7, 2, 1, '#f8fafc'); R(10, 7, 2, 1, '#f8fafc'); R(5, 7, 1, 1, '#2a1608'); R(11, 7, 1, 1, '#2a1608');
+                R(7, 9, 2, 1, skinDk); R(6, 10, 4, 1, skinDk); R(7, 10, 2, 1, '#7b2d2d'); R(5, 11, 6, 1, skinDk);
+                return pxSVG(g);
+            }
+            const POINTER_SVG = (function () {
+                const rows = ['...yyyyyy...','...yyyyyy...','...yyyyyy...','...yyyyyy...','yyyyyyyyyyyy','.yyyyyyyyyy.','..yyyyyyyy..','...yyyyyy...','....yyyy....','.....yy.....'];
+                const g = rows.map(r => r.split('').map(c => c === 'y' ? '#facc15' : null)); g.forEach(r => { if (r[3]) r[3] = '#fde68a'; }); return pxSVG(g);
+            })();
+
+            // ================= rosters: your school + every other school =================
+            const rosterCache = {};
+            function rosterFor(idx) { if (career && career.roster && idx === career.teamIdx) return career.roster; return rosterCache[idx] || (rosterCache[idx] = buildRoster(idx, 'cpu')); }
+            function ensureRoster() { if (career && !career.roster) career.roster = buildRoster(career.teamIdx, career.coachName); return career && career.roster; }
+            function ratingsOf(r) { const avg = g => { const l = r.filter(p => p.grp === g); return Math.round(l.reduce((s, p) => s + p.ovr, 0) / l.length); }; const off = avg('off'), def = avg('def'), k = avg('st'); return { off, def, st: k, ovr: Math.round(off * 0.45 + def * 0.45 + k * 0.10) }; }
+            window.getTeamRatings = function () { return career && career.roster ? ratingsOf(career.roster) : null; };
+            window.getTeamRoster = function (idx) { return rosterFor(idx); };
+
+            // ================= DOM =================
+            const body = document.body;
+            const backdrop = document.createElement('div'); backdrop.id = 'tut-backdrop';
+            backdrop.innerHTML = '<div id="tut-dialog"><div id="tut-top"><div id="tut-avatar"></div><div style="flex:1;min-width:0"><div id="tut-name">PRINCIPAL HARRIS</div><div id="tut-text"></div></div></div><div id="tut-foot">TAP TO CONTINUE ▶</div></div>';
+            const pointer = document.createElement('div'); pointer.id = 'tut-pointer'; pointer.innerHTML = POINTER_SVG;
+            const bar = document.createElement('div'); bar.id = 'tut-bar'; bar.innerHTML = '<div id="tut-bar-in"><div id="tut-bar-msg"></div><button class="retro-btn" id="tut-continue" disabled>CONTINUE</button></div>';
+            const modal = document.createElement('div'); modal.id = 'of-modal'; modal.innerHTML = '<div id="of-panel"><div id="of-sheet"></div><button class="retro-btn" id="of-close">BACK</button></div>';
+            body.append(backdrop, pointer, bar, modal);
+            document.getElementById('tut-avatar').innerHTML = harrisSVG();
+
+            const tut = { on: false, phase: '', viewed: new Set(), need: 3 };
+            let typer = null, onNext = null, fullText = '';
+            function say(text, next) {
+                onNext = next; fullText = text; const el = document.getElementById('tut-text'); el.textContent = ''; backdrop.style.display = 'flex'; clearInterval(typer);
+                let i = 0; typer = setInterval(() => { i += 1; el.textContent = text.slice(0, i); if (i >= text.length) clearInterval(typer); }, 30);
+            }
+            backdrop.addEventListener('click', () => {
+                const el = document.getElementById('tut-text');
+                if (el.textContent.length < fullText.length) { clearInterval(typer); el.textContent = fullText; return; }
+                const n = onNext; onNext = null; if (n) n();
+            });
+            const closeDialog = () => { clearInterval(typer); backdrop.style.display = 'none'; };
+
+            const officeTab = () => document.querySelector(`.hub-tab[onclick="switchHubTab('OFFICE')"]`);
+            let raf = 0;
+            function trackPointer() { const t = officeTab(); if (!t || pointer.style.display === 'none') return; const r = t.getBoundingClientRect(); pointer.style.left = (r.left + r.width / 2 - 32) + 'px'; pointer.style.top = Math.max(4, r.top - 84) + 'px'; raf = requestAnimationFrame(trackPointer); }
+            function showPointer() { document.querySelectorAll('.hub-tab').forEach(b => b.classList.add('tut-dim')); const o = officeTab(); if (o) { o.classList.remove('tut-dim'); o.classList.add('tut-glow'); } pointer.style.display = 'block'; cancelAnimationFrame(raf); trackPointer(); }
+            function hidePointer() { pointer.style.display = 'none'; cancelAnimationFrame(raf); document.querySelectorAll('.hub-tab').forEach(b => b.classList.remove('tut-dim', 'tut-glow')); }
+
+            // ================= Office =================
+            const teamOf = () => qpTeams[career.teamIdx];
+            const tierVars = (tier, t) => `--tc:${tier.c};--tc2:${tier.c2};--sb:${shadeHex(t.c1, -62)}`;
+            function cardHTML(p) {
+                const t = teamOf(), tier = tierOf(p.ovr), tr = traitsOf(p)[0];
+                return `<button class="pc ${tier.cls} ${tut.viewed.has(p.id) ? 'seen' : ''}" style="${tierVars(tier, t)}" onclick="ofOpen('${p.id}')"><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
+            }
+            function renderOffice() {
+                const content = document.getElementById('hub-content'); if (!content) return;
+                const r = ensureRoster(); if (!r) return; const tr = ratingsOf(r), t = teamOf();
+                const sec = (title, grp) => { const l = r.filter(p => p.grp === grp); return `<div class="of-sec"><span>${title}</span><small>${l.length}</small></div><div class="of-grid ${tut.phase === 'roster' ? 'of-hl' : ''}">${l.map(cardHTML).join('')}</div>`; };
+                const plate = (v, l, big) => `<div class="of-plate ${big ? 'big' : ''}"><b style="color:${tierOf(v).c}">${v}</b><i>${l}</i></div>`;
+                content.style.justifyContent = 'flex-start';
+                content.innerHTML = `<div class="of-wrap"><div class="of-title">OFFICE</div><div class="of-school">${t.name.toUpperCase()} · STARTING ROSTER</div>
+                    <div class="of-rate">${plate(tr.ovr, 'TEAM OVR', true)}${plate(tr.off, 'OFFENSE')}${plate(tr.def, 'DEFENSE')}${plate(tr.st, 'KICKER')}</div>
+                    ${sec('OFFENSE', 'off')}${sec('DEFENSE', 'def')}${sec('SPECIAL TEAMS', 'st')}</div>`;
+                content.style.paddingBottom = tut.phase === 'roster' ? '120px' : '';
+            }
+            window.ofOpen = function (id) {
+                const p = career.roster.find(x => x.id === id); if (!p) return; const t = teamOf(), tier = tierOf(p.ovr), panel = document.getElementById('of-panel');
+                panel.style.cssText = tierVars(tier, t);
+                const attrs = POS[p.pos].a.map(([k, label]) => { const v = p.attrs[k], c = tierOf(v).c, on = Math.round(v / 5); return `<div class="md-row"><span>${label}</span><b style="color:${c}">${v}</b><div class="md-seg" style="--c:${c}">${Array.from({ length: 20 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('');
+                const fx = impactOf(p).map(([l, v, tn]) => `<div class="md-fx"><span>${l}</span><b class="${tn}">${v}</b></div>`).join('');
+                document.getElementById('of-sheet').innerHTML = `<div class="md-stage ${tier.cls}"><div class="md-ovr">${p.ovr}<i>OVR</i></div><div class="md-tier">${tier.name}</div><img alt="" src="${bust(p, t)}"><div class="md-num">#${p.num}</div></div>
+                    <div class="md-body"><div><div class="md-name">${p.name.toUpperCase()}</div><div class="md-sub">${p.role} · ${POS[p.pos].full}<br>${t.name.toUpperCase()}</div></div>
+                    <div class="md-traits">${traitsOf(p).map(x => `<span>${x}</span>`).join('')}</div>
+                    <div><div class="md-h">RATINGS</div>${attrs}</div>
+                    <div><div class="md-h">IN-GAME IMPACT</div>${fx}</div></div>`;
+                modal.style.display = 'flex'; panel.scrollTop = 0;
+                if (tut.on && tut.phase === 'roster') { tut.viewed.add(id); updateBar(); }
+            };
+            document.getElementById('of-close').onclick = () => { modal.style.display = 'none'; if (tut.on && tut.phase === 'roster') renderOffice(); };
+            modal.addEventListener('click', e => { if (e.target === modal) document.getElementById('of-close').click(); });
+
+            function updateBar() {
+                const n = Math.min(tut.viewed.size, tut.need), ready = n >= tut.need;
+                document.getElementById('tut-bar-msg').innerHTML = ready ? '<b>NICE WORK, COACH!</b><br>PRESS CONTINUE.' : `TAP A PLAYER TO SEE STATS<br><b>${n}/${tut.need}</b> CHECKED`;
+                const b = document.getElementById('tut-continue'); b.disabled = !ready; b.classList.toggle('ready', ready);
+            }
+            document.getElementById('tut-continue').onclick = function () {
+                if (this.disabled) return; bar.style.display = 'none'; tut.on = false; tut.phase = ''; career.tutorialDone = true;
+                const c = document.getElementById('hub-content'); if (c) c.style.paddingBottom = ''; switchHubTab('HOME');
+            };
+
+            const baseSwitch = window.switchHubTab;
+            window.switchHubTab = function (tab) {
+                const hub = document.getElementById('hub-content');
+                if (tut.on && (tut.phase === 'point' || tut.phase === 'roster') && tab !== 'OFFICE') return;
+                baseSwitch(tab); if (hub) hub.style.justifyContent = '';
+                if (tab === 'OFFICE') renderOffice();
+                if (tut.on && tut.phase === 'point' && tab === 'OFFICE') {
+                    hidePointer(); tut.phase = 'roster'; tut.viewed.clear(); renderOffice();
+                    setTimeout(() => say("This is your team. Every player has their own position, ratings, and strengths. You'll need to find the right players and build the best lineup you can.", () =>
+                        say("Tap any player to see his full stats. What you see is what you get on the field: a 99 speed really is quick. Check out a few starters!", () => { closeDialog(); updateBar(); bar.style.display = 'flex'; })), 350);
+                }
+            };
+            window.startTutorial = function () {
+                if (!career || career.tutorialDone) return; ensureRoster();
+                const hub = document.getElementById('hub-container'); if (!hub || hub.style.display === 'none') return;
+                tut.on = true; tut.phase = 'intro'; tut.viewed.clear();
+                say(`"Coach, glad to finally have you here. We've got a football program with potential, but we've had a rough few seasons."`, () =>
+                    say(`"We've got some good kids, but we're going to need to develop them if we want to compete. Let's take a look at your roster."`, () => { closeDialog(); tut.phase = 'point'; showPointer(); }));
+            };
+
+            // ================= STAT BRIDGE: ratings -> real gameplay (called from the game code) =================
+            window.StatsBridge = {
+                active() { return (isQuickPlay || isMultiplayer) && typeof qpState !== 'undefined'; },
+                teamIdx(isCPU) { const away = qpState.playerSide === 'AWAY'; return isCPU ? (away ? qpState.homeIdx : qpState.awayIdx) : (away ? qpState.awayIdx : qpState.homeIdx); },
+                // give every body on the field the roster player it represents
+                assign() {
+                    players.forEach(p => { p.st = null; p.rp = null; }); if (!this.active()) return;
+                    [false, true].forEach(isCPU => {
+                        const roster = rosterFor(this.teamIdx(isCPU)), byPos = {}, used = new Set(); roster.forEach(r => (byPos[r.pos] = byPos[r.pos] || []).push(r));
+                        const take = pos => { const l = byPos[pos] || []; while (l.length) { const r = l.shift(); if (!used.has(r)) { used.add(r); return r; } } return null; };
+                        const bodies = players.filter(p => !p.isRef && p.isCPU === isCPU), isOff = p => (offenseDirection === -1) ? !p.isCPU : p.isCPU;
+                        bodies.forEach(p => { if (p.isKicker) p.rp = take('K'); else if (p.isQB) p.rp = take('QB'); else if (p.isMLB) p.rp = take('LB'); else if (p.isReturner) p.rp = take('WR'); });
+                        bodies.forEach(p => { if (!p.rp && p.isLineman) p.rp = take(isOff(p) ? 'OL' : 'DL'); });
+                        bodies.forEach(p => { if (p.rp) return; if (isOff(p)) p.rp = take('WR'); else p.rp = (p.aiRole === 'MAN' || p.aiRole === 'PRESS') ? take('CB') : (take('LB') || take('CB')); });
+                        bodies.forEach(p => { if (!p.rp) { const r = roster.find(x => !used.has(x)); if (r) { used.add(r); p.rp = r; } } });
+                        bodies.forEach(p => { if (p.rp) p.st = p.rp.attrs; });
+                    });
+                },
+                speedFor(p) { return FX.speed(p.st, !!p.isLineman, p === player ? 0.086 : 0.082); },
+                throwRange(p) { return p && p.st && p.st.THP != null ? FX.throwRange(p.st) : 999; },
+                hangMul(p) { return p && p.st && p.st.THP != null ? FX.hangMul(p.st) : 1; },
+                pressured(p) { const n = players.filter(e => e.isCPU !== p.isCPU && e.isLineman).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0]; return !!n && Math.hypot(n.x - p.x, n.y - p.y) < 3.5; },
+                scatter(p, dist) { return p && p.st && p.st.THA != null ? FX.scatter(p.st, dist, this.pressured(p)) : 0; },
+                qbDiff(p) { return p && p.st && p.st.THA != null ? FX.qbDiff(p.st) : cpuDifficulty; },
+                kickMul(p) { return p && p.st && p.st.KPW != null ? FX.kickMul(p.st) : 1; },
+                kickScatter(p) { return p && p.st && p.st.KAC != null ? FX.kickScatter(p.st, quarter >= 4) : 0; },
+                catchAdj(w, d) { return (w && w.st && d && d.st) ? FX.catchAdj(w.st, d.st) : 0; },
+                handsAdj(w) { return w && w.st ? FX.handsAdj(w.st) : 0; },
+                sepBonus(w, d) { return (w && w.st && d && d.st) ? FX.sepBonus(w.st, d.st) : 0; },
+                intAdj(d) { return d && d.st ? FX.intAdj(d.st) : 0; },
+                shedDiff(d, b, fallback) { if (!d || !b || !d.st || !b.st) return fallback; return FX.shedFrames(d.st, b.st, isPassPlay(currentOffensePlay)) + fallback * 0.25; },
+                tackleMiss(c, h) {
+                    if (!c || !h || !c.st || !h.st) return false; const now = performance.now();
+                    if (h._missUntil && now < h._missUntil) return true;
+                    if (h._rollT && now - h._rollT < 1200) return false; h._rollT = now;
+                    if (Math.random() < FX.whiff(c.st, h.st)) { h._missUntil = now + 800; if (h !== player) { h.isMissedTackle = true; h.missedTackleTimer = 0; h.isLunging = false; } return true; }
+                    return false;
+                }
+            };
+        })();
 
         document.fonts.ready.then(function () {
             initTextures(); 
