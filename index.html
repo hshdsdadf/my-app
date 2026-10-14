@@ -1543,6 +1543,7 @@
 
 
         window.startQuickPlayGame = function() {
+            try { if (window.StatsBridge && StatsBridge.resetStamina) StatsBridge.resetStamina(); } catch (e) {}
             document.getElementById('quick-play-screen').style.display = 'none';
             const overlay = document.getElementById('transition-overlay');
             overlay.style.pointerEvents = 'auto'; overlay.style.opacity = '1';
@@ -1707,13 +1708,14 @@
         function addScreenShake(amount) { screenShake.trauma = Math.min(1, screenShake.trauma + amount); }
         function updateScreenShake() { if (screenShake.trauma > 0) { screenShake.trauma = Math.max(0, screenShake.trauma - 0.05); let shakeAmt = screenShake.trauma * screenShake.trauma; let maxOffset = 20; screenShake.x = (Math.random() * 2 - 1) * maxOffset * shakeAmt; screenShake.y = (Math.random() * 2 - 1) * maxOffset * shakeAmt * 0.6; } else { screenShake.x = 0; screenShake.y = 0; } }
         function spawnImpactBurst(x, y, count) { for (let i = 0; i < count; i++) { let angle = Math.random() * Math.PI * 2; let spd = 0.02 + Math.random() * 0.1; particles.push({ type: 'impact', x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, z: 0.1, vz: 0.15 + Math.random() * 0.2, gravity: 0.02, life: 20 + Math.random() * 15, maxLife: 35, size: 3 + Math.random() * 5, color: Math.random() > 0.5 ? '#94a3b8' : '#cbd5e1' }); } hitMarkers.push({ x, y, life: 12, maxLife: 12 }); }
+        function spawnSweat(p) { const n = 1 + (Math.random() < 0.5 ? 1 : 0); for (let i = 0; i < n; i++) particles.push({ type: 'sweat', x: p.x + (Math.random() - 0.5) * 0.35, y: p.y + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.05 - (p.facing || 1) * 0.012, vy: (Math.random() - 0.5) * 0.03, z: 1.4 + Math.random() * 0.4, vz: 0.03 + Math.random() * 0.05, gravity: 0.007, life: 28 + Math.random() * 10, maxLife: 36, size: 3.5 + Math.random() * 2.5, color: Math.random() > 0.4 ? '#7dd3fc' : '#e0f2fe' }); }
         function spawnDust(x, y, zOffset = 0) { let angle = Math.random() * Math.PI * 2; particles.push({ type: 'dust', x: x + (Math.random()-0.5)*0.5, y: y + (Math.random()-0.5)*0.5, vx: Math.cos(angle) * 0.02, vy: Math.sin(angle) * 0.02, z: zOffset, vz: 0.02 + Math.random() * 0.03, gravity: -0.001, life: 15 + Math.random() * 10, maxLife: 25, size: 4 + Math.random() * 4, color: 'rgba(200, 200, 200, 0.5)' }); }
 
         const CONFETTI_COLORS = ['#facc15', '#ef4444', '#3b82f6', '#4ade80', '#ffffff', '#f97316', '#a855f7', '#06b6d4'];
         function spawnConfettiBurst(x, y, count) { for (let i = 0; i < count; i++) { let angle = Math.random() * Math.PI * 2; let spd = 0.04 + Math.random() * 0.16; particles.push({ type: 'confetti', x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, z: 1.2 + Math.random() * 1.5, vz: 0.05 + Math.random() * 0.15, gravity: 0.005, life: 60 + Math.random() * 40, maxLife: 100, size: 3 + Math.random() * 4, color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] }); } }
 
         function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) { let pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.z += pt.vz; pt.vz -= pt.gravity; if (pt.z < 0 && pt.type !== 'dust') { pt.z = 0; pt.vz *= -0.3; pt.vx *= 0.6; pt.vy *= 0.6; } pt.life--; if (pt.life <= 0) particles.splice(i, 1); }
+            for (let i = particles.length - 1; i >= 0; i--) { let pt = particles[i]; pt.x += pt.vx; pt.y += pt.vy; pt.z += pt.vz; pt.vz -= pt.gravity; if (pt.type === 'sweat' && pt.z < 0) pt.life = 0; else if (pt.z < 0 && pt.type !== 'dust') { pt.z = 0; pt.vz *= -0.3; pt.vx *= 0.6; pt.vy *= 0.6; } pt.life--; if (pt.life <= 0) particles.splice(i, 1); }
             for (let i = hitMarkers.length - 1; i >= 0; i--) { hitMarkers[i].life--; if (hitMarkers[i].life <= 0) hitMarkers.splice(i, 1); }
             for (let i = stadiumFlashes.length - 1; i >= 0; i--) { stadiumFlashes[i].life--; if(stadiumFlashes[i].life <= 0) stadiumFlashes.splice(i,1); }
             if (['PLAYING', 'TOUCHDOWN_CELEBRATION', 'BALL_IN_AIR'].includes(gameState) && Math.random() < 0.1) { stadiumFlashes.push({ x: Math.random() * canvas.width, y: Math.random() * (canvas.height * 0.3), life: 5, maxLife: 5, size: 2 + Math.random() * 4 }); }
@@ -1988,7 +1990,7 @@
                 if (p.isLineman) { p.speed = 0.052 + Math.random() * 0.01; p.girth = 1.35 + Math.random() * 0.45; } 
                 else { if (!p.girth || p.girth === 1.0) p.girth = 0.95 + Math.random() * 0.15; if (!p.speedModified) { p.speed = 0.082 + (Math.random() * 0.008); p.speedModified = true; } }
                 if (p === player) { p.speed = 0.086; if (!p.skinTone) p.skinTone = SKIN_TONES[2]; } else if (p.isCPU && cpuDifficulty !== 0) { p.speed *= (1 + cpuDifficulty * 0.09); }
-                if (p.st) { p.speed = StatsBridge.speedFor(p); p.girth = p.rp.girth; p.skinTone = p.rp.skin; }
+                if (p.st) { p.speed = StatsBridge.speedFor(p); p.girth = p.rp.girth; p.skinTone = p.rp.skin; p.baseSpeed = p.speed; p._shedVar = null; p._sx = null; if (p.rp.stam == null) p.rp.stam = 100; else p.rp.stam = Math.min(100, p.rp.stam + StatsBridge.STA_REST); p.speed = p.baseSpeed * StatsBridge.staMul(p.rp.stam); }
             });
             
             if (isMultiplayer && isMpHost) {
@@ -2901,10 +2903,10 @@
                         if (dist > 2.0 || gameState === 'TACKLED') { p.isBlocking = false; p.blockTarget = null; } 
                         else {
                             p.blockTimer++; p.animTimer = 0; 
-                            if (isDefending) { let shedDiff = StatsBridge.shedDiff(p, p.blockTarget, (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20, isPassPlay(currentOffensePlay)); let shedTime = Math.max(20, (p.superShedder ? 15 : 70) - shedDiff); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
+                            if (isDefending) { let shedDiff = StatsBridge.shedDiff(p, p.blockTarget, (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20, isPassPlay(currentOffensePlay)); if (p._shedVar == null) p._shedVar = 0.85 + Math.random() * 0.3; let shedTime = Math.max(14, ((p.superShedder ? 15 : 70) - shedDiff) * p._shedVar); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
                             else {
-                                p.x += p.facing * (p.speed * 0.1); let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU;
-                                if (isOffense && p.isLineman) { if (currentOffensePlay === 'INSIDE_RUN') { if (p.blockTarget) { let pushDir = (p.blockTarget.y < 0) ? -1 : 1; p.blockTarget.y += pushDir * (p.speed * 0.15); p.y += pushDir * (p.speed * 0.15); } } else if (currentOffensePlay === 'SWEEP_RIGHT') { if (p.blockTarget) { p.blockTarget.y += p.speed * 0.15; p.y += p.speed * 0.15; } } else if (currentOffensePlay === 'SWEEP_LEFT') { if (p.blockTarget) { p.blockTarget.y -= p.speed * 0.15; p.y -= p.speed * 0.15; } } }
+                                p.x += p.facing * (p.speed * 0.1); const pf = StatsBridge.pushFactor(p, p.blockTarget); let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU;
+                                if (isOffense && p.isLineman) { if (currentOffensePlay === 'INSIDE_RUN') { if (p.blockTarget) { let pushDir = (p.blockTarget.y < 0) ? -1 : 1; p.blockTarget.y += pushDir * (p.speed * 0.15 * pf); p.y += pushDir * (p.speed * 0.15 * pf); } } else if (currentOffensePlay === 'SWEEP_RIGHT') { if (p.blockTarget) { p.blockTarget.y += p.speed * 0.15 * pf; p.y += p.speed * 0.15 * pf; } } else if (currentOffensePlay === 'SWEEP_LEFT') { if (p.blockTarget) { p.blockTarget.y -= p.speed * 0.15 * pf; p.y -= p.speed * 0.15 * pf; } } }
                             }
                         }
                         return; 
@@ -4499,7 +4501,7 @@ const PXS = (function () {
 
             particles.forEach(pt => {
                 let s = toScreen(pt.x, pt.y); let alpha = Math.max(0, pt.life / pt.maxLife); let sz = pt.size * (camera.zoom / 45);
-                ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = pt.color; ctx.fillRect(s.x - sz / 2, s.y - pt.z * camera.zoom * 0.5 - sz / 2, sz, sz); ctx.restore();
+                ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = pt.color; if (pt.type === 'sweat') { const hy = s.y - pt.z * camera.zoom * 0.5 - sz; ctx.fillRect(s.x - sz / 2, hy, sz, sz * 1.7); ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - sz / 2, hy, Math.max(1, sz * 0.35), Math.max(1, sz * 0.5)); } else ctx.fillRect(s.x - sz / 2, s.y - pt.z * camera.zoom * 0.5 - sz / 2, sz, sz); ctx.restore();
             });
 
             stadiumFlashes.forEach(f => {
@@ -4514,6 +4516,12 @@ const PXS = (function () {
                 ctx.restore();
             });
 
+            if (typeof player !== 'undefined' && player && player.rp && player.rp.stam != null && player.rp.stam < 92 && !isIntroScene && window.StatsBridge && StatsBridge.active()) {
+                const sp = toScreen(player.x, player.y), z = camera.zoom, bw = z * 1.1, bh = Math.max(4, z * 0.1), bx = sp.x - bw / 2, by = sp.y - z * 1.5, st = player.rp.stam;
+                const col = st > 60 ? '#4ade80' : st > 30 ? '#facc15' : '#ef4444';
+                ctx.save(); ctx.fillStyle = '#000'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = '#1e293b'; ctx.fillRect(bx, by, bw, bh);
+                ctx.fillStyle = (st < 20 && Math.floor(Date.now() / 150) % 2) ? '#ffffff' : col; ctx.fillRect(bx, by, bw * st / 100, bh); ctx.restore();
+            }
             if (window._mpMirror) { ctx.setTransform(1, 0, 0, 1, 0, 0); window._mpOverlay = true; } // screen-space overlays (kick meter, text) must not be flipped
             let kicker = players.find(p => p.isKicker && ((isMultiplayer && isMpHost) ? !p.isCPU : !p.isCPU));
             if (isMultiplayer && isMpClient) kicker = players.find(p => p.isKicker && p.isCPU === !!window._mpClientKicks) || players.find(p => p.isKicker);
@@ -4651,7 +4659,7 @@ const PXS = (function () {
             if (canvas.style.display === 'none') { accumulator = 0; requestAnimationFrame(loop); return; } // hub is showing: nothing to simulate or draw
             accumulator += frameTime;
             while (accumulator >= timeStep) {
-                try { update(); } catch (err) { console.error('update error', err); }
+                try { update(); if (window.StatsBridge) StatsBridge.tickStamina(); } catch (err) { console.error('update error', err); }
                 accumulator -= timeStep;
             }
 
@@ -4938,12 +4946,12 @@ const PXS = (function () {
 
             // [key, label, weight]  ->  overall = weighted average of the position's attributes
             const POS = {
-                QB: { full: 'QUARTERBACK',   a: [['THP','ARM STRENGTH',.27],['THA','ACCURACY',.30],['AWR','AWARENESS',.22],['SPD','SPEED',.11],['AGI','AGILITY',.10]] },
-                WR: { full: 'WIDE RECEIVER', a: [['HND','HANDS',.27],['SPD','SPEED',.25],['RTE','ROUTES',.17],['AGI','AGILITY',.15],['JMP','LEAPING',.08],['STR','STRENGTH',.08]] },
-                OL: { full: 'OFFENSIVE LINE',a: [['PBK','PASS BLOCK',.27],['RBK','RUN BLOCK',.27],['STR','STRENGTH',.24],['AWR','AWARENESS',.16],['SPD','SPEED',.06]] },
-                DL: { full: 'DEFENSIVE LINE',a: [['PRS','PASS RUSH',.27],['STR','STRENGTH',.25],['TKL','TACKLING',.25],['SPD','SPEED',.13],['AGI','AGILITY',.10]] },
-                LB: { full: 'LINEBACKER',    a: [['TKL','TACKLING',.28],['SPD','SPEED',.20],['AWR','AWARENESS',.17],['STR','STRENGTH',.15],['COV','COVERAGE',.12],['AGI','AGILITY',.08]] },
-                CB: { full: 'CORNERBACK',    a: [['COV','COVERAGE',.30],['SPD','SPEED',.24],['AGI','AGILITY',.16],['INT','BALL SKILLS',.14],['TKL','TACKLING',.10],['STR','STRENGTH',.06]] },
+                QB: { full: 'QUARTERBACK',   a: [['THP','ARM STRENGTH',.27],['THA','ACCURACY',.30],['AWR','AWARENESS',.22],['SPD','SPEED',.11],['AGI','AGILITY',.10],['STA','STAMINA',0]] },
+                WR: { full: 'WIDE RECEIVER', a: [['HND','HANDS',.27],['SPD','SPEED',.25],['RTE','ROUTES',.17],['AGI','AGILITY',.15],['JMP','LEAPING',.08],['STR','STRENGTH',.08],['STA','STAMINA',0]] },
+                OL: { full: 'OFFENSIVE LINE',a: [['PBK','PASS BLOCK',.27],['RBK','RUN BLOCK',.27],['STR','STRENGTH',.24],['AWR','AWARENESS',.16],['SPD','SPEED',.06],['STA','STAMINA',0]] },
+                DL: { full: 'DEFENSIVE LINE',a: [['PRS','PASS RUSH',.27],['STR','STRENGTH',.25],['TKL','TACKLING',.25],['SPD','SPEED',.13],['AGI','AGILITY',.10],['STA','STAMINA',0]] },
+                LB: { full: 'LINEBACKER',    a: [['TKL','TACKLING',.28],['SPD','SPEED',.20],['AWR','AWARENESS',.17],['STR','STRENGTH',.15],['COV','COVERAGE',.12],['AGI','AGILITY',.08],['STA','STAMINA',0]] },
+                CB: { full: 'CORNERBACK',    a: [['COV','COVERAGE',.30],['SPD','SPEED',.24],['AGI','AGILITY',.16],['INT','BALL SKILLS',.14],['TKL','TACKLING',.10],['STR','STRENGTH',.06],['STA','STAMINA',0]] },
                 K:  { full: 'KICKER',        a: [['KPW','KICK POWER',.42],['KAC','KICK ACCURACY',.43],['CLU','CLUTCH',.15]] }
             };
             // exactly the bodies the game puts on the field: QB + 2 WR + 4 OL  |  4 DL + 2 CB + MLB  |  kicker
@@ -4971,7 +4979,9 @@ const PXS = (function () {
                 intAdj: d => (gv(d, 'INT', gv(d, 'AWR', 70)) - 78) * 0.004,
                 blockRating: (a, pass) => a && a.PBK != null ? (pass ? a.PBK : a.RBK) * 0.55 + gv(a, 'STR', 60) * 0.30 + gv(a, 'AWR', 70) * 0.15 : 60,
                 shedRating: (a, pass) => a && a.PRS != null ? (pass ? a.PRS : a.STR) * 0.7 + a.STR * 0.3 : (a && a.TKL != null && a.STR != null && a.AWR != null ? (a.TKL + a.STR) / 2 : 55),
-                shedFrames: (d, b, pass) => clamp((FX.shedRating(d, pass) - FX.blockRating(b, pass)) * 0.9, -30, 30),
+                shedFrames: (d, b, pass) => clamp((FX.shedRating(d, pass) - FX.blockRating(b, pass)) * 1.1, -45, 45),
+                fatigue: a => clamp(1 + (70 - gv(a, 'STA', 70)) * 0.022, 0.55, 1.9),                 // how fast a player tires (1 = average)
+                staMul: st => st >= 60 ? 1 : 0.72 + 0.28 * Math.max(0, st) / 60,                // speed once tired (down to -28%)
                 whiff: (c, h) => clamp(0.08 + ((gv(c, 'AGI', 60) + gv(c, 'STR', 55)) / 2 - gv(h, 'TKL', 60)) * 0.011, 0.02, 0.45)
             };
 
@@ -5044,7 +5054,7 @@ const PXS = (function () {
                     out.push(['AIM MISS (40 YD)', '±' + (FX.kickScatter(a, false) * 35.6).toFixed(1) + ' YD', tone(1.3 - FX.kickScatter(a, false) * 35.6)]);
                     out.push(['4TH QTR AIM MISS', '±' + (FX.kickScatter(a, true) * 35.6).toFixed(1) + ' YD', tone(FX.kickScatter(a, false) - FX.kickScatter(a, true))]);
                 }
-                if (p.pos !== 'K') out.push(['RUN SPEED', pct(spdPct), tone(spdPct)]);
+                if (p.pos !== 'K') { out.push(['RUN SPEED', pct(spdPct), tone(spdPct)]); out.push(['FATIGUE RATE', pct((FX.fatigue(a) - 1) * 100), tone(1 - FX.fatigue(a))]); }
                 return out;
             }
             //@@PURE_END
@@ -5519,6 +5529,23 @@ const PXS = (function () {
                         bodies.forEach(p => { if (!p.rp) { const r = roster.find(x => !used.has(x)); if (r) { used.add(r); p.rp = r; } } });
                         bodies.forEach(p => { if (p.rp) p.st = p.rp.attrs; });
                     });
+                },
+                STA_DRAIN: 0.03, STA_REGEN: 0.01, STA_REST: 12,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
+                resetStamina() { const all = (career && career.roster ? career.roster.concat(career.bench || []) : []).concat(...Object.values(rosterCache)); all.forEach(r => { r.stam = 100; }); },
+                staMul(st) { return FX.staMul(st); },
+                pushFactor(b, d) { if (!b || !d || !b.st || !d.st) return 1; return clamp(1 - FX.shedFrames(d.st, b.st, false) / 45, 0.3, 1.9); },
+                tickStamina() {
+                    if (!this.active()) return;
+                    const live = gameState === 'PLAYING' || gameState === 'BALL_IN_AIR' || gameState === 'BALL_LOOSE';
+                    for (const p of players) {
+                        if (!p.rp || !p.st || p.isRef) continue;
+                        if (p.baseSpeed == null) p.baseSpeed = p.speed;
+                        const moved = Math.hypot(p.x - (p._sx == null ? p.x : p._sx), p.y - (p._sy == null ? p.y : p._sy)); p._sx = p.x; p._sy = p.y;
+                        let s = p.rp.stam == null ? 100 : p.rp.stam; const inten = live ? Math.min(1.5, moved / (p.baseSpeed || 0.08)) : 0;
+                        if (inten > 0.25) s -= this.STA_DRAIN * inten * FX.fatigue(p.st); else s += this.STA_REGEN;
+                        s = Math.max(0, Math.min(100, s)); p.rp.stam = s; p.speed = p.baseSpeed * FX.staMul(s);
+                        if (p === player && live && s < 40 && Math.random() < (0.5 - s / 100) * 0.5) spawnSweat(p);
+                    }
                 },
                 speedFor(p) { return FX.speed(p.st, !!p.isLineman, p === player ? 0.086 : 0.082); },
                 throwRange(p) { return p && p.st && p.st.THP != null ? FX.throwRange(p.st) : 999; },
