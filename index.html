@@ -301,22 +301,75 @@
         .of-toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 2800; background: #0f172a; color: #4ade80; font-family: 'Press Start 2P', monospace; font-size: 10px; padding: 14px 16px; white-space: nowrap; pointer-events: none; animation: tutRise 0.24s steps(4) both;
             box-shadow: 0 -4px 0 0 #4ade80, 0 4px 0 0 #4ade80, -4px 0 0 0 #4ade80, 4px 0 0 0 #4ade80, 8px 10px 0 0 rgba(0,0,0,.6); }
         /* shop */
-        .sh-card { align-self: center; width: min(100%, 320px); background: #0b1220; padding: 22px 16px; margin: 4px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
-            box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 8px 10px 0 0 rgba(0,0,0,.6); }
-        .sh-art { width: 110px; } .sh-art svg { width: 100%; display: block; image-rendering: pixelated; }
-        .sh-name { color: #facc15; font-size: 12px; text-shadow: 3px 3px 0 #000; }
-        .sh-sub { color: #94a3b8; font-size: 8px; line-height: 2; }
+        .sh-card { align-self: center; width: min(100%, 560px); box-sizing: border-box; background: #0b1220; padding: 18px; margin: 4px; display: flex; flex-direction: row; align-items: stretch; gap: 18px; text-align: left;
+            box-shadow: 0 -4px 0 0 #2563eb, 0 4px 0 0 #2563eb, -4px 0 0 0 #2563eb, 4px 0 0 0 #2563eb, 8px 10px 0 0 rgba(0,0,0,.6); }
+        .sh-art { flex: 0 0 auto; display: flex; align-items: center; }
+        .sh-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+        .sh-name { color: #fff; font-size: clamp(11px, 3.4vw, 15px); text-shadow: 3px 3px 0 #000; }
+        .sh-line { display: flex; align-items: center; gap: 10px; color: #e2e8f0; font-size: clamp(8px, 2.4vw, 10px); line-height: 1.5; }
+        .sh-line small { display: block; color: #94a3b8; font-size: 0.8em; margin-top: 4px; }
+        .sh-ico { display: block; width: 22px; flex: 0 0 auto; } .sh-ico svg { width: 100%; display: block; image-rendering: pixelated; }
+        .sh-sq { display: block; width: 16px; height: 16px; flex: 0 0 auto; box-shadow: inset -3px -3px 0 rgba(0,0,0,.3), inset 3px 3px 0 rgba(255,255,255,.4); margin: 0 3px; }
+        .sh-buy { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; }
+        .sh-price { display: flex; align-items: center; gap: 8px; color: #fff; font-size: clamp(10px, 3vw, 13px); text-shadow: 2px 2px 0 #000; }
+        .sh-btn { font-family: 'Press Start 2P', monospace; font-size: clamp(10px, 3vw, 13px); color: #facc15; background: transparent; padding: 12px 18px; cursor: pointer; border: 0; text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 -3px 0 0 #facc15, 0 3px 0 0 #facc15, -3px 0 0 0 #facc15, 3px 0 0 0 #facc15; margin: 3px; }
+        .sh-btn:active { transform: translate(2px, 2px); }
+        .sh-btn.done { color: #64748b; pointer-events: none; box-shadow: 0 -3px 0 0 #475569, 0 3px 0 0 #475569, -3px 0 0 0 #475569, 3px 0 0 0 #475569; }
+
+        /* shop tabs + panels */
+        .sh-tabs { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; overflow-y: hidden; padding: 8px 8px 16px; margin: 0 -6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+        .sh-tabs::-webkit-scrollbar { display: none; }
+        .sh-tab { --ac: #38bdf8; flex: 0 0 auto; scroll-snap-align: center; display: flex; align-items: center; gap: 10px; font-family: 'Press Start 2P', monospace; font-size: clamp(8px, 2.3vw, 10px); color: #94a3b8; background: #0b1220; border: 0; padding: 12px 14px 11px; margin: 3px; cursor: pointer; white-space: nowrap; position: relative;
+            box-shadow: 0 -3px 0 0 #334155, 0 3px 0 0 #334155, -3px 0 0 0 #334155, 3px 0 0 0 #334155, 5px 7px 0 0 rgba(0,0,0,.55); }
+        .sh-tab:hover { color: #e2e8f0; } .sh-tab:active { transform: translate(2px, 2px); }
+        .sh-tab .sh-ico { width: 18px; }
+        .sh-tab.active { color: #facc15; background: #172033; text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 -3px 0 0 #facc15, 0 3px 0 0 #facc15, -3px 0 0 0 #facc15, 3px 0 0 0 #facc15, 5px 7px 0 0 rgba(0,0,0,.55); }
+        .sh-tab.active::after { content: ''; position: absolute; left: 50%; bottom: -13px; margin-left: -5px; width: 10px; height: 6px; background: #facc15; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+        .sh-panel { display: flex; flex-direction: column; gap: 18px; animation: shFade 0.18s steps(3) both; }
+        @keyframes shFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .sh-stage { position: relative; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 14px 10px 20px; background: radial-gradient(circle at 50% 55%, rgba(37,99,235,.45) 0%, rgba(37,99,235,0) 68%), repeating-linear-gradient(135deg, rgba(255,255,255,.035) 0 8px, transparent 8px 16px); }
+        .sh-tag { position: absolute; left: -2px; top: -2px; z-index: 5; background: #facc15; color: #0b1220; font-size: 7px; padding: 6px 7px 5px; box-shadow: 3px 3px 0 rgba(0,0,0,.55); }
+        .sh-soon { align-self: center; width: min(100%, 560px); box-sizing: border-box; margin: 4px; padding: 36px 20px 32px; background: #0b1220; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center;
+            box-shadow: 0 -4px 0 0 #334155, 0 4px 0 0 #334155, -4px 0 0 0 #334155, 4px 0 0 0 #334155, 8px 10px 0 0 rgba(0,0,0,.6); }
+        .sh-soon .sh-big { width: 64px; opacity: .9; filter: drop-shadow(0 4px 0 rgba(0,0,0,.6)); } .sh-soon .sh-big svg { width: 100%; display: block; image-rendering: pixelated; }
+        .sh-soon h3 { margin: 0; font-weight: normal; color: #fff; font-size: clamp(11px, 3.4vw, 14px); text-shadow: 3px 3px 0 #000; }
+        .sh-soon p { margin: 0; color: #94a3b8; font-size: 8px; line-height: 2.1; max-width: 360px; }
+        .sh-soon b { font-weight: normal; color: #facc15; font-size: 8px; padding: 8px 10px 6px; box-shadow: 0 -2px 0 0 #facc15, 0 2px 0 0 #facc15, -2px 0 0 0 #facc15, 2px 0 0 0 #facc15; animation: tutBlink 1.4s steps(2) infinite; }
+        @media (max-width: 480px) { .sh-card { flex-direction: column; align-items: center; gap: 14px; } .sh-info { width: 100%; } }
+        .rk-pack { position: relative; flex: 0 0 auto; filter: drop-shadow(0 0.06em 0 rgba(0,0,0,0)) drop-shadow(0 6px 0 rgba(0,0,0,.55)); font-family: 'Press Start 2P', monospace; }
+        .rk-foil { position: absolute; inset: 0; overflow: hidden; background: linear-gradient(155deg, #60a5fa 0%, #2563eb 28%, #1d4ed8 55%, #1e3a8a 100%); }
+        .rk-foil::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 3em, rgba(255,255,255,.07) 3em 5em); }
+        .rk-crimp { position: absolute; left: 0; right: 0; height: 9%; background: repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 1.4em, rgba(0,0,0,.18) 1.4em 2.8em), #1e40af; }
+        .rk-crimp.top { top: 0; box-shadow: inset 0 -0.9em 0 rgba(0,0,0,.25); } .rk-crimp.bot { bottom: 0; box-shadow: inset 0 0.9em 0 rgba(0,0,0,.25); }
+        .rk-win { position: absolute; left: 7%; right: 7%; top: 12%; height: 50%; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; background-color: var(--sb);
+            background-image: radial-gradient(circle at 50% 70%, var(--hl) 0%, transparent 70%), linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%), linear-gradient(45deg, rgba(255,255,255,.08) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.08) 75%);
+            background-size: 100% 100%, 6em 6em, 6em 6em; background-position: 0 0, 0 0, 3em 3em;
+            box-shadow: 0 0 0 1.4em #fde68a, 0 0 0 2.4em #92400e, inset 0 -2.4em 0 rgba(0,0,0,.28); }
+        .rk-win img { width: 84%; image-rendering: pixelated; image-rendering: crisp-edges; display: block; position: relative; z-index: 1; }
+        .rk-ovr { position: absolute; left: 4%; top: 4%; z-index: 2; background: #fbbf24; color: #0b1220; font-size: 8em; padding: 0.7em 0.6em 0.5em; box-shadow: inset -0.4em -0.4em 0 rgba(0,0,0,.28), inset 0.4em 0.4em 0 rgba(255,255,255,.45), 0.5em 0.6em 0 rgba(0,0,0,.45); }
+        .rk-lbl { position: absolute; left: 4%; right: 4%; top: 67%; bottom: 10%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.8em; text-align: center; }
+        .rk-lbl b { font-weight: normal; font-size: 12em; line-height: 1; color: #fff; text-shadow: 0.14em 0.14em 0 #0b1220, -0.07em 0 0 #0b1220, 0.07em 0 0 #0b1220, 0 -0.07em 0 #0b1220; letter-spacing: 0.04em; }
+        .rk-lbl b.g { color: #fbbf24; }
+        .rk-lbl i { font-style: normal; font-size: 5em; color: #bfdbfe; background: rgba(2,6,23,.55); padding: 0.9em 1.3em 0.7em; text-shadow: 0.2em 0.2em 0 #000; }
+        .rk-spark { position: absolute; width: 2.6em; height: 2.6em; background: #fff8c5; box-shadow: 0 0 0 0.6em rgba(250,204,21,.5); transform: rotate(45deg); z-index: 3; animation: tutBlink 1.4s steps(2) infinite; }
+        .rk-shine { position: absolute; top: -10%; bottom: -10%; left: 0; width: 38%; z-index: 4; pointer-events: none; background: linear-gradient(100deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%); transform: translate3d(-160%,0,0) skewX(-14deg); animation: rkShine 3.6s linear infinite; will-change: transform; }
+        @keyframes rkShine { 0% { transform: translate3d(-160%,0,0) skewX(-14deg); } 45%, 100% { transform: translate3d(330%,0,0) skewX(-14deg); } }
         /* pack opening */
         #pk-modal { position: fixed; inset: 0; z-index: 2640; background: rgba(2,6,23,0.94); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 20px; overflow-y: auto; font-family: 'Press Start 2P', monospace; cursor: pointer; }
         .pk-title { color: #facc15; font-size: clamp(13px, 4vw, 18px); text-shadow: 3px 3px 0 #000; }
         .pk-hint { color: #fff; font-size: 9px; text-shadow: 2px 2px 0 #000; animation: tutBlink 1s steps(2) infinite; }
-        .pk-pack { width: 170px; animation: tutBob 0.6s steps(2) infinite; filter: drop-shadow(0 8px 0 rgba(0,0,0,.55)); } .pk-pack svg { width: 100%; display: block; image-rendering: pixelated; }
+        .pk-pack { width: 170px; height: 255px; animation: tutBob 0.6s steps(2) infinite; filter: drop-shadow(0 8px 0 rgba(0,0,0,.55)); } .pk-pack svg { width: 100%; display: block; image-rendering: pixelated; }
         .pk-pack.shake { animation: pkShake 0.8s steps(8) both; }
         @keyframes pkShake { 0%,100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-10px) rotate(-6deg); } 30% { transform: translateX(10px) rotate(6deg); } 45% { transform: translateX(-12px) rotate(-8deg); } 60% { transform: translateX(12px) rotate(8deg); } 80% { transform: scale(1.25); filter: brightness(2.2); } }
-        .pk-row { display: grid; grid-template-columns: repeat(2, minmax(110px, 140px)); gap: 22px 20px; }
+        .pk-row { display: grid; grid-template-columns: repeat(2, min(140px, 38vw)); gap: 22px 20px; }
+        .pk-slot { width: 100%; height: 176px; }
+        .pk-slot .pc { width: 100%; height: 100%; box-sizing: border-box; margin: 0; }
+        .pk-slot .pc-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
         .pk-slot.pop { animation: pkPop 0.3s steps(3) both; }
         @keyframes pkPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .pk-back { height: 168px; margin: 3px; background: #1e293b; color: #facc15; font-size: 28px; display: flex; align-items: center; justify-content: center; text-shadow: 3px 3px 0 #000;
+        .pk-back { height: 100%; box-sizing: border-box; margin: 0; background: #1e293b; color: #facc15; font-size: 28px; display: flex; align-items: center; justify-content: center; text-shadow: 3px 3px 0 #000;
             box-shadow: 0 -3px 0 0 #64748b, 0 3px 0 0 #64748b, -3px 0 0 0 #64748b, 3px 3px 0 0 #64748b, 5px 7px 0 0 rgba(0,0,0,.6); }
         #pk-modal .pc { pointer-events: none; }
     </style>
@@ -4953,12 +5006,25 @@ const PXS = (function () {
                 list.push(makePlayer(legPos, 90 + Math.floor(rnd() * 5), 90, rnd, names, nums, 'b' + (bump + 9)));
                 return list.sort((a, b) => a.ovr - b.ovr);
             }
-            const PACK_SVG = (function () {
-                const { g, R } = mkGrid(14, 18);
-                R(1, 1, 12, 16, '#2563eb'); R(0, 0, 14, 2, '#1e3a8a'); R(0, 16, 14, 2, '#1e3a8a'); R(2, 3, 2, 12, '#60a5fa'); R(10, 3, 2, 12, '#1d4ed8');
-                R(6, 5, 4, 8, '#facc15'); R(5, 7, 6, 4, '#facc15'); R(7, 8, 2, 2, '#2563eb'); R(6, 5, 1, 1, '#fde68a');
-                return pxSVG(g);
+            // Rookie Pack art: a crimped foil wrapper with a real in-game player bust (your school's colors) in the window
+            const PACK_CLIP = (function () {
+                const n = 14, up = [], dn = []; for (let i = 0; i <= n; i++) { const x = (i * 100 / n).toFixed(2), y = (i % 2 ? 2.4 : 0); up.push(`${x}% ${y}%`); dn.push(`${x}% ${(100 - y).toFixed(2)}%`); }
+                return `polygon(${up.join(',')},${dn.reverse().join(',')})`;
             })();
+            function packBust() {
+                try { const t = teamOf(); return { t, url: bust({ id: 'rookiepack', pos: 'QB', num: 12, name: 'ROOKIE', skin: SKIN_TONES[3], girth: 1.05, attrs: {} }, t) }; } catch (e) { return { t: null, url: '' }; }
+            }
+            const packHTML = w => {
+                const { t, url } = packBust(), c1 = t ? t.c1 : '#2563eb', c2 = t ? t.c2 : '#1e3a8a';
+                return `<div class="rk-pack" style="width:${w}px;height:${w * 1.5}px;font-size:${w / 100}px"><div class="rk-foil" style="clip-path:${PACK_CLIP}">
+                    <div class="rk-crimp top"></div><div class="rk-crimp bot"></div>
+                    <div class="rk-win" style="--sb:${shadeHex(c1, -62)};--hl:${shadeHex(c1, -20)}">${url ? `<img alt="" src="${url}">` : ''}</div>
+                    <div class="rk-lbl"><b>ROOKIE</b><b class="g">PACK</b><i>4 PLAYERS</i></div>
+                    <div class="rk-spark" style="left:7%;top:62%"></div><div class="rk-spark" style="right:8%;top:14%;width:3em;height:3em"></div><div class="rk-spark" style="right:12%;top:60%;width:2em;height:2em"></div>
+                    <div class="rk-shine"></div></div></div>`;
+            };
+            const ICON_PERSON = (function () { const { g, R } = mkGrid(8, 8); R(2, 0, 4, 4, '#94a3b8'); R(0, 5, 8, 3, '#94a3b8'); return pxSVG(g); })();
+            const ICON_COIN = (function () { const { g, R } = mkGrid(8, 8); R(1, 0, 6, 8, '#facc15'); R(0, 1, 8, 6, '#facc15'); R(2, 1, 4, 6, '#ca8a04'); R(3, 2, 2, 4, '#fde68a'); return pxSVG(g); })();
 
             // ================= Office =================
             const teamOf = () => qpTeams[career.teamIdx];
@@ -5061,27 +5127,69 @@ const PXS = (function () {
             document.getElementById('of-close').onclick = () => { modal.style.display = 'none'; if (tut.on && tut.phase === 'roster') renderOffice(); };
             modal.addEventListener('click', e => { if (e.target === modal) document.getElementById('of-close').click(); });
 
-            // ================= Shop (just one free pack for now) =================
+            // ================= Shop (tabbed) =================
+            const PACK_PRICE = 1000;
+            // ---- shop tabs ----
+            const shIcon = (rects, c, d) => { const { g, R } = mkGrid(8, 8); rects.forEach(r => R(r[0], r[1], r[2], r[3], r[4] ? d : c)); return pxSVG(g); };
+            const SH_TABS = [
+                { id: 'player',    label: 'PLAYER PACKS',    ac: '#38bdf8', d: '#0369a1', r: [[2,0,4,4],[0,5,8,3],[3,1,2,2,1]],
+                  sub: 'RECRUIT NEW TALENT' },
+                { id: 'playbook',  label: 'PLAYBOOK PACKS',  ac: '#4ade80', d: '#166534', r: [[1,1,6,7],[3,0,2,2,1],[2,4,4,1,1],[2,6,3,1,1]],
+                  sub: 'NEW PLAYS & FORMATIONS', blurb: 'NEW PLAYS AND FORMATIONS FOR YOUR OFFENSE AND DEFENSE.' },
+                { id: 'equipment', label: 'EQUIPMENT PACKS', ac: '#fb923c', d: '#9a3412', r: [[1,0,6,1],[0,1,8,4],[1,5,6,2],[4,4,4,1,1],[5,5,1,2,1]],
+                  sub: 'GEAR UP YOUR TEAM', blurb: 'HELMETS, CLEATS AND GEAR TO BOOST YOUR PLAYERS.' },
+                { id: 'training',  label: 'TRAINING PACKS',  ac: '#f472b6', d: '#9d174d', r: [[0,2,2,4],[6,2,2,4],[2,3,4,2,1]],
+                  sub: 'LEVEL UP YOUR ROSTER', blurb: 'DRILLS AND UPGRADES THAT BUILD UP YOUR PLAYERS.' },
+                { id: 'special',   label: 'SPECIAL PACKS',   ac: '#a78bfa', d: '#5b21b6', r: [[3,0,2,8],[0,3,8,2],[2,2,4,4],[3,3,2,2,1]],
+                  sub: 'RARE & LIMITED', blurb: 'RARE, LIMITED PACKS WITH ELITE REWARDS.' },
+                { id: 'offers',    label: 'OFFERS',          ac: '#f87171', d: '#7f1d1d', r: [[0,0,5,1],[0,1,6,1],[0,2,7,1],[0,3,8,1],[1,4,7,1],[2,5,6,1],[3,6,5,1],[4,7,3,1],[1,1,2,2,1]],
+                  sub: 'DEALS & BUNDLES', blurb: 'DEALS AND BUNDLES WILL SHOW UP HERE.' }
+            ];
+            SH_TABS.forEach(t => { t.icon = shIcon(t.r, t.ac, t.d); });
+            let shopTab = 'player';
+            function shPanel(id) {
+                const t = SH_TABS.find(x => x.id === id) || SH_TABS[0], PRICE = PACK_PRICE;
+                const head = `<div class="of-sec"><span>${t.label}</span><small>${t.sub}</small></div>`;
+                if (id === 'player') return `<div class="sh-panel">${head}
+                    <div class="sh-card"><div class="sh-art sh-stage"><div class="sh-tag">STARTER</div>${packHTML(124)}</div>
+                    <div class="sh-info"><div class="sh-name">ROOKIE PACK</div>
+                        <div class="sh-line"><i class="sh-ico">${ICON_PERSON}</i><span>4 PLAYERS<small>(1 GUARANTEED 90+ OVR)</small></span></div>
+                        <div class="sh-line"><i class="sh-sq" style="background:#fbbf24"></i><span>1 LEGEND<small>90+ OVR</small></span></div>
+                        <div class="sh-line"><i class="sh-sq" style="background:#38bdf8"></i><span>3 PLAYERS<small>72-82 OVR</small></span></div>
+                        <div class="sh-buy"><span class="sh-price"><i class="sh-ico">${ICON_COIN}</i>${PRICE.toLocaleString('en-US')}</span>
+                        <button class="sh-btn" id="sh-open" onclick="shOpen()">BUY</button></div></div></div></div>`;
+                return `<div class="sh-panel">${head}
+                    <div class="sh-soon"><div class="sh-big">${shIcon(t.r, t.ac, t.d)}</div><h3>${t.label}</h3><p>${t.blurb}</p><b>COMING SOON</b></div></div>`;
+            }
+            window.shTab = function (id) {
+                if (tut.on && tut.phase === 'pack') return;   // keep the tutorial on the Player Packs tab
+                shopTab = id;
+                document.querySelectorAll('.sh-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+                const p = document.getElementById('sh-body'); if (p) p.innerHTML = shPanel(id);
+                const a = document.querySelector('.sh-tab.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+            };
             function renderShop() {
                 const content = document.getElementById('hub-content'); if (!content) return;
-                const done = !!career.packOpened;
                 content.style.justifyContent = 'flex-start';
                 content.innerHTML = `<div class="of-wrap"><div class="of-title">SHOP</div>
-                    <div class="sh-card"><div class="sh-art">${PACK_SVG}</div><div class="sh-name">FREE STARTER PACK</div><div class="sh-sub">4 PLAYERS<br>1 GUARANTEED 90+ OVR</div>
-                    <button class="retro-btn ${done ? 'disabled-btn' : ''}" id="sh-open" style="${done ? '' : 'background-color:#16a34a'}" onclick="shOpen()">${done ? 'OPENED' : 'OPEN'}</button></div></div>`;
+                    <div class="sh-tabs">${SH_TABS.map(t => `<button class="sh-tab ${t.id === shopTab ? 'active' : ''}" data-tab="${t.id}" onclick="shTab('${t.id}')"><i class="sh-ico">${t.icon}</i>${t.label}</button>`).join('')}</div>
+                    <div id="sh-body">${shPanel(shopTab)}</div></div>`;
             }
             const pk = document.createElement('div'); pk.id = 'pk-modal'; body.appendChild(pk);
             window.shOpen = function () {
-                if (career.packOpened) return; if (tut.on && tut.phase === 'pack') unpoint();
+                if (pk.style.display === 'flex') return;
+                if ((career.funds || 0) < PACK_PRICE) { toast('NOT ENOUGH CASH!'); return; }
+                career.funds -= PACK_PRICE; const hc = document.getElementById('hub-cash'); if (hc) hc.textContent = csFmtMoney(career.funds);
+                if (tut.on && tut.phase === 'pack') unpoint();
                 const cards = genPack(); let stage = 0, shown = 0;
                 function draw() {
-                    if (stage === 0) pk.innerHTML = `<div class="pk-title">STARTER PACK</div><div class="pk-pack" id="pk-pack">${PACK_SVG}</div><div class="pk-hint">TAP TO OPEN</div>`;
+                    if (stage === 0) pk.innerHTML = `<div class="pk-title">ROOKIE PACK</div><div class="pk-pack" id="pk-pack">${packHTML(170)}</div><div class="pk-hint">TAP TO OPEN</div>`;
                     else pk.innerHTML = `<div class="pk-title">YOUR PLAYERS</div><div class="pk-row">${cards.map((p, i) => i < shown ? `<div class="pk-slot ${i === shown - 1 ? 'pop' : ''}">${cardHTML(p, '')}</div>` : `<div class="pk-slot"><div class="pk-back">?</div></div>`).join('')}</div>`
                         + (shown === cards.length ? `<button class="retro-btn" id="pk-go" style="background-color:#16a34a">COLLECT</button>` : `<div class="pk-hint">TAP TO REVEAL</div>`);
                     const go = document.getElementById('pk-go'); if (go) go.onclick = e => { e.stopPropagation(); finish(); };
                 }
                 function finish() {
-                    career.bench = (career.bench || []).concat(cards); career.packOpened = true; pk.style.display = 'none'; pk.innerHTML = ''; renderShop();
+                    career.bench = (career.bench || []).concat(cards); pk.style.display = 'none'; pk.innerHTML = ''; renderShop();
                     if (tut.on && tut.phase === 'pack') {
                         tut.phase = 'backOffice';
                         setTimeout(() => say(`"Now THAT is some talent! Head back to the Office. Your new players are waiting on the bench."`, () => { closeDialog(); pointTab('OFFICE'); }), 400);
@@ -5124,7 +5232,7 @@ const PXS = (function () {
                         say("Tap any player to see his full stats. What you see is what you get on the field: a 99 speed really is quick. Check out a few starters!", () => { closeDialog(); updateBar(); bar.style.display = 'flex'; })), 350);
                 } else if (tut.phase === 'shopPoint' && tab === 'SHOP') {
                     unpoint(); tut.phase = 'pack';
-                    setTimeout(() => say(`"Here we are. The booster club left us a free starter pack. Open it up and see who you get!"`, () => { closeDialog(); pointAt(() => document.getElementById('sh-open')); }), 350);
+                    setTimeout(() => say(`"Here we are. The Rookie Pack costs $1,000, and you've got the funds. Buy it and see who you get!"`, () => { closeDialog(); pointAt(() => document.getElementById('sh-open')); }), 350);
                 } else if (tut.phase === 'backOffice' && tab === 'OFFICE') {
                     unpoint(); tut.phase = 'lineup';
                     setTimeout(() => say(`"Here's how you build a winner. Press the EDIT button at the bottom to change your lineup."`, () => { closeDialog(); const eb = document.getElementById('of-edit'); if (eb) eb.scrollIntoView({ behavior: 'smooth', block: 'center' }); pointAt(() => document.getElementById('of-edit')); }), 350);
