@@ -269,8 +269,8 @@
         .pc-num { position: absolute; left: 4px; top: 5px; font-size: 7px; color: #fff; text-shadow: 2px 2px 0 #000; }
         .pc-name { font-size: 7px; line-height: 1.6; min-height: 2.4em; color: #e2e8f0; text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; }
         .pc-tag { font-size: 6px; line-height: 1.4; padding: 5px 2px 4px; background: var(--tc2); color: var(--tc); }
-        .pc.t-gold::before, .md-stage.t-gold::before { content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.28) 48%, rgba(255,255,255,.28) 52%, transparent 60%); background-size: 300% 100%; animation: pcShine 2.4s steps(10) infinite; }
-        @keyframes pcShine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+        .pc.t-gold .pc-stage::after, .md-stage.t-gold::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; z-index: 3; pointer-events: none; background: linear-gradient(105deg, transparent 0%, rgba(255,255,255,.32) 50%, transparent 100%); transform: translate3d(-130%,0,0); animation: pcShine 3.2s linear infinite; will-change: transform; }
+        @keyframes pcShine { 0% { transform: translate3d(-130%,0,0); } 40%, 100% { transform: translate3d(320%,0,0); } }
         .of-hl .pc { animation: pcPulse 1.1s steps(2) infinite; }
         @keyframes pcPulse { 50% { transform: translateY(-3px); } }
 
@@ -294,7 +294,7 @@
         #of-close { margin: 14px 16px 18px; width: calc(100% - 32px); }
 
         /* office edit + bench */
-        .of-editbar { position: sticky; bottom: 10px; z-index: 5; display: flex; justify-content: center; padding-top: 6px; }
+        .of-editbar { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; padding: 14px 0 6px; }
         .of-editbar .retro-btn { min-width: 200px; }
         .of-empty { text-align: center; color: #64748b; font-size: 8px; line-height: 1.8; padding: 22px 0; }
         #of-start { margin: 14px 16px 0; width: calc(100% - 32px); background-color: #16a34a; }
@@ -4931,13 +4931,14 @@ const PXS = (function () {
             // ================= new players: packs =================
             const DEFROLE = { QB: 'QB', WR: 'WR', OL: 'OL', DL: 'DL', LB: 'LB', CB: 'CB', K: 'K' };
             function makePlayer(pos, target, minOvr, rnd, names, nums, id) {
+                const roles = SLOTS.filter(s => s[1] === pos).map(s => s[2]), role = roles[Math.floor(rnd() * roles.length)];
                 const pick = a => a[Math.floor(rnd() * a.length)];
                 let name; do { name = pick(FIRST) + ' ' + pick(LAST); } while (names.has(name)); names.add(name);
                 const [lo, hi] = NUM_RANGE[pos]; let num, g = 0; do { num = lo + Math.floor(rnd() * (hi - lo + 1)); } while (nums.has(num) && g++ < 80); nums.add(num);
                 const off = OFFS[pos] || {}, attrs = {}, keys = POS[pos].a.map(a => a[0]);
                 POS[pos].a.forEach(([k,,w]) => { attrs[k] = clamp(Math.round(target + (off[k] || 0) + (rnd() * 12 - 6) + (w >= .25 ? 3 : 0)), 30, 99); });
                 if (pos === 'QB') attrs.THP = clamp(target + Math.round(rnd() * 2 - 1), 40, 99);
-                const adj = keys.filter(k => !(pos === 'QB' && k === 'THP')), p = { id, name, pos, role: DEFROLE[pos], grp: SLOTS.find(s => s[1] === pos)[0], num, skin: SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)], girth: (pos === 'OL') ? 1.45 + rnd() * 0.25 : (pos === 'DL') ? 1.35 + rnd() * 0.22 : (pos === 'LB') ? 1.08 + rnd() * 0.1 : 0.95 + rnd() * 0.14, attrs };
+                const adj = keys.filter(k => !(pos === 'QB' && k === 'THP')), p = { id, name, pos, role, grp: SLOTS.find(s => s[1] === pos)[0], num, skin: SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)], girth: (pos === 'OL') ? 1.45 + rnd() * 0.25 : (pos === 'DL') ? 1.35 + rnd() * 0.22 : (pos === 'LB') ? 1.08 + rnd() * 0.1 : 0.95 + rnd() * 0.14, attrs };
                 for (let n = 0; n < 12; n++) { const d = target - calcOvr(p); if (!d) break; adj.forEach(k => { attrs[k] = clamp(attrs[k] + d, 30, 99); }); }
                 for (let n = 0; n < 25 && calcOvr(p) < minOvr; n++) adj.forEach(k => { attrs[k] = clamp(attrs[k] + 1, 30, 99); });
                 p.ovr = calcOvr(p); return p;
@@ -4979,7 +4980,7 @@ const PXS = (function () {
                 content.innerHTML = `<div class="of-wrap"><div class="of-title">${ofEdit ? 'EDIT LINEUP' : 'OFFICE'}</div><div class="of-school">${ofEdit ? 'TAP A BENCH PLAYER, THEN PRESS START' : t.name.toUpperCase() + ' · STARTING ROSTER'}</div>
                     <div class="of-rate">${plate(tr.ovr, 'TEAM OVR', true)}${plate(tr.off, 'OFFENSE')}${plate(tr.def, 'DEFENSE')}${plate(tr.st, 'KICKER')}</div>
                     ${sec('OFFENSE', 'off')}${sec('DEFENSE', 'def')}${sec('SPECIAL TEAMS', 'st')}${benchSec}
-                    <div class="of-editbar"><button class="retro-btn" id="of-edit" style="${ofEdit ? 'background-color:#16a34a' : ''}" onclick="ofToggleEdit()">${ofEdit ? 'DONE' : 'EDIT'}</button></div></div>`;
+                    <div class="of-editbar">${ofEdit ? '<button class="retro-btn" id="of-auto" style="background-color:#f59e0b" onclick="ofAuto()">AUTO BEST LINEUP</button>' : ''}<button class="retro-btn" id="of-edit" style="${ofEdit ? 'background-color:#16a34a' : ''}" onclick="ofToggleEdit()">${ofEdit ? 'DONE' : 'EDIT'}</button></div></div>`;
                 content.style.paddingBottom = tut.phase === 'roster' ? '120px' : '';
             }
             window.ofToggleEdit = function () {
@@ -4990,7 +4991,7 @@ const PXS = (function () {
                         say(`"Your bench players show up at the bottom. Tap one to see him, then press START to put him in your lineup. He takes the spot of the player he replaces."`, () => {
                             closeDialog(); const b = document.getElementById('of-bench'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         });
-                    } else pointAt(() => document.getElementById('of-edit'));
+                    } else { const eb = document.getElementById('of-edit'); if (eb) eb.scrollIntoView({ block: 'center' }); pointAt(() => document.getElementById('of-edit')); }
                 }
             };
             window.ofOpen = function (id) {
@@ -5011,7 +5012,7 @@ const PXS = (function () {
             // START: bench -> lineup. One starter at that position = automatic swap; several = pick who sits.
             window.ofStart = function (id) {
                 const p = (career.bench || []).find(x => x.id === id); if (!p) return;
-                const cands = career.roster.filter(x => x.pos === p.pos);
+                const cands = career.roster.filter(x => x.role === p.role);
                 if (cands.length === 1) return ofSwap(id, cands[0].id);
                 document.getElementById('of-sheet').innerHTML = `<div class="md-body"><div class="md-h">REPLACE WHO?</div><div class="md-sub">${p.name.toUpperCase()} (${p.ovr}) TAKES THE SPOT OF:</div>
                     <div class="of-grid">${cands.map(c => cardHTML(c, `ofSwap('${id}','${c.id}')`)).join('')}</div></div>`;
@@ -5020,14 +5021,39 @@ const PXS = (function () {
             window.ofSwap = function (benchId, starterId) {
                 const bench = career.bench || [], bi = bench.findIndex(x => x.id === benchId), ri = career.roster.findIndex(x => x.id === starterId); if (bi < 0 || ri < 0) return;
                 const nw = bench.splice(bi, 1)[0], old = career.roster[ri];
-                nw.role = old.role; nw.grp = old.grp; old.role = DEFROLE[old.pos]; career.roster[ri] = nw; bench.push(old); career.bench = bench;
+                nw.role = old.role; nw.grp = old.grp; career.roster[ri] = nw; bench.push(old); career.bench = bench;
                 modal.style.display = 'none'; renderOffice(); toast(`${nw.name.toUpperCase()} NOW STARTS!`);
+                finishLineupStep();
+            };
+            function finishLineupStep() {
                 if (tut.on && tut.phase === 'lineup') {
                     tut.phase = 'done';
                     setTimeout(() => say(`"That's the whole loop, Coach: open packs, find talent, and upgrade your lineup. Keep building this program!"`, () => {
                         closeDialog(); tut.on = false; tut.phase = ''; unlock(); career.tutorialDone = true; ofEdit = false; switchHubTab('HOME');
                     }), 900);
                 }
+            }
+            // AUTO BEST LINEUP: for every lineup spot, the highest-OVR player who plays that spot (starters + bench) starts.
+            window.ofAuto = function () {
+                const bench = career.bench || [], before = ratingsOf(career.roster).ovr, changes = [], promoted = new Set();
+                const roles = [...new Set(career.roster.map(p => p.role))];
+                roles.forEach(role => {
+                    const idxs = career.roster.map((p, i) => p.role === role ? i : -1).filter(i => i >= 0);
+                    const pool = career.roster.filter(p => p.role === role).concat(bench.filter(p => p.role === role)); // starters first = they win ties
+                    const best = pool.slice().sort((a, b) => b.ovr - a.ovr).slice(0, idxs.length);
+                    // keep players already starting in their current spot, fill the open spots with the promoted ones
+                    const keep = best.filter(p => career.roster.includes(p)), add = best.filter(p => !career.roster.includes(p));
+                    idxs.forEach(i => { const cur = career.roster[i]; if (!keep.includes(cur)) { const nw = add.shift(); changes.push({ role, out: cur, inn: nw }); promoted.add(nw); career.roster[i] = nw; nw.grp = cur.grp; } });
+                });
+                if (!changes.length) { toast('ALREADY YOUR BEST LINEUP!'); return; }
+                career.bench = bench.filter(p => !promoted.has(p)).concat(changes.map(c => c.out));
+                renderOffice(); const after = ratingsOf(career.roster).ovr;
+                if (tut.on) { toast(changes.length + ' PLAYER' + (changes.length > 1 ? 'S' : '') + ' UPGRADED!'); finishLineupStep(); return; }
+                const t = teamOf(), panel = document.getElementById('of-panel'); panel.style.cssText = tierVars(tierOf(90), t);
+                document.getElementById('of-sheet').innerHTML = `<div class="md-body"><div class="md-h">LINEUP UPDATED</div>
+                    <div class="md-fx"><span>TEAM OVR</span><b class="up">${before} ▶ ${after}</b></div>
+                    ${changes.map(c => `<div class="md-fx"><span>${c.role} · ${c.inn.name.toUpperCase()}<br>BENCHES ${c.out.name.toUpperCase()}</span><b class="${c.inn.ovr > c.out.ovr ? 'up' : ''}">${c.out.ovr} ▶ ${c.inn.ovr}</b></div>`).join('')}</div>`;
+                modal.style.display = 'flex'; panel.scrollTop = 0;
             };
             function toast(msg) {
                 const d = document.createElement('div'); d.className = 'of-toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 1900);
@@ -5101,7 +5127,7 @@ const PXS = (function () {
                     setTimeout(() => say(`"Here we are. The booster club left us a free starter pack. Open it up and see who you get!"`, () => { closeDialog(); pointAt(() => document.getElementById('sh-open')); }), 350);
                 } else if (tut.phase === 'backOffice' && tab === 'OFFICE') {
                     unpoint(); tut.phase = 'lineup';
-                    setTimeout(() => say(`"Here's how you build a winner. Press the EDIT button at the bottom to change your lineup."`, () => { closeDialog(); pointAt(() => document.getElementById('of-edit')); }), 350);
+                    setTimeout(() => say(`"Here's how you build a winner. Press the EDIT button at the bottom to change your lineup."`, () => { closeDialog(); const eb = document.getElementById('of-edit'); if (eb) eb.scrollIntoView({ behavior: 'smooth', block: 'center' }); pointAt(() => document.getElementById('of-edit')); }), 350);
                 }
             };
             window.startTutorial = function () {
