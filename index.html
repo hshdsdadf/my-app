@@ -2865,8 +2865,8 @@
                                 if (Math.random() < catchProb) { winner = intendedTarget; outcome = 'CATCH'; } 
                                 else { let intChance = Math.min(0.65, 0.28 + coverageFactor * 0.13 + (ball.isBadPass ? 0.15 : 0)); intChance += diffAdj * 0.16 + StatsBridge.intAdj(closestDef); intChance = Math.max(0.05, Math.min(0.75, intChance)); if (Math.random() < intChance) { winner = closestDef; outcome = 'INT'; } else { winner = null; outcome = 'PBU'; } }
                             } else {
-                                let catchProb = (ball.isBadPass ? 0.82 : 0.95) + StatsBridge.handsAdj(intendedTarget); catchProb += (intendedTarget.isCPU ? cpuDifficulty : -cpuDifficulty) * 0.05; catchProb = Math.max(0.5, Math.min(0.97, catchProb));
-                                if (Math.random() < catchProb) { winner = intendedTarget; outcome = 'CATCH'; } else { winner = null; outcome = 'PBU'; }
+                                let catchProb = (ball.isBadPass ? 0.82 : 0.95) + StatsBridge.handsAdj(intendedTarget); catchProb += (intendedTarget.isCPU ? cpuDifficulty : -cpuDifficulty) * 0.05; catchProb = Math.max(0.3, Math.min(0.97, catchProb));
+                                if (Math.random() < catchProb) { winner = intendedTarget; outcome = 'CATCH'; } else { winner = null; outcome = 'DROP'; }
                             }
                         } else {
                             winner = potentialCatchers[0]; if (potentialCatchers.length > 1) { let defenders = potentialCatchers.filter(c => c.isIntercepter); if (defenders.length > 0) winner = defenders[Math.floor(Math.random() * defenders.length)]; else winner = potentialCatchers[Math.floor(Math.random() * potentialCatchers.length)]; }
@@ -2874,7 +2874,7 @@
                         }
                         if (!winner) {
                             players.forEach(p => { p.isTargetReceiver = false; p.isIntercepter = false; p.runningRoute = false; p.isLunging = false; p.isMissedTackle = false; });
-                            ball.vx = (Math.random() - 0.5) * 0.4; ball.vy = (Math.random() - 0.5) * 0.4; ball.vz = 0.2 + Math.random() * 0.3; gameState = 'BALL_LOOSE'; ball.isDeadPass = true; ball.pbuMessage = outcome === 'PBU' ? "PASS BROKEN UP!" : "INCOMPLETE PASS"; spawnImpactBurst(ball.x, ball.y, 10);
+                            ball.vx = (Math.random() - 0.5) * 0.4; ball.vy = (Math.random() - 0.5) * 0.4; ball.vz = 0.2 + Math.random() * 0.3; gameState = 'BALL_LOOSE'; ball.isDeadPass = true; ball.pbuMessage = outcome === 'PBU' ? "PASS BROKEN UP!" : outcome === 'DROP' ? "DROPPED PASS!" : "INCOMPLETE PASS"; spawnImpactBurst(ball.x, ball.y, 10);
                         } else {
                             gameState = 'PLAYING'; winner.hasBall = true; isPassing = false; players.forEach(p => { p.isTargetReceiver = false; p.isIntercepter = false; p.runningRoute = false; if (p !== winner) { p.isBlocking = false; p.blockTarget = null; } p.isLunging = false; p.isMissedTackle = false; });
                             let isChangeOfPossession = (winner.isCPU !== (offenseDirection === 1));
@@ -4959,14 +4959,14 @@ const PXS = (function () {
             // ---- how every rating really changes the game (the game code calls these same formulas) ----
             const FX = {
                 speed: (a, line, base) => { const s = gv(a, 'SPD', 78); return line ? 0.052 * (1 + (s - 62) * 0.011) : base * (1 + (s - 78) * (s >= 78 ? 0.0085 : 0.0095)); },
-                throwRange: a => Math.max(12, 22.5 + (gv(a, 'THP', 78) - 70) * 1.12),                       // yards
+                throwRange: a => Math.max(17, 22.5 + (gv(a, 'THP', 78) - 70) * 1.12),                       // yards
                 hangMul: a => clamp(1 - (gv(a, 'THP', 78) - 78) * 0.0045, 0.85, 1.15),       // ball flight time
-                scatter: (a, dist, pressured) => Math.max(0, 99 - gv(a, 'THA', 78)) * 0.045 * (0.5 + dist / 40) * (pressured ? clamp(1.7 - (gv(a, 'AWR', 78) - 60) * 0.012, 1.0, 2.2) : 1),
+                scatter: (a, dist, pressured) => Math.max(0, 99 - gv(a, 'THA', 78)) * 0.055 * (0.5 + dist / 40) * (pressured ? clamp(1.7 - (gv(a, 'AWR', 78) - 60) * 0.012, 1.0, 2.2) : 1),
                 qbDiff: a => clamp(((gv(a, 'THA', 78) + gv(a, 'AWR', 78)) / 2 - 78) / 14, -1.2, 1.2),
                 kickMul: a => { const s = gv(a, 'KPW', 78); return s >= 78 ? 1 + (s - 78) * 0.0038 : 1 + (s - 78) * 0.0058; },
                 kickScatter: (a, q4) => { let k = gv(a, 'KAC', 78); if (q4) k += (gv(a, 'CLU', 78) - 78) * 0.4; return Math.max(0, 100 - k) * 0.0016; },
-                catchAdj: (w, d) => clamp((gv(w, 'HND', 78) - 78) * 0.004 + (gv(w, 'JMP', 78) - 78) * 0.0015 - (gv(d, 'COV', 78) - 78) * 0.004, -0.25, 0.2),
-                handsAdj: w => (gv(w, 'HND', 78) - 78) * 0.002,
+                catchAdj: (w, d) => clamp((gv(w, 'HND', 78) - 78) * 0.0065 + (gv(w, 'JMP', 78) - 78) * 0.002 - (gv(d, 'COV', 78) - 78) * 0.004, -0.45, 0.2),
+                handsAdj: w => clamp((gv(w, 'HND', 78) - 78) * 0.0065, -0.45, 0.04),
                 sepBonus: (w, d) => clamp((gv(w, 'RTE', 78) - 78) * 0.008 + (gv(w, 'AGI', 70) - gv(d, 'AGI', 70)) * 0.004, -0.6, 0.6),
                 intAdj: d => (gv(d, 'INT', gv(d, 'AWR', 70)) - 78) * 0.004,
                 blockRating: (a, pass) => a && a.PBK != null ? (pass ? a.PBK : a.RBK) * 0.55 + gv(a, 'STR', 60) * 0.30 + gv(a, 'AWR', 70) * 0.15 : 60,
@@ -4994,8 +4994,8 @@ const PXS = (function () {
             };
             function traitsOf(p) { const out = (TRAITS[p.pos] || []).filter(([k, v]) => p.attrs[k] >= v).map(t => t[2]).slice(0, 2); if (!out.length) out.push(p.ovr >= 74 ? 'SOLID STARTER' : p.ovr >= 65 ? 'GRINDER' : 'DEVELOPING'); return out; }
 
-            function buildRoster(teamIdx, seed) {
-                const t = qpTeams[teamIdx]; let h = teamIdx * 9973 + 17; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) | 0;
+            function buildRoster(teamIdx, seed, tgt) {
+                const t = tgt ? Object.assign({}, qpTeams[teamIdx], tgt) : qpTeams[teamIdx]; let h = teamIdx * 9973 + 17; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) | 0;
                 const rnd = mulberry(h), pick = a => a[Math.floor(rnd() * a.length)];
                 const usedNames = new Set(), usedNums = new Set(); const target = { off: t.off, def: t.def, st: t.ovr };
                 const roster = SLOTS.map(([grp, pos, role], i) => {
@@ -5095,7 +5095,9 @@ const PXS = (function () {
             // ================= rosters: your school + every other school =================
             const rosterCache = {};
             function rosterFor(idx) { if (career && career.roster && idx === career.teamIdx) return career.roster; return rosterCache[idx] || (rosterCache[idx] = buildRoster(idx, 'cpu')); }
-            function ensureRoster() { if (career && !career.roster) career.roster = buildRoster(career.teamIdx, career.coachName); return career && career.roster; }
+            // your starting team is rough on purpose: the plan is to build it up (packs now, training later)
+            const START_TEAM = { off: 56, def: 56, ovr: 56 };
+            function ensureRoster() { if (career && !career.roster) career.roster = buildRoster(career.teamIdx, career.coachName, START_TEAM); return career && career.roster; }
             function ratingsOf(r) { const avg = g => { const l = r.filter(p => p.grp === g); return Math.round(l.reduce((s, p) => s + p.ovr, 0) / l.length); }; const off = avg('off'), def = avg('def'), k = avg('st'); return { off, def, st: k, ovr: Math.round(off * 0.45 + def * 0.45 + k * 0.10) }; }
             window.getTeamRatings = function () { return career && career.roster ? ratingsOf(career.roster) : null; };
             window.getTeamRoster = function (idx) { return rosterFor(idx); };
