@@ -36,6 +36,13 @@
         .playbook-svg { width: 140px; height: 140px; background-color: #0f661e; border: 4px solid #ffffff; box-shadow: 6px 6px 0px rgba(0,0,0,0.8); image-rendering: pixelated; flex-shrink: 0; }
         .playbook-svg rect, .playbook-svg line, .playbook-svg polyline, .playbook-svg path { shape-rendering: crispEdges; }
         .route-path { stroke: #ff003c; stroke-width: 4; fill: none; }
+        .playbook-svg.pf { background-color: #256f3a; border-radius: 6px; image-rendering: auto; }
+        .playbook-svg.pf rect, .playbook-svg.pf line, .playbook-svg.pf polyline, .playbook-svg.pf path, .playbook-svg.pf circle { shape-rendering: geometricPrecision; }
+        .pf .route-path { stroke: #fde047; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+        .pf .route-out { stroke: #0b1220; stroke-width: 5.2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+        .pf .pf-def path { stroke: #f87171; stroke-width: 2.2; stroke-linecap: round; fill: none; }
+        .pf .pf-off circle { fill: #22d3ee; stroke: #fff; stroke-width: 1.4; }
+        .pf g[stroke="#fff"] { stroke: #fff; stroke-width: 1.6; stroke-dasharray: 3,2.5; stroke-linecap: round; opacity: .85; }
         .hud-text { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); width: 100%; text-align: center; font-family: 'Press Start 2P', monospace; color: white; font-size: 20px; text-shadow: 2px 2px 0 #000; z-index: 9; transition: transform 0.1s; }
         #scoreboard { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 8; display: flex; align-items: stretch; font-family: 'Press Start 2P', monospace; background-color: rgba(10, 15, 25, 0.95); border: 4px solid #ffffff; box-shadow: 6px 6px 0px rgba(0,0,0,0.8); border-radius: 4px; overflow: hidden; user-select: none; }
         #scoreboard .sb-team { display: flex; align-items: center; gap: 12px; padding: 10px 16px; transition: background-color 0.3s; }
@@ -364,6 +371,30 @@
         .hm-gt { color: #fff; font-size: clamp(8px, 2.3vw, 10px); line-height: 1.5; text-shadow: 2px 2px 0 #000; } .hm-gt small { display: block; color: #94a3b8; font-size: 7px; line-height: 1.8; margin-top: 4px; text-shadow: none; }
         .hm-meter { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 7px; color: #cbd5e1; } .hm-meter div { flex: 1; height: 8px; background: #1e293b; } .hm-meter i { display: block; height: 100%; background: #facc15; } .hm-meter.done i { background: #4ade80; }
         .hm-ov { margin-top: 0; }
+
+        /* office playbook + welcome pack */
+        .of-seg { display: flex; gap: 14px; justify-content: center; padding: 4px 0; }
+        .of-seg button { font-family: 'Press Start 2P', monospace; font-size: clamp(8px, 2.4vw, 10px); color: #94a3b8; background: #0b1220; border: 0; padding: 12px 18px 10px; cursor: pointer; margin: 3px; box-shadow: 0 -3px 0 0 #334155, 0 3px 0 0 #334155, -3px 0 0 0 #334155, 3px 0 0 0 #334155, 4px 6px 0 0 rgba(0,0,0,.55); }
+        .of-seg button.on { color: #0b1220; background: #facc15; box-shadow: 0 -3px 0 0 #fff, 0 3px 0 0 #fff, -3px 0 0 0 #fff, 3px 0 0 0 #fff, 4px 6px 0 0 rgba(0,0,0,.55); }
+        .pb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 18px 16px; padding: 6px 4px 4px; }
+        .pb-card { background: #0b1220; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; margin: 3px;
+            box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 5px 7px 0 0 rgba(0,0,0,.55); }
+        .pb-card.on { box-shadow: 0 -3px 0 0 #4ade80, 0 3px 0 0 #4ade80, -3px 0 0 0 #4ade80, 3px 0 0 0 #4ade80, 5px 7px 0 0 rgba(0,0,0,.55); }
+        .pb-card.lock { box-shadow: 0 -3px 0 0 #334155, 0 3px 0 0 #334155, -3px 0 0 0 #334155, 3px 0 0 0 #334155, 5px 7px 0 0 rgba(0,0,0,.55); } .pb-card.lock .pb-art svg { filter: grayscale(1) brightness(.55); } .pb-card.lock .pb-name { color: #64748b; }
+        .pb-card.empty { background: transparent; box-shadow: none; border: 3px dashed #334155; justify-content: center; min-height: 190px; margin: 0; }
+        .pb-empty { color: #475569; font-size: 8px; line-height: 2; text-align: center; }
+        .pb-name { color: #fff; font-size: 8px; line-height: 1.6; text-align: center; text-shadow: 2px 2px 0 #000; min-height: 26px; display: flex; align-items: center; }
+        .pb-art { position: relative; width: 100%; display: flex; justify-content: center; }
+        .playbook-svg.pb-svg { width: 100%; max-width: 112px; height: auto; aspect-ratio: 1 / 1; box-shadow: 4px 4px 0 rgba(0,0,0,.8); }
+        .pb-lock { position: absolute; inset: 0; margin: auto; max-width: 112px; display: flex; align-items: center; justify-content: center; color: #facc15; font-size: 8px; background: rgba(2,6,23,.55); text-shadow: 2px 2px 0 #000; }
+        .pb-btn { font-family: 'Press Start 2P', monospace; font-size: 9px; width: 100%; padding: 11px 4px 9px; border: 0; color: #fff; cursor: pointer; text-shadow: 2px 2px 0 #000; box-shadow: inset 0 -4px 0 rgba(0,0,0,.35), 3px 3px 0 rgba(0,0,0,.7); }
+        .pb-btn:active { transform: translate(2px, 2px); } .pb-btn.add { background: #16a34a; } .pb-btn.rm { background: #b91c1c; }
+        .pb-hint { color: #64748b; font-size: 7px; line-height: 1.8; text-align: center; }
+        .pk-plays { display: grid; grid-template-columns: repeat(3, min(104px, 28vw)); gap: 18px 14px; }
+        .pk-play { display: flex; flex-direction: column; align-items: center; gap: 8px; color: #fff; font-size: 7px; line-height: 1.6; text-align: center; text-shadow: 2px 2px 0 #000; animation: pkPop 0.3s steps(3) both; }
+        .pk-play .playbook-svg { width: 100%; height: auto; aspect-ratio: 1 / 1; border-width: 3px; }
+        .sh-card.done { filter: grayscale(.55); opacity: .85; }
+        .sh-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; box-shadow: none; text-shadow: none; transform: none; }
         /* shop tabs + panels */
         .sh-tabs { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; overflow-y: hidden; padding: 8px 8px 16px; margin: 0 -6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
         .sh-tabs::-webkit-scrollbar { display: none; }
@@ -419,6 +450,14 @@
         .pk-back { height: 100%; box-sizing: border-box; margin: 0; background: #1e293b; color: #facc15; font-size: 28px; display: flex; align-items: center; justify-content: center; text-shadow: 3px 3px 0 #000;
             box-shadow: 0 -3px 0 0 #64748b, 0 3px 0 0 #64748b, -3px 0 0 0 #64748b, 3px 3px 0 0 #64748b, 5px 7px 0 0 rgba(0,0,0,.6); }
         #pk-modal .pc { pointer-events: none; }
+        .pk-count { color: #94a3b8; font-size: 9px; text-shadow: 2px 2px 0 #000; }
+        .pk-dots { display: flex; gap: 8px; } .pk-dots i { width: 10px; height: 10px; background: #334155; box-shadow: 2px 2px 0 #000; } .pk-dots i.on { background: #facc15; }
+        .pk-big { width: 224px; height: 282px; position: relative; } .pk-big > .pk-slot { width: 140px; height: 176px; transform: scale(1.6); transform-origin: top left; }
+        .pk-big.pop { animation: pkPop 0.3s steps(3) both; }
+        .pk-big.leg { filter: drop-shadow(0 0 14px rgba(250,204,21,.85)); }
+        .pk-playbig { display: flex; flex-direction: column; align-items: center; gap: 14px; animation: pkPop 0.3s steps(3) both; }
+        .pk-playbig .pk-pname { color: #fff; font-size: clamp(12px, 4vw, 16px); text-shadow: 3px 3px 0 #000; text-align: center; }
+        .pk-playbig .playbook-svg { width: min(240px, 66vw); height: min(240px, 66vw); border-width: 4px; box-shadow: 6px 6px 0 rgba(0,0,0,.8); }
     </style>
 </head>
 <body>
@@ -2289,19 +2328,33 @@
 
         function snapBall() { gameState = 'PLAYING'; isAimingPass = false; aimPointerId = null; players.forEach(p => { p.tackleTimer = 0; }); let qb = players.find(p => p.isQB && (offenseDirection === -1 ? !p.isCPU : p.isCPU)); if (qb) qb.hasBall = true; hud.innerHTML = ""; hideUI(); mainClockStarted = true; }
 
+        function pfStyleRoutes(h) {
+            // defense = red X, offense = cyan discs, routes get a dark outline underneath for contrast
+            h = h.replace(/<g fill="#ff003c"[^>]*>([\s\S]*?)<\/g>/g, (m, inner) => '<g class="pf-def">' + inner.replace(/<rect x="(\d+)" y="(\d+)"[^>]*\/>/g, (mm, x, y) => { x = +x + 3; y = +y + 3; return `<path d="M${x-3} ${y-3}L${x+3} ${y+3}M${x+3} ${y-3}L${x-3} ${y+3}"/>`; }) + '</g>');
+            h = h.replace(/<g fill="#00f0ff"[^>]*>([\s\S]*?)<\/g>/g, (m, inner) => '<g class="pf-off">' + inner.replace(/<rect x="(\d+)" y="(\d+)"[^>]*\/>/g, (mm, x, y) => `<circle cx="${+x+3}" cy="${+y+3}" r="3.6"/>`) + '</g>');
+            h = h.replace(/<g class="route-path">[\s\S]*?<\/g>/g, m => m.replace('route-path', 'route-out') + m);
+            return h;
+        }
         function getPlaySVG(title, playRoutesHTML) {
-            return `<div class="play-card" onclick="selectPlay('${title.replace(/ /g, "_")}')"><div class="play-title">${title.replace(/_/g, " ")}</div><svg class="playbook-svg menu-icon" viewBox="0 0 120 120"><rect x="0" y="0" width="120" height="120" fill="#0f661e" /><path d="M0 10 H120 M0 30 H120 M0 50 H120 M0 70 H120 M0 90 H120 M0 110 H120" stroke="#0a4a15" stroke-width="2" /><line x1="0" y1="50" x2="120" y2="50" stroke="#ffe600" stroke-width="2" stroke-dasharray="4,4"/> <line x1="0" y1="20" x2="120" y2="20" stroke="#00f0ff" stroke-width="2" stroke-dasharray="4,4"/> ${playRoutesHTML}</svg></div>`;
+            let bands = '', lines = '', hash = '';
+            for (let i = 0; i < 12; i++) if (i % 2) bands += `<rect x="0" y="${i*10}" width="120" height="10" fill="#2f9a4a"/>`;
+            for (let y = 10; y < 120; y += 10) lines += `M0 ${y}H120`;
+            for (let y = 5; y < 120; y += 5) hash += `M38 ${y}h4M78 ${y}h4`;
+            return `<div class="play-card" onclick="selectPlay('${title.replace(/ /g, "_")}')"><div class="play-title">${title.replace(/_/g, " ")}</div><svg class="playbook-svg menu-icon pf" viewBox="0 0 120 120"><rect width="120" height="120" fill="#256f3a"/>${bands}<path d="${lines}" stroke="#fff" stroke-opacity=".28" stroke-width="1"/><path d="${hash}" stroke="#fff" stroke-opacity=".3" stroke-width="1"/><rect x="0" y="0" width="120" height="14" fill="#0f172a" fill-opacity=".28"/><line x1="0" y1="20" x2="120" y2="20" stroke="#22d3ee" stroke-width="1.6" stroke-dasharray="5,3" stroke-opacity=".9"/><line x1="0" y1="50" x2="120" y2="50" stroke="#facc15" stroke-width="2.2"/><rect x="0" y="0" width="120" height="120" fill="none" stroke="#0b3d1a" stroke-opacity=".6" stroke-width="3"/>${pfStyleRoutes(playRoutesHTML)}</svg></div>`;
         }
 
+        window.PLAY_DEFS = [
+            { id: 'INSIDE_RUN', routes: `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="57" y="41" width="6" height="6"/><rect x="45" y="41" width="6" height="6"/><rect x="69" y="41" width="6" height="6"/><rect x="33" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="33" y="52" width="6" height="6"/><rect x="81" y="52" width="6" height="6"/><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="62" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 60,15" /><polyline points="52,24 60,15 68,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="40" y2="40" /><line x1="72" y1="52" x2="80" y2="40" /></g>` },
+            { id: 'SWEEP_RIGHT', routes: `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="57" y="41" width="6" height="6"/><rect x="69" y="41" width="6" height="6"/><rect x="45" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 80,74 95,59 95,15" /><polyline points="87,24 95,15 103,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="38" y2="40" /><line x1="60" y1="52" x2="50" y2="40" /><line x1="72" y1="52" x2="62" y2="40" /></g>` },
+            { id: 'SWEEP_LEFT', routes: `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="49" y="41" width="6" height="6"/><rect x="37" y="41" width="6" height="6"/><rect x="61" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 40,74 25,59 25,15" /><polyline points="17,24 25,15 33,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="58" y2="40" /><line x1="60" y1="52" x2="70" y2="40" /></g>` },
+            { id: 'FLY', routes: `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="12,55 12,10" /><polyline points="4,19 12,10 20,19" /><polyline points="108,55 108,10" /><polyline points="100,19 108,10 116,19" /></g>` },
+            { id: 'DOUBLE_SLANT', routes: `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="12,55 12,35 35,15" /><polyline points="25,15 35,15 35,25" /><polyline points="108,55 108,35 85,15" /><polyline points="95,15 85,15 85,25" /></g>` },
+            { id: 'OUTS', routes: `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="21" y="52" width="6" height="6"/><rect x="93" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="24,55 24,35 4,35" /><polyline points="12,27 4,35 12,43" /><polyline points="96,55 96,35 116,35" /><polyline points="108,27 116,35 108,43" /></g>` }
+        ];
         function showPlayCallMenu() {
-            const allPlays = [
-                getPlaySVG('INSIDE_RUN', `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="57" y="41" width="6" height="6"/><rect x="45" y="41" width="6" height="6"/><rect x="69" y="41" width="6" height="6"/><rect x="33" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="33" y="52" width="6" height="6"/><rect x="81" y="52" width="6" height="6"/><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="62" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 60,15" /><polyline points="52,24 60,15 68,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="40" y2="40" /><line x1="72" y1="52" x2="80" y2="40" /></g>`),
-                getPlaySVG('SWEEP_RIGHT', `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="57" y="41" width="6" height="6"/><rect x="69" y="41" width="6" height="6"/><rect x="45" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 80,74 95,59 95,15" /><polyline points="87,24 95,15 103,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="38" y2="40" /><line x1="60" y1="52" x2="50" y2="40" /><line x1="72" y1="52" x2="62" y2="40" /></g>`),
-                getPlaySVG('SWEEP_LEFT', `<g fill="#ff003c" stroke="#000" stroke-width="1"><rect x="49" y="41" width="6" height="6"/><rect x="37" y="41" width="6" height="6"/><rect x="61" y="41" width="6" height="6"/></g><g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="57" y="52" width="6" height="6"/><rect x="45" y="52" width="6" height="6"/><rect x="69" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="60,74 40,74 25,59 25,15" /><polyline points="17,24 25,15 33,24" /></g><g stroke="#fff" stroke-width="2" stroke-dasharray="2,2" fill="none"><line x1="48" y1="52" x2="58" y2="40" /><line x1="60" y1="52" x2="70" y2="40" /></g>`),
-                getPlaySVG('FLY', `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="12,55 12,10" /><polyline points="4,19 12,10 20,19" /><polyline points="108,55 108,10" /><polyline points="100,19 108,10 116,19" /></g>`),
-                getPlaySVG('DOUBLE_SLANT', `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="9" y="52" width="6" height="6"/><rect x="105" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="12,55 12,35 35,15" /><polyline points="25,15 35,15 35,25" /><polyline points="108,55 108,35 85,15" /><polyline points="95,15 85,15 85,25" /></g>`),
-                getPlaySVG('OUTS', `<g fill="#00f0ff" stroke="#000" stroke-width="1"><rect x="21" y="52" width="6" height="6"/><rect x="93" y="52" width="6" height="6"/><rect x="57" y="74" width="6" height="6"/></g><g class="route-path"><polyline points="24,55 24,35 4,35" /><polyline points="12,27 4,35 12,43" /><polyline points="96,55 96,35 116,35" /><polyline points="108,27 116,35 108,43" /></g>`)
-            ];
+            // plays come from the coach's active playbook (Office > Playbook); fall back to every play if it's too small
+            const pbIds = (typeof career !== 'undefined' && career && Array.isArray(career.playbook)) ? career.playbook.filter(id => PLAY_DEFS.some(d => d.id === id)) : [];
+            const allPlays = (pbIds.length >= 3 ? PLAY_DEFS.filter(d => pbIds.includes(d.id)) : PLAY_DEFS).map(d => getPlaySVG(d.id, d.routes));
             allPlays.sort(() => 0.5 - Math.random()); let chosenThree = allPlays.slice(0, 3);
             let selectedPlaysHtml = chosenThree.join('');
             offeredPlays = chosenThree.map(html => { let m = html.match(/selectPlay\('([A-Z_0-9]+)'\)/); return m ? m[1] : null; }).filter(Boolean);
@@ -5061,12 +5114,12 @@ const PXS = (function () {
             function packBust() {
                 try { const t = teamOf(); return { t, url: bust({ id: 'rookiepack', pos: 'QB', num: 12, name: 'ROOKIE', skin: SKIN_TONES[3], girth: 1.05, attrs: {} }, t) }; } catch (e) { return { t: null, url: '' }; }
             }
-            const packHTML = w => {
+            const packHTML = (w, o = {}) => {
                 const { t, url } = packBust(), c1 = t ? t.c1 : '#2563eb', c2 = t ? t.c2 : '#1e3a8a';
                 return `<div class="rk-pack" style="width:${w}px;height:${w * 1.5}px;font-size:${w / 100}px"><div class="rk-foil" style="clip-path:${PACK_CLIP}">
                     <div class="rk-crimp top"></div><div class="rk-crimp bot"></div>
                     <div class="rk-win" style="--sb:${shadeHex(c1, -62)};--hl:${shadeHex(c1, -20)}">${url ? `<img alt="" src="${url}">` : ''}</div>
-                    <div class="rk-lbl"><b>ROOKIE</b><b class="g">PACK</b><i>4 PLAYERS</i></div>
+                    <div class="rk-lbl"><b>${o.a || 'ROOKIE'}</b><b class="g">${o.b || 'PACK'}</b><i>${o.i || '4 PLAYERS'}</i></div>
                     <div class="rk-spark" style="left:7%;top:62%"></div><div class="rk-spark" style="right:8%;top:14%;width:3em;height:3em"></div><div class="rk-spark" style="right:12%;top:60%;width:2em;height:2em"></div>
                     <div class="rk-shine"></div></div></div>`;
             };
@@ -5076,7 +5129,7 @@ const PXS = (function () {
             // ================= Office =================
             const teamOf = () => qpTeams[career.teamIdx];
             const tierVars = (tier, t) => `--tc:${tier.c};--tc2:${tier.c2};--sb:${shadeHex(t.c1, -62)}`;
-            let ofEdit = false;
+            let ofEdit = false, ofView = 'lineup';
             function cardHTML(p, click) {
                 const t = teamOf(), tier = tierOf(p.ovr), tr = traitsOf(p)[0], oc = click == null ? `onclick="ofOpen('${p.id}')"` : (click ? `onclick="${click}"` : 'tabindex="-1"');
                 return `<button class="pc ${tier.cls} ${(tut.on && tut.phase === 'roster' && tut.viewed.has(p.id)) ? 'seen' : ''}" style="${tierVars(tier, t)}" ${oc}><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
@@ -5084,6 +5137,8 @@ const PXS = (function () {
             function renderOffice() {
                 const content = document.getElementById('hub-content'); if (!content) return;
                 const r = ensureRoster(); if (!r) return; const tr = ratingsOf(r), t = teamOf(), bench = career.bench || [];
+                if (tut.on) ofView = 'lineup';
+                if (ofView === 'playbook' && !ofEdit) return renderPlaybook();
                 const sec = (title, grp) => { const l = r.filter(p => p.grp === grp); return `<div class="of-sec"><span>${title}</span><small>${l.length}</small></div><div class="of-grid ${tut.phase === 'roster' ? 'of-hl' : ''}">${l.map(p => cardHTML(p)).join('')}</div>`; };
                 const plate = (v, l, big) => `<div class="of-plate ${big ? 'big' : ''}"><b style="color:${tierOf(v).c}">${v}</b><i>${l}</i></div>`;
                 const benchSec = !ofEdit ? '' : `<div class="of-sec" id="of-bench"><span>BENCH</span><small>${bench.length}</small></div>` + (bench.length
@@ -5091,7 +5146,7 @@ const PXS = (function () {
                     : `<div class="of-empty">NO BENCH PLAYERS YET<br><br>OPEN PACKS IN THE SHOP</div>`);
                 content.style.justifyContent = 'flex-start';
                 content.innerHTML = `<div class="of-wrap"><div class="of-title">${ofEdit ? 'EDIT LINEUP' : 'OFFICE'}</div><div class="of-school">${ofEdit ? 'TAP A BENCH PLAYER, THEN PRESS START' : t.name.toUpperCase() + ' · STARTING ROSTER'}</div>
-                    <div class="of-rate">${plate(tr.ovr, 'TEAM OVR', true)}${plate(tr.off, 'OFFENSE')}${plate(tr.def, 'DEFENSE')}${plate(tr.st, 'KICKER')}</div>
+                    ${ofSeg()}<div class="of-rate">${plate(tr.ovr, 'TEAM OVR', true)}${plate(tr.off, 'OFFENSE')}${plate(tr.def, 'DEFENSE')}${plate(tr.st, 'KICKER')}</div>
                     ${sec('OFFENSE', 'off')}${sec('DEFENSE', 'def')}${sec('SPECIAL TEAMS', 'st')}${benchSec}
                     <div class="of-editbar">${ofEdit ? '<button class="retro-btn" id="of-auto" style="background-color:#f59e0b" onclick="ofAuto()">AUTO BEST LINEUP</button>' : ''}<button class="retro-btn" id="of-edit" style="${ofEdit ? 'background-color:#16a34a' : ''}" onclick="ofToggleEdit()">${ofEdit ? 'DONE' : 'EDIT'}</button></div></div>`;
                 content.style.paddingBottom = tut.phase === 'roster' ? '120px' : '';
@@ -5174,6 +5229,41 @@ const PXS = (function () {
             document.getElementById('of-close').onclick = () => { modal.style.display = 'none'; if (tut.on && tut.phase === 'roster') renderOffice(); };
             modal.addEventListener('click', e => { if (e.target === modal) document.getElementById('of-close').click(); });
 
+            // ---- playbook manager (Office > PLAYBOOK) ----
+            const PB_MAX = 5, PB_MIN = 3;
+            const pbEnsure = () => { career.unlockedPlays = career.unlockedPlays || []; career.playbook = career.playbook || []; };
+            const pbName = id => id.replace(/_/g, ' ');
+            const pbSvg = id => { const d = PLAY_DEFS.find(x => x.id === id); if (!d) return ''; const m = getPlaySVG(id, d.routes).match(/<svg[\s\S]*<\/svg>/); return m ? m[0].replace('playbook-svg menu-icon', 'playbook-svg pb-svg') : ''; };
+            function pbUnlock(ids) {
+                pbEnsure();
+                ids.forEach(id => { if (!career.unlockedPlays.includes(id)) career.unlockedPlays.push(id); if (career.playbook.length < PB_MAX && !career.playbook.includes(id)) career.playbook.push(id); });
+            }
+            function ofSeg() {
+                if (tut.on || ofEdit) return '';
+                return `<div class="of-seg"><button class="${ofView === 'lineup' ? 'on' : ''}" onclick="ofSetView('lineup')">LINEUP</button><button class="${ofView === 'playbook' ? 'on' : ''}" onclick="ofSetView('playbook')">PLAYBOOK</button></div>`;
+            }
+            window.ofSetView = function (v) { if (tut.on) return; ofView = v; ofEdit = false; renderOffice(); };
+            window.pbToggle = function (id) {
+                pbEnsure(); const on = career.playbook.includes(id);
+                if (on) { if (career.playbook.length <= PB_MIN) { toast('KEEP AT LEAST ' + PB_MIN + ' PLAYS!'); return; } career.playbook = career.playbook.filter(x => x !== id); }
+                else { if (!career.unlockedPlays.includes(id)) return; if (career.playbook.length >= PB_MAX) { toast('PLAYBOOK FULL! REMOVE A PLAY FIRST'); return; } career.playbook.push(id); }
+                const y = window.scrollY, hc = document.getElementById('hub-content'), st = hc ? hc.scrollTop : 0; renderOffice(); if (hc) hc.scrollTop = st; window.scrollTo(0, y);
+            };
+            function renderPlaybook() {
+                const content = document.getElementById('hub-content'); if (!content) return; pbEnsure();
+                const ids = PLAY_DEFS.map(d => d.id), act = career.playbook.filter(id => ids.includes(id)), unl = career.unlockedPlays.filter(id => ids.includes(id) && !act.includes(id)), lock = ids.filter(id => !career.unlockedPlays.includes(id));
+                const card = (id, st) => `<div class="pb-card ${st}"><div class="pb-name">${pbName(id)}</div><div class="pb-art">${pbSvg(id)}${st === 'lock' ? '<div class="pb-lock">LOCKED</div>' : ''}</div>`
+                    + (st === 'on' ? `<button class="pb-btn rm" onclick="pbToggle('${id}')">REMOVE</button>` : st === 'off' ? `<button class="pb-btn add" onclick="pbToggle('${id}')">ADD</button>` : `<div class="pb-hint">FIND IT IN<br>SPECIAL PACKS</div>`) + `</div>`;
+                const empties = Array.from({ length: Math.max(0, PB_MAX - act.length) }, () => `<div class="pb-card empty"><div class="pb-empty">EMPTY<br>SLOT</div></div>`).join('');
+                const sec = (title, n, body) => `<div class="of-sec"><span>${title}</span><small>${n}</small></div>${body}`;
+                content.style.justifyContent = 'flex-start'; content.style.paddingBottom = '';
+                content.innerHTML = `<div class="of-wrap"><div class="of-title">OFFICE</div><div class="of-school">${teamOf().name.toUpperCase()} · PLAYBOOK</div>${ofSeg()}
+                    <div class="of-school" style="margin-top:0">ACTIVE PLAYS SHOW UP IN YOUR PLAY CALLS. KEEP AT LEAST ${PB_MIN}.</div>
+                    ${sec('ACTIVE PLAYBOOK', act.length + '/' + PB_MAX, `<div class="pb-grid">${act.map(id => card(id, 'on')).join('')}${empties}</div>`)}
+                    ${unl.length ? sec('UNLOCKED PLAYS', unl.length, `<div class="pb-grid">${unl.map(id => card(id, 'off')).join('')}</div>`) : ''}
+                    ${lock.length ? sec('LOCKED PLAYS', lock.length, `<div class="pb-grid">${lock.map(id => card(id, 'lock')).join('')}</div>`) : ''}</div>`;
+            }
+
             // ================= Shop (tabbed) =================
             const PACK_PRICE = 1000;
             // ---- shop tabs ----
@@ -5188,7 +5278,7 @@ const PXS = (function () {
                 { id: 'training',  label: 'TRAINING PACKS',  ac: '#f472b6', d: '#9d174d', r: [[0,2,2,4],[6,2,2,4],[2,3,4,2,1]],
                   sub: 'LEVEL UP YOUR ROSTER', blurb: 'DRILLS AND UPGRADES THAT BUILD UP YOUR PLAYERS.' },
                 { id: 'special',   label: 'SPECIAL PACKS',   ac: '#a78bfa', d: '#5b21b6', r: [[3,0,2,8],[0,3,8,2],[2,2,4,4],[3,3,2,2,1]],
-                  sub: 'RARE & LIMITED', blurb: 'RARE, LIMITED PACKS WITH ELITE REWARDS.' },
+                  sub: 'RARE & LIMITED' },
                 { id: 'offers',    label: 'OFFERS',          ac: '#f87171', d: '#7f1d1d', r: [[0,0,5,1],[0,1,6,1],[0,2,7,1],[0,3,8,1],[1,4,7,1],[2,5,6,1],[3,6,5,1],[4,7,3,1],[1,1,2,2,1]],
                   sub: 'DEALS & BUNDLES', blurb: 'DEALS AND BUNDLES WILL SHOW UP HERE.' }
             ];
@@ -5205,15 +5295,23 @@ const PXS = (function () {
                         <div class="sh-line"><i class="sh-sq" style="background:#38bdf8"></i><span>3 PLAYERS<small>72-82 OVR</small></span></div>
                         <div class="sh-buy"><span class="sh-price"><i class="sh-ico">${ICON_COIN}</i>${PRICE.toLocaleString('en-US')}</span>
                         <button class="sh-btn" id="sh-open" onclick="shOpen()">BUY</button></div></div></div></div>`;
+                if (id === 'special') { const done = !!career.welcomeClaimed; return `<div class="sh-panel">${head}
+                    <div class="sh-card ${done ? 'done' : ''}"><div class="sh-art sh-stage"><div class="sh-tag">${done ? 'OPENED' : 'ONE-TIME'}</div>${packHTML(124, { a: 'WELCOME', b: 'PACK', i: 'PLAYERS + PLAYS' })}</div>
+                    <div class="sh-info"><div class="sh-name">WELCOME PACK</div>
+                        <div class="sh-line"><i class="sh-ico">${ICON_PERSON}</i><span>4 PLAYERS<small>(1 GUARANTEED 90+ OVR)</small></span></div>
+                        <div class="sh-line"><i class="sh-ico">${SH_TABS[1].icon}</i><span>${PLAY_DEFS.length} PLAYS<small>UNLOCKS THEM FOR YOUR PLAYBOOK</small></span></div>
+                        <div class="sh-buy"><span class="sh-price">FREE</span>
+                        <button class="sh-btn" id="sh-open-w" onclick="shOpenWelcome()" ${done ? 'disabled' : ''}>${done ? 'OPENED' : 'OPEN'}</button></div></div></div></div>`; }
                 return `<div class="sh-panel">${head}
                     <div class="sh-soon"><div class="sh-big">${shIcon(t.r, t.ac, t.d)}</div><h3>${t.label}</h3><p>${t.blurb}</p><b>COMING SOON</b></div></div>`;
             }
             window.shTab = function (id) {
-                if (tut.on && tut.phase === 'pack') return;   // keep the tutorial on the Player Packs tab
+                if (tut.on && tut.phase === 'pack' && id !== 'special') return;   // tutorial: only the Special Packs tab
                 shopTab = id;
                 document.querySelectorAll('.sh-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
                 const p = document.getElementById('sh-body'); if (p) p.innerHTML = shPanel(id);
                 const a = document.querySelector('.sh-tab.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+                if (tut.on && tut.phase === 'pack' && id === 'special') { unpoint(); setTimeout(() => pointAt(() => document.getElementById('sh-open-w')), 60); }
             };
             function renderShop() {
                 const content = document.getElementById('hub-content'); if (!content) return;
@@ -5253,30 +5351,49 @@ const PXS = (function () {
                     </div></div>`;
             }
             const pk = document.createElement('div'); pk.id = 'pk-modal'; body.appendChild(pk);
-            window.shOpen = function () {
+            function openPack(cfg) {
                 if (pk.style.display === 'flex') return;
-                if ((career.funds || 0) < PACK_PRICE) { toast('NOT ENOUGH CASH!'); return; }
-                career.funds -= PACK_PRICE; const hc = document.getElementById('hub-cash'); if (hc) hc.textContent = csFmtMoney(career.funds);
+                if (cfg.cost && (career.funds || 0) < cfg.cost) { toast('NOT ENOUGH CASH!'); return; }
+                if (cfg.cost) { career.funds -= cfg.cost; const hc = document.getElementById('hub-cash'); if (hc) hc.textContent = csFmtMoney(career.funds); }
                 if (tut.on && tut.phase === 'pack') unpoint();
-                const cards = genPack(); let stage = 0, shown = 0;
+                const cards = genPack(), plays = cfg.plays || []; let stage = 0, shown = 0;
+                const dots = (n, i) => `<div class="pk-dots">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
+                let pi = 0;   // play index
                 function draw() {
-                    if (stage === 0) pk.innerHTML = `<div class="pk-title">ROOKIE PACK</div><div class="pk-pack" id="pk-pack">${packHTML(170)}</div><div class="pk-hint">TAP TO OPEN</div>`;
-                    else pk.innerHTML = `<div class="pk-title">YOUR PLAYERS</div><div class="pk-row">${cards.map((p, i) => i < shown ? `<div class="pk-slot ${i === shown - 1 ? 'pop' : ''}">${cardHTML(p, '')}</div>` : `<div class="pk-slot"><div class="pk-back">?</div></div>`).join('')}</div>`
-                        + (shown === cards.length ? `<button class="retro-btn" id="pk-go" style="background-color:#16a34a">COLLECT</button>` : `<div class="pk-hint">TAP TO REVEAL</div>`);
+                    if (stage === 0) pk.innerHTML = `<div class="pk-title">${cfg.title}</div><div class="pk-pack" id="pk-pack">${packHTML(170, cfg.art)}</div><div class="pk-hint">TAP TO OPEN</div>`;
+                    else if (stage === 1) {
+                        const p = cards[shown - 1], big = p.ovr >= 90;
+                        pk.innerHTML = `<div class="pk-title">${big ? 'LEGENDARY PULL!' : 'NEW PLAYER'}</div><div class="pk-count">${shown} / ${cards.length}</div><div class="pk-big pop ${big ? 'leg' : ''}"><div class="pk-slot">${cardHTML(p, '')}</div></div>${dots(cards.length, shown - 1)}`
+                            + (shown === cards.length && !plays.length ? `<button class="retro-btn" id="pk-go" style="background-color:#16a34a">COLLECT</button>` : `<div class="pk-hint">${shown === cards.length ? 'TAP FOR YOUR PLAYS' : 'TAP FOR NEXT PLAYER'}</div>`);
+                    } else {
+                        const id = plays[pi];
+                        pk.innerHTML = `<div class="pk-title">NEW PLAY UNLOCKED</div><div class="pk-count">${pi + 1} / ${plays.length}</div><div class="pk-playbig"><div class="pk-pname">${pbName(id)}</div>${pbSvg(id)}</div>${dots(plays.length, pi)}`
+                            + (pi === plays.length - 1 ? `<button class="retro-btn" id="pk-go" style="background-color:#16a34a">COLLECT</button>` : `<div class="pk-hint">TAP FOR NEXT PLAY</div>`);
+                    }
                     const go = document.getElementById('pk-go'); if (go) go.onclick = e => { e.stopPropagation(); finish(); };
                 }
                 function finish() {
-                    career.bench = (career.bench || []).concat(cards); pk.style.display = 'none'; pk.innerHTML = ''; renderShop();
+                    career.bench = (career.bench || []).concat(cards); if (plays.length) pbUnlock(plays); if (cfg.onClaim) cfg.onClaim();
+                    pk.style.display = 'none'; pk.innerHTML = ''; renderShop();
                     if (tut.on && tut.phase === 'pack') {
                         tut.phase = 'backOffice';
-                        setTimeout(() => say(`"Now THAT is some talent! Head back to the Office. Your new players are waiting on the bench."`, () => { closeDialog(); pointTab('OFFICE'); }), 400);
+                        setTimeout(() => say(`"Now THAT is some talent! Head back to the Office. Your new players are waiting on the bench, and your new plays are in your playbook."`, () => { closeDialog(); pointTab('OFFICE'); }), 400);
                     }
                 }
                 pk.onclick = () => {
-                    if (stage === 0) { const el = document.getElementById('pk-pack'); if (!el || el.classList.contains('shake')) return; el.classList.add('shake'); setTimeout(() => { stage = 1; draw(); }, 800); }
-                    else if (shown < cards.length) { shown++; draw(); }
+                    if (stage === 0) { const el = document.getElementById('pk-pack'); if (!el || el.classList.contains('shake')) return; el.classList.add('shake'); setTimeout(() => { stage = 1; shown = 1; draw(); }, 800); }
+                    else if (stage === 1) { if (shown < cards.length) { shown++; draw(); } else if (plays.length) { stage = 2; pi = 0; draw(); } }
+                    else if (stage === 2 && pi < plays.length - 1) { pi++; draw(); }
                 };
                 draw(); pk.style.display = 'flex';
+            }
+            window.shOpen = function () {
+                if (tut.on && tut.phase === 'pack') { toast('OPEN YOUR WELCOME PACK FIRST!'); return; }
+                openPack({ title: 'ROOKIE PACK', cost: PACK_PRICE });
+            };
+            window.shOpenWelcome = function () {
+                if (career.welcomeClaimed) return;
+                openPack({ title: 'WELCOME PACK', cost: 0, plays: PLAY_DEFS.map(d => d.id), art: { a: 'WELCOME', b: 'PACK', i: 'PLAYERS + PLAYS' }, onClaim: () => { career.welcomeClaimed = true; } });
             };
 
             function updateBar() {
@@ -5310,7 +5427,7 @@ const PXS = (function () {
                         say("Tap any player to see his full stats. What you see is what you get on the field: a 99 speed really is quick. Check out a few starters!", () => { closeDialog(); updateBar(); bar.style.display = 'flex'; })), 350);
                 } else if (tut.phase === 'shopPoint' && tab === 'SHOP') {
                     unpoint(); tut.phase = 'pack';
-                    setTimeout(() => say(`"Here we are. The Rookie Pack costs $1,000, and you've got the funds. Buy it and see who you get!"`, () => { closeDialog(); pointAt(() => document.getElementById('sh-open')); }), 350);
+                    setTimeout(() => say(`"Here we are. Your Welcome Pack is waiting in the Special Packs tab. It's free, with new players AND plays for your playbook!"`, () => { closeDialog(); const st = document.querySelector('.sh-tab[data-tab="special"]'); if (st && st.scrollIntoView) st.scrollIntoView({ block: 'nearest', inline: 'center' }); pointAt(() => document.querySelector('.sh-tab[data-tab="special"]')); }), 350);
                 } else if (tut.phase === 'backOffice' && tab === 'OFFICE') {
                     unpoint(); tut.phase = 'lineup';
                     setTimeout(() => say(`"Here's how you build a winner. Press the EDIT button at the bottom to change your lineup."`, () => { closeDialog(); const eb = document.getElementById('of-edit'); if (eb) eb.scrollIntoView({ behavior: 'smooth', block: 'center' }); pointAt(() => document.getElementById('of-edit')); }), 350);
