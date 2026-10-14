@@ -292,6 +292,33 @@
         .md-seg { grid-column: 1 / 3; display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 10px; } .md-seg i { background: #1e293b; } .md-seg i.on { background: var(--c); box-shadow: inset 0 -3px 0 rgba(0,0,0,.3); }
         .md-fx { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 7px; line-height: 1.8; padding: 9px 8px 8px; margin-top: 8px; background: #0f172a; box-shadow: inset 4px 0 0 0 var(--tc); } .md-fx span { color: #cbd5e1; } .md-fx b { font-weight: normal; color: var(--tc); text-align: right; white-space: nowrap; } .md-fx b.up { color: #4ade80; } .md-fx b.dn { color: #f87171; }
         #of-close { margin: 14px 16px 18px; width: calc(100% - 32px); }
+
+        /* office edit + bench */
+        .of-editbar { position: sticky; bottom: 10px; z-index: 5; display: flex; justify-content: center; padding-top: 6px; }
+        .of-editbar .retro-btn { min-width: 200px; }
+        .of-empty { text-align: center; color: #64748b; font-size: 8px; line-height: 1.8; padding: 22px 0; }
+        #of-start { margin: 14px 16px 0; width: calc(100% - 32px); background-color: #16a34a; }
+        .of-toast { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 2800; background: #0f172a; color: #4ade80; font-family: 'Press Start 2P', monospace; font-size: 10px; padding: 14px 16px; white-space: nowrap; pointer-events: none; animation: tutRise 0.24s steps(4) both;
+            box-shadow: 0 -4px 0 0 #4ade80, 0 4px 0 0 #4ade80, -4px 0 0 0 #4ade80, 4px 0 0 0 #4ade80, 8px 10px 0 0 rgba(0,0,0,.6); }
+        /* shop */
+        .sh-card { align-self: center; width: min(100%, 320px); background: #0b1220; padding: 22px 16px; margin: 4px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center;
+            box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 8px 10px 0 0 rgba(0,0,0,.6); }
+        .sh-art { width: 110px; } .sh-art svg { width: 100%; display: block; image-rendering: pixelated; }
+        .sh-name { color: #facc15; font-size: 12px; text-shadow: 3px 3px 0 #000; }
+        .sh-sub { color: #94a3b8; font-size: 8px; line-height: 2; }
+        /* pack opening */
+        #pk-modal { position: fixed; inset: 0; z-index: 2640; background: rgba(2,6,23,0.94); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 20px; overflow-y: auto; font-family: 'Press Start 2P', monospace; cursor: pointer; }
+        .pk-title { color: #facc15; font-size: clamp(13px, 4vw, 18px); text-shadow: 3px 3px 0 #000; }
+        .pk-hint { color: #fff; font-size: 9px; text-shadow: 2px 2px 0 #000; animation: tutBlink 1s steps(2) infinite; }
+        .pk-pack { width: 170px; animation: tutBob 0.6s steps(2) infinite; filter: drop-shadow(0 8px 0 rgba(0,0,0,.55)); } .pk-pack svg { width: 100%; display: block; image-rendering: pixelated; }
+        .pk-pack.shake { animation: pkShake 0.8s steps(8) both; }
+        @keyframes pkShake { 0%,100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-10px) rotate(-6deg); } 30% { transform: translateX(10px) rotate(6deg); } 45% { transform: translateX(-12px) rotate(-8deg); } 60% { transform: translateX(12px) rotate(8deg); } 80% { transform: scale(1.25); filter: brightness(2.2); } }
+        .pk-row { display: grid; grid-template-columns: repeat(2, minmax(110px, 140px)); gap: 22px 20px; }
+        .pk-slot.pop { animation: pkPop 0.3s steps(3) both; }
+        @keyframes pkPop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .pk-back { height: 168px; margin: 3px; background: #1e293b; color: #facc15; font-size: 28px; display: flex; align-items: center; justify-content: center; text-shadow: 3px 3px 0 #000;
+            box-shadow: 0 -3px 0 0 #64748b, 0 3px 0 0 #64748b, -3px 0 0 0 #64748b, 3px 3px 0 0 #64748b, 5px 7px 0 0 rgba(0,0,0,.6); }
+        #pk-modal .pc { pointer-events: none; }
     </style>
 </head>
 <body>
@@ -4722,7 +4749,7 @@ const PXS = (function () {
             // ---- how every rating really changes the game (the game code calls these same formulas) ----
             const FX = {
                 speed: (a, line, base) => { const s = gv(a, 'SPD', 78); return line ? 0.052 * (1 + (s - 62) * 0.011) : base * (1 + (s - 78) * (s >= 78 ? 0.0085 : 0.0095)); },
-                throwRange: a => 18 + (gv(a, 'THP', 78) - 40) * 0.88,                       // yards
+                throwRange: a => Math.max(12, 22.5 + (gv(a, 'THP', 78) - 70) * 1.12),                       // yards
                 hangMul: a => clamp(1 - (gv(a, 'THP', 78) - 78) * 0.0045, 0.85, 1.15),       // ball flight time
                 scatter: (a, dist, pressured) => Math.max(0, 99 - gv(a, 'THA', 78)) * 0.045 * (0.5 + dist / 40) * (pressured ? clamp(1.7 - (gv(a, 'AWR', 78) - 60) * 0.012, 1.0, 2.2) : 1),
                 qbDiff: a => clamp(((gv(a, 'THA', 78) + gv(a, 'AWR', 78)) / 2 - 78) / 14, -1.2, 1.2),
@@ -4765,7 +4792,7 @@ const PXS = (function () {
                     let name; do { name = pick(FIRST) + ' ' + pick(LAST); } while (usedNames.has(name)); usedNames.add(name);
                     const [lo, hi] = NUM_RANGE[pos]; let num, g = 0; do { num = lo + Math.floor(rnd() * (hi - lo + 1)); } while (usedNums.has(num) && g++ < 80); usedNums.add(num);
                     const base = target[grp] + (rnd() * 12 - 6), attrs = {}, off = OFFS[pos] || {};
-                    POS[pos].a.forEach(([k,,w]) => { attrs[k] = clamp(Math.round(base + (off[k] || 0) + (rnd() * 16 - 8) + (w >= .25 ? 3 : 0)), 30, 99); });
+                    POS[pos].a.forEach(([k,,w]) => { attrs[k] = clamp(Math.round(base + (off[k] || 0) + (rnd() * ((pos === 'QB' && k === 'THP') ? 6 : 16) - ((pos === 'QB' && k === 'THP') ? 3 : 8)) + (w >= .25 ? 3 : 0)), 30, 99); });
                     const girth = (pos === 'OL') ? 1.45 + rnd() * 0.25 : (pos === 'DL') ? 1.35 + rnd() * 0.22 : (pos === 'LB') ? 1.08 + rnd() * 0.1 : 0.95 + rnd() * 0.14;
                     return { id: 'p' + i, name, pos, role, grp, num, skin: SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)], girth, attrs };
                 });
@@ -4778,6 +4805,8 @@ const PXS = (function () {
                     }
                 });
                 roster.forEach(p => { p.ovr = calcOvr(p); });
+                // a quarterback's arm strength tracks his overall, so a 70-75 QB tops out around 23-28 yards and a 95 around 51
+                const qb = roster.find(p => p.pos === 'QB'); if (qb) { qb.attrs.THP = clamp(qb.ovr + Math.round(rnd() * 2 - 1), 40, 99); qb.ovr = calcOvr(qb); }
                 return roster;
             }
             const pct = (v, d) => (v >= 0 ? '+' : '') + (v).toFixed(d == null ? 0 : d) + '%';
@@ -4786,7 +4815,7 @@ const PXS = (function () {
                 const a = p.attrs, line = p.pos === 'OL' || p.pos === 'DL', base = line ? 0.052 : 0.082, out = [];
                 const spdPct = (FX.speed(a, line, base) / (line ? 0.052 : 0.082) - 1) * 100; const tone = v => v > 0.4 ? 'up' : v < -0.4 ? 'dn' : '';
                 if (p.pos === 'QB') {
-                    out.push(['MAX THROW', Math.round(FX.throwRange(a)) + ' YDS', tone(FX.throwRange(a) - 52)]);
+                    out.push(['MAX THROW', Math.round(FX.throwRange(a)) + ' YDS', tone(FX.throwRange(a) - 40)]);
                     out.push(['ACCURACY (30 YD)', '±' + FX.scatter(a, 30, false).toFixed(1) + ' YD', tone(1.3 - FX.scatter(a, 30, false))]);
                     out.push(['UNDER PRESSURE', '±' + FX.scatter(a, 30, true).toFixed(1) + ' YD', tone(1.9 - FX.scatter(a, 30, true))]);
                     out.push(['BALL SPEED', pct((1 - FX.hangMul(a)) * 100), tone(1 - FX.hangMul(a))]);
@@ -4871,7 +4900,7 @@ const PXS = (function () {
             body.append(backdrop, pointer, bar, modal);
             document.getElementById('tut-avatar').innerHTML = harrisSVG();
 
-            const tut = { on: false, phase: '', viewed: new Set(), need: 3 };
+            const tut = { on: false, phase: '', viewed: new Set(), need: 3, allow: null };
             let typer = null, onNext = null, fullText = '';
             function say(text, next) {
                 onNext = next; fullText = text; const el = document.getElementById('tut-text'); el.textContent = ''; backdrop.style.display = 'flex'; clearInterval(typer);
@@ -4884,74 +4913,203 @@ const PXS = (function () {
             });
             const closeDialog = () => { clearInterval(typer); backdrop.style.display = 'none'; };
 
-            const officeTab = () => document.querySelector(`.hub-tab[onclick="switchHubTab('OFFICE')"]`);
-            let raf = 0;
-            function trackPointer() { const t = officeTab(); if (!t || pointer.style.display === 'none') return; const r = t.getBoundingClientRect(); pointer.style.left = (r.left + r.width / 2 - 32) + 'px'; pointer.style.top = Math.max(4, r.top - 84) + 'px'; raf = requestAnimationFrame(trackPointer); }
-            function showPointer() { document.querySelectorAll('.hub-tab').forEach(b => b.classList.add('tut-dim')); const o = officeTab(); if (o) { o.classList.remove('tut-dim'); o.classList.add('tut-glow'); } pointer.style.display = 'block'; cancelAnimationFrame(raf); trackPointer(); }
-            function hidePointer() { pointer.style.display = 'none'; cancelAnimationFrame(raf); document.querySelectorAll('.hub-tab').forEach(b => b.classList.remove('tut-dim', 'tut-glow')); }
+            // ================= pointer + tab lock helpers =================
+            let raf = 0, ptGet = null;
+            const tabEl = n => document.querySelector(`.hub-tab[onclick="switchHubTab('${n}')"]`);
+            function trackPointer() {
+                if (pointer.style.display === 'none') return;
+                const t = ptGet && ptGet();
+                if (t) { const r = t.getBoundingClientRect(); pointer.style.left = (r.left + r.width / 2 - 32) + 'px'; pointer.style.top = Math.max(4, r.top - 84) + 'px'; }
+                raf = requestAnimationFrame(trackPointer);
+            }
+            function pointAt(get) { ptGet = get; pointer.style.display = 'block'; cancelAnimationFrame(raf); trackPointer(); }
+            function unpoint() { pointer.style.display = 'none'; cancelAnimationFrame(raf); document.querySelectorAll('.hub-tab').forEach(b => b.classList.remove('tut-glow')); }
+            function lockTab(n) { tut.allow = n; document.querySelectorAll('.hub-tab').forEach(b => b.classList.toggle('tut-dim', !!n && b !== tabEl(n))); }
+            function pointTab(n) { lockTab(n); const o = tabEl(n); if (o) o.classList.add('tut-glow'); pointAt(() => tabEl(n)); }
+            function unlock() { lockTab(null); unpoint(); }
+
+            // ================= new players: packs =================
+            const DEFROLE = { QB: 'QB', WR: 'WR', OL: 'OL', DL: 'DL', LB: 'LB', CB: 'CB', K: 'K' };
+            function makePlayer(pos, target, minOvr, rnd, names, nums, id) {
+                const pick = a => a[Math.floor(rnd() * a.length)];
+                let name; do { name = pick(FIRST) + ' ' + pick(LAST); } while (names.has(name)); names.add(name);
+                const [lo, hi] = NUM_RANGE[pos]; let num, g = 0; do { num = lo + Math.floor(rnd() * (hi - lo + 1)); } while (nums.has(num) && g++ < 80); nums.add(num);
+                const off = OFFS[pos] || {}, attrs = {}, keys = POS[pos].a.map(a => a[0]);
+                POS[pos].a.forEach(([k,,w]) => { attrs[k] = clamp(Math.round(target + (off[k] || 0) + (rnd() * 12 - 6) + (w >= .25 ? 3 : 0)), 30, 99); });
+                if (pos === 'QB') attrs.THP = clamp(target + Math.round(rnd() * 2 - 1), 40, 99);
+                const adj = keys.filter(k => !(pos === 'QB' && k === 'THP')), p = { id, name, pos, role: DEFROLE[pos], grp: SLOTS.find(s => s[1] === pos)[0], num, skin: SKIN_TONES[Math.floor(rnd() * SKIN_TONES.length)], girth: (pos === 'OL') ? 1.45 + rnd() * 0.25 : (pos === 'DL') ? 1.35 + rnd() * 0.22 : (pos === 'LB') ? 1.08 + rnd() * 0.1 : 0.95 + rnd() * 0.14, attrs };
+                for (let n = 0; n < 12; n++) { const d = target - calcOvr(p); if (!d) break; adj.forEach(k => { attrs[k] = clamp(attrs[k] + d, 30, 99); }); }
+                for (let n = 0; n < 25 && calcOvr(p) < minOvr; n++) adj.forEach(k => { attrs[k] = clamp(attrs[k] + 1, 30, 99); });
+                p.ovr = calcOvr(p); return p;
+            }
+            function genPack() {
+                const rnd = mulberry((Date.now() ^ (Math.random() * 1e9)) | 0), names = new Set(), nums = new Set(), bench = career.bench || [];
+                career.roster.concat(bench).forEach(p => { names.add(p.name); nums.add(p.num); });
+                const bump = (career.packSeq = (career.packSeq || 0) + 1) * 10;
+                const legPos = ['QB', 'WR', 'CB', 'DL', 'OL', 'LB'][Math.floor(rnd() * 6)];
+                const others = ['QB', 'WR', 'OL', 'DL', 'LB', 'CB', 'K'].filter(p => p !== legPos).sort(() => rnd() - 0.5).slice(0, 3);
+                const list = others.map((pos, i) => makePlayer(pos, 72 + Math.floor(rnd() * 11), 0, rnd, names, nums, 'b' + (bump + i)));
+                list.push(makePlayer(legPos, 90 + Math.floor(rnd() * 5), 90, rnd, names, nums, 'b' + (bump + 9)));
+                return list.sort((a, b) => a.ovr - b.ovr);
+            }
+            const PACK_SVG = (function () {
+                const { g, R } = mkGrid(14, 18);
+                R(1, 1, 12, 16, '#2563eb'); R(0, 0, 14, 2, '#1e3a8a'); R(0, 16, 14, 2, '#1e3a8a'); R(2, 3, 2, 12, '#60a5fa'); R(10, 3, 2, 12, '#1d4ed8');
+                R(6, 5, 4, 8, '#facc15'); R(5, 7, 6, 4, '#facc15'); R(7, 8, 2, 2, '#2563eb'); R(6, 5, 1, 1, '#fde68a');
+                return pxSVG(g);
+            })();
 
             // ================= Office =================
             const teamOf = () => qpTeams[career.teamIdx];
             const tierVars = (tier, t) => `--tc:${tier.c};--tc2:${tier.c2};--sb:${shadeHex(t.c1, -62)}`;
-            function cardHTML(p) {
-                const t = teamOf(), tier = tierOf(p.ovr), tr = traitsOf(p)[0];
-                return `<button class="pc ${tier.cls} ${(tut.on && tut.phase === 'roster' && tut.viewed.has(p.id)) ? 'seen' : ''}" style="${tierVars(tier, t)}" onclick="ofOpen('${p.id}')"><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
+            let ofEdit = false;
+            function cardHTML(p, click) {
+                const t = teamOf(), tier = tierOf(p.ovr), tr = traitsOf(p)[0], oc = click == null ? `onclick="ofOpen('${p.id}')"` : (click ? `onclick="${click}"` : 'tabindex="-1"');
+                return `<button class="pc ${tier.cls} ${(tut.on && tut.phase === 'roster' && tut.viewed.has(p.id)) ? 'seen' : ''}" style="${tierVars(tier, t)}" ${oc}><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
             }
             function renderOffice() {
                 const content = document.getElementById('hub-content'); if (!content) return;
-                const r = ensureRoster(); if (!r) return; const tr = ratingsOf(r), t = teamOf();
-                const sec = (title, grp) => { const l = r.filter(p => p.grp === grp); return `<div class="of-sec"><span>${title}</span><small>${l.length}</small></div><div class="of-grid ${tut.phase === 'roster' ? 'of-hl' : ''}">${l.map(cardHTML).join('')}</div>`; };
+                const r = ensureRoster(); if (!r) return; const tr = ratingsOf(r), t = teamOf(), bench = career.bench || [];
+                const sec = (title, grp) => { const l = r.filter(p => p.grp === grp); return `<div class="of-sec"><span>${title}</span><small>${l.length}</small></div><div class="of-grid ${tut.phase === 'roster' ? 'of-hl' : ''}">${l.map(p => cardHTML(p)).join('')}</div>`; };
                 const plate = (v, l, big) => `<div class="of-plate ${big ? 'big' : ''}"><b style="color:${tierOf(v).c}">${v}</b><i>${l}</i></div>`;
+                const benchSec = !ofEdit ? '' : `<div class="of-sec" id="of-bench"><span>BENCH</span><small>${bench.length}</small></div>` + (bench.length
+                    ? `<div class="of-grid ${tut.phase === 'lineup' ? 'of-hl' : ''}">${bench.map(p => cardHTML(p)).join('')}</div>`
+                    : `<div class="of-empty">NO BENCH PLAYERS YET<br><br>OPEN PACKS IN THE SHOP</div>`);
                 content.style.justifyContent = 'flex-start';
-                content.innerHTML = `<div class="of-wrap"><div class="of-title">OFFICE</div><div class="of-school">${t.name.toUpperCase()} · STARTING ROSTER</div>
+                content.innerHTML = `<div class="of-wrap"><div class="of-title">${ofEdit ? 'EDIT LINEUP' : 'OFFICE'}</div><div class="of-school">${ofEdit ? 'TAP A BENCH PLAYER, THEN PRESS START' : t.name.toUpperCase() + ' · STARTING ROSTER'}</div>
                     <div class="of-rate">${plate(tr.ovr, 'TEAM OVR', true)}${plate(tr.off, 'OFFENSE')}${plate(tr.def, 'DEFENSE')}${plate(tr.st, 'KICKER')}</div>
-                    ${sec('OFFENSE', 'off')}${sec('DEFENSE', 'def')}${sec('SPECIAL TEAMS', 'st')}</div>`;
+                    ${sec('OFFENSE', 'off')}${sec('DEFENSE', 'def')}${sec('SPECIAL TEAMS', 'st')}${benchSec}
+                    <div class="of-editbar"><button class="retro-btn" id="of-edit" style="${ofEdit ? 'background-color:#16a34a' : ''}" onclick="ofToggleEdit()">${ofEdit ? 'DONE' : 'EDIT'}</button></div></div>`;
                 content.style.paddingBottom = tut.phase === 'roster' ? '120px' : '';
             }
+            window.ofToggleEdit = function () {
+                ofEdit = !ofEdit; renderOffice();
+                if (tut.on && tut.phase === 'lineup') {
+                    if (ofEdit) {
+                        unpoint();
+                        say(`"Your bench players show up at the bottom. Tap one to see him, then press START to put him in your lineup. He takes the spot of the player he replaces."`, () => {
+                            closeDialog(); const b = document.getElementById('of-bench'); if (b) b.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        });
+                    } else pointAt(() => document.getElementById('of-edit'));
+                }
+            };
             window.ofOpen = function (id) {
-                const p = career.roster.find(x => x.id === id); if (!p) return; const t = teamOf(), tier = tierOf(p.ovr), panel = document.getElementById('of-panel');
+                const bench = career.bench || [], inBench = bench.some(x => x.id === id);
+                const p = career.roster.find(x => x.id === id) || bench.find(x => x.id === id); if (!p) return; const t = teamOf(), tier = tierOf(p.ovr), panel = document.getElementById('of-panel');
                 panel.style.cssText = tierVars(tier, t);
                 const attrs = POS[p.pos].a.map(([k, label]) => { const v = p.attrs[k], c = tierOf(v).c, on = Math.round(v / 5); return `<div class="md-row"><span>${label}</span><b style="color:${c}">${v}</b><div class="md-seg" style="--c:${c}">${Array.from({ length: 20 }, (_, i) => `<i class="${i < on ? 'on' : ''}"></i>`).join('')}</div></div>`; }).join('');
                 const fx = impactOf(p).map(([l, v, tn]) => `<div class="md-fx"><span>${l}</span><b class="${tn}">${v}</b></div>`).join('');
                 document.getElementById('of-sheet').innerHTML = `<div class="md-stage ${tier.cls}"><div class="md-ovr">${p.ovr}<i>OVR</i></div><div class="md-tier">${tier.name}</div><img alt="" src="${bust(p, t)}"><div class="md-num">#${p.num}</div></div>
-                    <div class="md-body"><div><div class="md-name">${p.name.toUpperCase()}</div><div class="md-sub">${p.role} · ${POS[p.pos].full}<br>${t.name.toUpperCase()}</div></div>
+                    <div class="md-body"><div><div class="md-name">${p.name.toUpperCase()}</div><div class="md-sub">${inBench ? 'BENCH' : p.role} · ${POS[p.pos].full}<br>${t.name.toUpperCase()}</div></div>
                     <div class="md-traits">${traitsOf(p).map(x => `<span>${x}</span>`).join('')}</div>
                     <div><div class="md-h">RATINGS</div>${attrs}</div>
-                    <div><div class="md-h">IN-GAME IMPACT</div>${fx}</div></div>`;
+                    <div><div class="md-h">IN-GAME IMPACT</div>${fx}</div></div>
+                    ${inBench && ofEdit ? `<button class="retro-btn" id="of-start" onclick="ofStart('${p.id}')">START</button>` : ''}`;
                 modal.style.display = 'flex'; panel.scrollTop = 0;
-                if (tut.on && tut.phase === 'roster') { tut.viewed.add(id); updateBar(); }
+                if (tut.on && tut.phase === 'roster' && !inBench) { tut.viewed.add(id); updateBar(); }
             };
+            // START: bench -> lineup. One starter at that position = automatic swap; several = pick who sits.
+            window.ofStart = function (id) {
+                const p = (career.bench || []).find(x => x.id === id); if (!p) return;
+                const cands = career.roster.filter(x => x.pos === p.pos);
+                if (cands.length === 1) return ofSwap(id, cands[0].id);
+                document.getElementById('of-sheet').innerHTML = `<div class="md-body"><div class="md-h">REPLACE WHO?</div><div class="md-sub">${p.name.toUpperCase()} (${p.ovr}) TAKES THE SPOT OF:</div>
+                    <div class="of-grid">${cands.map(c => cardHTML(c, `ofSwap('${id}','${c.id}')`)).join('')}</div></div>`;
+                document.getElementById('of-panel').scrollTop = 0;
+            };
+            window.ofSwap = function (benchId, starterId) {
+                const bench = career.bench || [], bi = bench.findIndex(x => x.id === benchId), ri = career.roster.findIndex(x => x.id === starterId); if (bi < 0 || ri < 0) return;
+                const nw = bench.splice(bi, 1)[0], old = career.roster[ri];
+                nw.role = old.role; nw.grp = old.grp; old.role = DEFROLE[old.pos]; career.roster[ri] = nw; bench.push(old); career.bench = bench;
+                modal.style.display = 'none'; renderOffice(); toast(`${nw.name.toUpperCase()} NOW STARTS!`);
+                if (tut.on && tut.phase === 'lineup') {
+                    tut.phase = 'done';
+                    setTimeout(() => say(`"That's the whole loop, Coach: open packs, find talent, and upgrade your lineup. Keep building this program!"`, () => {
+                        closeDialog(); tut.on = false; tut.phase = ''; unlock(); career.tutorialDone = true; ofEdit = false; switchHubTab('HOME');
+                    }), 900);
+                }
+            };
+            function toast(msg) {
+                const d = document.createElement('div'); d.className = 'of-toast'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 1900);
+            }
             document.getElementById('of-close').onclick = () => { modal.style.display = 'none'; if (tut.on && tut.phase === 'roster') renderOffice(); };
             modal.addEventListener('click', e => { if (e.target === modal) document.getElementById('of-close').click(); });
+
+            // ================= Shop (just one free pack for now) =================
+            function renderShop() {
+                const content = document.getElementById('hub-content'); if (!content) return;
+                const done = !!career.packOpened;
+                content.style.justifyContent = 'flex-start';
+                content.innerHTML = `<div class="of-wrap"><div class="of-title">SHOP</div>
+                    <div class="sh-card"><div class="sh-art">${PACK_SVG}</div><div class="sh-name">FREE STARTER PACK</div><div class="sh-sub">4 PLAYERS<br>1 GUARANTEED 90+ OVR</div>
+                    <button class="retro-btn ${done ? 'disabled-btn' : ''}" id="sh-open" style="${done ? '' : 'background-color:#16a34a'}" onclick="shOpen()">${done ? 'OPENED' : 'OPEN'}</button></div></div>`;
+            }
+            const pk = document.createElement('div'); pk.id = 'pk-modal'; body.appendChild(pk);
+            window.shOpen = function () {
+                if (career.packOpened) return; if (tut.on && tut.phase === 'pack') unpoint();
+                const cards = genPack(); let stage = 0, shown = 0;
+                function draw() {
+                    if (stage === 0) pk.innerHTML = `<div class="pk-title">STARTER PACK</div><div class="pk-pack" id="pk-pack">${PACK_SVG}</div><div class="pk-hint">TAP TO OPEN</div>`;
+                    else pk.innerHTML = `<div class="pk-title">YOUR PLAYERS</div><div class="pk-row">${cards.map((p, i) => i < shown ? `<div class="pk-slot ${i === shown - 1 ? 'pop' : ''}">${cardHTML(p, '')}</div>` : `<div class="pk-slot"><div class="pk-back">?</div></div>`).join('')}</div>`
+                        + (shown === cards.length ? `<button class="retro-btn" id="pk-go" style="background-color:#16a34a">COLLECT</button>` : `<div class="pk-hint">TAP TO REVEAL</div>`);
+                    const go = document.getElementById('pk-go'); if (go) go.onclick = e => { e.stopPropagation(); finish(); };
+                }
+                function finish() {
+                    career.bench = (career.bench || []).concat(cards); career.packOpened = true; pk.style.display = 'none'; pk.innerHTML = ''; renderShop();
+                    if (tut.on && tut.phase === 'pack') {
+                        tut.phase = 'backOffice';
+                        setTimeout(() => say(`"Now THAT is some talent! Head back to the Office. Your new players are waiting on the bench."`, () => { closeDialog(); pointTab('OFFICE'); }), 400);
+                    }
+                }
+                pk.onclick = () => {
+                    if (stage === 0) { const el = document.getElementById('pk-pack'); if (!el || el.classList.contains('shake')) return; el.classList.add('shake'); setTimeout(() => { stage = 1; draw(); }, 800); }
+                    else if (shown < cards.length) { shown++; draw(); }
+                };
+                draw(); pk.style.display = 'flex';
+            };
 
             function updateBar() {
                 const n = Math.min(tut.viewed.size, tut.need), ready = n >= tut.need;
                 document.getElementById('tut-bar-msg').innerHTML = ready ? '<b>NICE WORK, COACH!</b><br>PRESS CONTINUE.' : `TAP A PLAYER TO SEE STATS<br><b>${n}/${tut.need}</b> CHECKED`;
                 const b = document.getElementById('tut-continue'); b.disabled = !ready; b.classList.toggle('ready', ready);
             }
+            // Step 3 done -> Step 4: back to the main menu, pointer moves to SHOP
             document.getElementById('tut-continue').onclick = function () {
-                if (this.disabled) return; bar.style.display = 'none'; tut.on = false; tut.phase = ''; tut.viewed.clear(); career.tutorialDone = true;
-                const c = document.getElementById('hub-content'); if (c) c.style.paddingBottom = ''; switchHubTab('HOME');
+                if (this.disabled) return; bar.style.display = 'none'; tut.phase = 'shopIntro'; tut.viewed.clear();
+                const c = document.getElementById('hub-content'); if (c) c.style.paddingBottom = '';
+                lockTab('HOME'); switchHubTab('HOME');
+                setTimeout(() => say(`"We also have some resources to help you build this program. Check the shop for player packs, upgrades, and other rewards."`, () => {
+                    closeDialog(); tut.phase = 'shopPoint'; pointTab('SHOP');
+                }), 450);
             };
 
             const baseSwitch = window.switchHubTab;
             window.switchHubTab = function (tab) {
                 const hub = document.getElementById('hub-content');
-                if (tut.on && (tut.phase === 'point' || tut.phase === 'roster') && tab !== 'OFFICE') return;
+                if (tut.on && tut.allow && tab !== tut.allow) return;
                 baseSwitch(tab); if (hub) hub.style.justifyContent = '';
+                ofEdit = false;
                 if (tab === 'OFFICE') renderOffice();
-                if (tut.on && tut.phase === 'point' && tab === 'OFFICE') {
-                    hidePointer(); tut.phase = 'roster'; tut.viewed.clear(); renderOffice();
+                if (tab === 'SHOP') renderShop();
+                if (!tut.on) return;
+                if (tut.phase === 'point' && tab === 'OFFICE') {
+                    unpoint(); tut.phase = 'roster'; tut.viewed.clear(); renderOffice();
                     setTimeout(() => say("This is your team. Every player has their own position, ratings, and strengths. You'll need to find the right players and build the best lineup you can.", () =>
                         say("Tap any player to see his full stats. What you see is what you get on the field: a 99 speed really is quick. Check out a few starters!", () => { closeDialog(); updateBar(); bar.style.display = 'flex'; })), 350);
+                } else if (tut.phase === 'shopPoint' && tab === 'SHOP') {
+                    unpoint(); tut.phase = 'pack';
+                    setTimeout(() => say(`"Here we are. The booster club left us a free starter pack. Open it up and see who you get!"`, () => { closeDialog(); pointAt(() => document.getElementById('sh-open')); }), 350);
+                } else if (tut.phase === 'backOffice' && tab === 'OFFICE') {
+                    unpoint(); tut.phase = 'lineup';
+                    setTimeout(() => say(`"Here's how you build a winner. Press the EDIT button at the bottom to change your lineup."`, () => { closeDialog(); pointAt(() => document.getElementById('of-edit')); }), 350);
                 }
             };
             window.startTutorial = function () {
-                if (!career || career.tutorialDone) return; ensureRoster();
+                if (!career || career.tutorialDone) return; ensureRoster(); career.bench = career.bench || [];
                 const hub = document.getElementById('hub-container'); if (!hub || hub.style.display === 'none') return;
                 tut.on = true; tut.phase = 'intro'; tut.viewed.clear();
                 say(`"Coach, glad to finally have you here. We've got a football program with potential, but we've had a rough few seasons."`, () =>
-                    say(`"We've got some good kids, but we're going to need to develop them if we want to compete. Let's take a look at your roster."`, () => { closeDialog(); tut.phase = 'point'; showPointer(); }));
+                    say(`"We've got some good kids, but we're going to need to develop them if we want to compete. Let's take a look at your roster."`, () => { closeDialog(); tut.phase = 'point'; pointTab('OFFICE'); }));
             };
 
             // ================= STAT BRIDGE: ratings -> real gameplay (called from the game code) =================
