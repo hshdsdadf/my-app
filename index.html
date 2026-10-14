@@ -242,6 +242,8 @@
         #tut-continue:disabled { opacity: 0.4; filter: grayscale(1); cursor: default; }
         #tut-continue.ready { background-color: #16a34a; animation: tutGlow 0.9s steps(2) infinite; }
 
+        #hub-content { flex-shrink: 0 !important; }
+        #hub-container { padding-bottom: max(28px, env(safe-area-inset-bottom)) !important; }
         /* office */
         .of-wrap { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 18px; text-align: left; font-family: 'Press Start 2P', monospace; }
         .of-title { text-align: center; color: #facc15; font-size: clamp(16px, 5vw, 22px); text-shadow: 3px 3px 0 #000; }
@@ -2662,7 +2664,7 @@
                         if (dist > 2.0 || gameState === 'TACKLED') { p.isBlocking = false; p.blockTarget = null; } 
                         else {
                             p.blockTimer++; p.animTimer = 0; 
-                            if (isDefending) { let shedDiff = StatsBridge.shedDiff(p, p.blockTarget, (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20); let shedTime = Math.max(20, (p.superShedder ? 15 : 70) - shedDiff); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
+                            if (isDefending) { let shedDiff = StatsBridge.shedDiff(p, p.blockTarget, (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 20, isPassPlay(currentOffensePlay)); let shedTime = Math.max(20, (p.superShedder ? 15 : 70) - shedDiff); if (p.blockTimer > shedTime) { let shedDir = (carrier && carrier.y > p.y) ? 1 : -1; p.y += shedDir * (p.speed * 0.7); if (p.superShedder) p.x -= p.facing * (p.speed * 0.8); } } 
                             else {
                                 p.x += p.facing * (p.speed * 0.1); let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU;
                                 if (isOffense && p.isLineman) { if (currentOffensePlay === 'INSIDE_RUN') { if (p.blockTarget) { let pushDir = (p.blockTarget.y < 0) ? -1 : 1; p.blockTarget.y += pushDir * (p.speed * 0.15); p.y += pushDir * (p.speed * 0.15); } } else if (currentOffensePlay === 'SWEEP_RIGHT') { if (p.blockTarget) { p.blockTarget.y += p.speed * 0.15; p.y += p.speed * 0.15; } } else if (currentOffensePlay === 'SWEEP_LEFT') { if (p.blockTarget) { p.blockTarget.y -= p.speed * 0.15; p.y -= p.speed * 0.15; } } }
@@ -4412,11 +4414,11 @@ const PXS = (function () {
             if (canvas.style.display === 'none') { accumulator = 0; requestAnimationFrame(loop); return; } // hub is showing: nothing to simulate or draw
             accumulator += frameTime;
             while (accumulator >= timeStep) {
-                update();
+                try { update(); } catch (err) { console.error('update error', err); }
                 accumulator -= timeStep;
             }
 
-            drawGame(); window._mpOverlay = false;
+            try { drawGame(); } catch (err) { console.error('draw error', err); } window._mpOverlay = false;
             requestAnimationFrame(loop);
         }
 
@@ -4893,7 +4895,7 @@ const PXS = (function () {
             const tierVars = (tier, t) => `--tc:${tier.c};--tc2:${tier.c2};--sb:${shadeHex(t.c1, -62)}`;
             function cardHTML(p) {
                 const t = teamOf(), tier = tierOf(p.ovr), tr = traitsOf(p)[0];
-                return `<button class="pc ${tier.cls} ${tut.viewed.has(p.id) ? 'seen' : ''}" style="${tierVars(tier, t)}" onclick="ofOpen('${p.id}')"><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
+                return `<button class="pc ${tier.cls} ${(tut.on && tut.phase === 'roster' && tut.viewed.has(p.id)) ? 'seen' : ''}" style="${tierVars(tier, t)}" onclick="ofOpen('${p.id}')"><span class="pc-head"><span class="pc-ovr">${p.ovr}</span><span class="pc-pos">${p.role}</span></span><span class="pc-stage"><span class="pc-num">#${p.num}</span><img alt="" src="${bust(p, t)}"></span><span class="pc-name">${p.name.toUpperCase()}</span><span class="pc-tag">${tr}</span></button>`;
             }
             function renderOffice() {
                 const content = document.getElementById('hub-content'); if (!content) return;
@@ -4928,7 +4930,7 @@ const PXS = (function () {
                 const b = document.getElementById('tut-continue'); b.disabled = !ready; b.classList.toggle('ready', ready);
             }
             document.getElementById('tut-continue').onclick = function () {
-                if (this.disabled) return; bar.style.display = 'none'; tut.on = false; tut.phase = ''; career.tutorialDone = true;
+                if (this.disabled) return; bar.style.display = 'none'; tut.on = false; tut.phase = ''; tut.viewed.clear(); career.tutorialDone = true;
                 const c = document.getElementById('hub-content'); if (c) c.style.paddingBottom = ''; switchHubTab('HOME');
             };
 
@@ -4982,7 +4984,7 @@ const PXS = (function () {
                 handsAdj(w) { return w && w.st ? FX.handsAdj(w.st) : 0; },
                 sepBonus(w, d) { return (w && w.st && d && d.st) ? FX.sepBonus(w.st, d.st) : 0; },
                 intAdj(d) { return d && d.st ? FX.intAdj(d.st) : 0; },
-                shedDiff(d, b, fallback) { if (!d || !b || !d.st || !b.st) return fallback; return FX.shedFrames(d.st, b.st, isPassPlay(currentOffensePlay)) + fallback * 0.25; },
+                shedDiff(d, b, fallback, pass) { if (!d || !b || !d.st || !b.st) return fallback; return FX.shedFrames(d.st, b.st, !!pass) + fallback * 0.25; },
                 tackleMiss(c, h) {
                     if (!c || !h || !c.st || !h.st) return false; const now = performance.now();
                     if (h._missUntil && now < h._missUntil) return true;
