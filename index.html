@@ -4512,7 +4512,7 @@ const PXS = (function () {
 
             particles.forEach(pt => {
                 let s = toScreen(pt.x, pt.y); let alpha = Math.max(0, pt.life / pt.maxLife); let sz = pt.size * (camera.zoom / 45);
-                ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = pt.color; if (pt.type === 'sweat') { const hy = s.y - pt.z * camera.zoom * 0.5 - sz; ctx.fillRect(s.x - sz / 2, hy, sz, sz * 1.7); ctx.fillStyle = '#ffffff'; ctx.fillRect(s.x - sz / 2, hy, Math.max(1, sz * 0.35), Math.max(1, sz * 0.5)); } else ctx.fillRect(s.x - sz / 2, s.y - pt.z * camera.zoom * 0.5 - sz / 2, sz, sz); ctx.restore();
+                ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = pt.color; if (pt.type === 'sweat') { const u = Math.max(1, Math.round(Math.max(0.45, camera.zoom * 0.04 * 2.9 * 1.22))), sx = Math.round(s.x / u) * u, hy = Math.round((s.y - pt.z * camera.zoom * 0.5) / u) * u; ctx.globalAlpha = 1; if (pt.life > 6 || Math.floor(pt.life) % 2) { ctx.fillStyle = '#38bdf8'; ctx.fillRect(sx, hy, u, u * 2); ctx.fillStyle = '#e0f2fe'; ctx.fillRect(sx, hy, u, u); } } else ctx.fillRect(s.x - sz / 2, s.y - pt.z * camera.zoom * 0.5 - sz / 2, sz, sz); ctx.restore();
             });
 
             stadiumFlashes.forEach(f => {
@@ -5720,7 +5720,7 @@ const PXS = (function () {
                         bodies.forEach(p => { if (p.rp) p.st = p.rp.attrs; });
                     });
                 },
-                STA_DRAIN: 0.085, STA_REGEN: 0.008, STA_REST: 7,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
+                STA_DRAIN: 0.085, STA_REGEN: 0.008, STA_REST: 100,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
                 resetStamina() { const all = (career && career.roster ? career.roster.concat(career.bench || []) : []).concat(...Object.values(rosterCache)); all.forEach(r => { r.stam = 100; }); },
                 staMul(st) { return FX.staMul(st); },
                 pushFactor(b, d) { if (!b || !d || !b.st || !d.st) return 1; return clamp(1 - FX.shedFrames(d.st, b.st, false) / 45, 0.3, 1.9); },
