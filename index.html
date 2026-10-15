@@ -1089,7 +1089,7 @@
 
         window.toggleSetting = function(setting) { if (setting === 'time') { qpState.timeIdx = (qpState.timeIdx + 1) % timeOptions.length; updateQuickPlayUI(); } };
         window.setPlayerSide = function(side) { qpState.playerSide = side; updateQuickPlayUI(); };
-        window.openQuickPlaySetup = function() { document.getElementById('hub-container').style.display = 'none'; document.getElementById('quick-play-screen').style.display = 'flex'; updateQuickPlayUI(); };
+        window.openQuickPlaySetup = function() { window._careerGame = null; document.getElementById('hub-container').style.display = 'none'; document.getElementById('quick-play-screen').style.display = 'flex'; updateQuickPlayUI(); };
         window.closeQuickPlaySetup = function() { document.getElementById('quick-play-screen').style.display = 'none'; document.getElementById('hub-container').style.display = 'flex'; };
 
         // ONLINE MULTIPLAYER LOGIC
@@ -2119,6 +2119,7 @@
         }
 
         window.exitToHub = function() {
+            window._careerGame = null;
             const overlay = document.getElementById('transition-overlay');
             if (overlay) {
                 overlay.style.pointerEvents = 'auto'; overlay.style.opacity = '1';
@@ -2167,13 +2168,13 @@
         };
 
         function endGame() {
-            gameState = 'GAME_OVER'; let won = playerScore > cpuScore; let resultText = playerScore === cpuScore ? "IT'S A TIE!" : (won ? "YOU WIN!" : "OPPONENT WINS!"); let resultColor = playerScore === cpuScore ? "#facc15" : (won ? "#4ade80" : "#f87171");
+            gameState = 'GAME_OVER'; window._careerNote = ''; try { if (window._careerGame && !isMultiplayer && window.careerGameOver) window.careerGameOver(playerScore, cpuScore); } catch (e) { console.error(e); } let won = playerScore > cpuScore; let resultText = playerScore === cpuScore ? "IT'S A TIE!" : (won ? "YOU WIN!" : "OPPONENT WINS!"); let resultColor = playerScore === cpuScore ? "#facc15" : (won ? "#4ade80" : "#f87171");
             let btnHtml = '';
             if (isQuickPlay || isMultiplayer) { btnHtml = `<button class="retro-btn" style="margin-top: 30px; background-color: #10b981;" onclick="exitToHub()">EXIT TO HUB</button>`; } 
             else { btnHtml = won ? `<button class="retro-btn" style="margin-top: 30px; background-color: #10b981;" onclick="exitToHub()">EXIT TO HUB</button>` : `<button class="retro-btn" style="margin-top: 30px; background-color: #f59e0b;" onclick="retryClutchDrive()">TRY AGAIN</button>`; }
             
             if (isMpHost || !isMultiplayer) {
-                showUI(`<div style="text-align: center;"><h2 class="result-headline" style="color: #facc15;">FINAL SCORE</h2><p class="result-yardage neutral" style="color: #e2e8f0; margin-top: 14px;">${isMpHost ? "YOU" : "P1"} ${playerScore} - ${cpuScore} ${isMpHost ? "P2" : "CPU"}</p><p class="result-down" style="color: ${resultColor}; margin-top: 8px;">${resultText}</p>${btnHtml}</div>`, 'result-panel');
+                showUI(`<div style="text-align: center;"><h2 class="result-headline" style="color: #facc15;">FINAL SCORE</h2><p class="result-yardage neutral" style="color: #e2e8f0; margin-top: 14px;">${isMpHost ? "YOU" : "P1"} ${playerScore} - ${cpuScore} ${isMpHost ? "P2" : "CPU"}</p><p class="result-down" style="color: ${resultColor}; margin-top: 8px;">${resultText}</p>${window._careerNote || ''}${btnHtml}</div>`, 'result-panel');
             }
         }
 
@@ -3778,6 +3779,27 @@ const PXS = (function () {
             ctx.fillStyle = hz; ctx.fillRect(0, Math.max(0, horizonY), canvas.width, 70);
         }
 
+
+        // ===== PIXEL-ART STAMINA RING (built pixel by pixel, cached per state) =====
+        const _staRingCache = {};
+        function getStaRing(lit, tone, flash) {
+            const key = lit + '_' + tone + '_' + (flash ? 1 : 0); if (_staRingCache[key]) return _staRingCache[key];
+            const S = 40, c = S / 2 - 0.5, RI = 12, RO = 17, N = 20, cv = document.createElement('canvas'); cv.width = cv.height = S;
+            const g = cv.getContext('2d'), img = g.createImageData(S, S), set = (x, y, hex) => { const i = (y * S + x) * 4; img.data[i] = parseInt(hex.slice(1, 3), 16); img.data[i + 1] = parseInt(hex.slice(3, 5), 16); img.data[i + 2] = parseInt(hex.slice(5, 7), 16); img.data[i + 3] = 255; };
+            const pal = [['#4ade80', '#bbf7d0', '#15803d'], ['#facc15', '#fef08a', '#a16207'], ['#ef4444', '#fecaca', '#991b1b']][tone];
+            for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+                const dx = x - c, dy = y - c, d = Math.sqrt(dx * dx + dy * dy); if (d > RO + 1.6 || d < RI - 1.6) continue;
+                if (d > RO + 0.5 || d < RI - 0.5) { set(x, y, '#000000'); continue; }
+                let ang = Math.atan2(dx, -dy); if (ang < 0) ang += Math.PI * 2;      // 0 at top, clockwise
+                const f = ang / (Math.PI * 2) * N, seg = Math.floor(f), edge = f - seg;
+                if (edge < 0.1 || edge > 0.9) { set(x, y, '#000000'); continue; }  // chunky black dividers
+                const outer = d > RO - 1.2, inner = d < RI + 1.2;
+                if (seg < lit) { if (flash) set(x, y, outer ? '#ffffff' : '#fca5a5'); else set(x, y, outer ? pal[1] : inner ? pal[2] : pal[0]); }
+                else set(x, y, outer ? '#475569' : inner ? '#0f172a' : '#1e293b');
+            }
+            g.putImageData(img, 0, 0); return (_staRingCache[key] = cv);
+        }
+
         function drawGoalpost(yardX) {
             let scale = camera.zoom; let crossbarHeight = scale * 5.0; let uprightHeight = scale * 10.0;  let postThickness = Math.max(4, scale * 0.4); let widthYards = 7.0; 
             let base = toScreen(yardX, 0); let crossCenter = { x: base.x, y: base.y - crossbarHeight };
@@ -3786,14 +3808,7 @@ const PXS = (function () {
             let upLeft = { x: crossLeft.x, y: crossLeft.y - uprightHeight }; let upRight = { x: crossRight.x, y: crossRight.y - uprightHeight };
 
             function drawPipes(thickness, color) { ctx.lineWidth = thickness; ctx.strokeStyle = color; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(crossCenter.x, crossCenter.y); ctx.moveTo(crossLeft.x, crossLeft.y); ctx.lineTo(crossRight.x, crossRight.y); ctx.moveTo(crossLeft.x, crossLeft.y); ctx.lineTo(upLeft.x, upLeft.y); ctx.moveTo(crossRight.x, crossRight.y); ctx.lineTo(upRight.x, upRight.y); ctx.stroke(); }
-            drawPipes(postThickness + 4, '#000000'); drawPipes(postThickness, '#eab308');     
-            let padThickness = postThickness * 3.5; let padH = crossbarHeight * 0.4; let padTopY = (base.y - padH) + (padThickness / 2); let padBottomY = base.y + (postThickness / 2) + 2; 
-
-            ctx.lineCap = 'round';
-            ctx.lineWidth = padThickness + 4; ctx.strokeStyle = '#000000'; ctx.beginPath(); ctx.moveTo(base.x, padBottomY); ctx.lineTo(base.x, padTopY); ctx.stroke();
-            ctx.lineWidth = padThickness; ctx.strokeStyle = '#1e3a8a'; ctx.beginPath(); ctx.moveTo(base.x, padBottomY); ctx.lineTo(base.x, padTopY); ctx.stroke();
-            ctx.lineWidth = padThickness * 0.7; ctx.strokeStyle = '#2563eb'; ctx.beginPath(); ctx.moveTo(base.x - padThickness * 0.1, padBottomY); ctx.lineTo(base.x - padThickness * 0.1, padTopY); ctx.stroke();
-            ctx.lineWidth = padThickness * 0.25; ctx.strokeStyle = '#60a5fa'; ctx.beginPath(); ctx.moveTo(base.x - padThickness * 0.2, padBottomY - 2); ctx.lineTo(base.x - padThickness * 0.2, padTopY + 2); ctx.stroke();
+            drawPipes(postThickness + 4, '#000000'); drawPipes(postThickness, '#eab308');
         }
 
         function drawPlayRoute(pathBuilderFn, color, PPY) {
@@ -4297,13 +4312,11 @@ const PXS = (function () {
                 if (isMultiplayer && isMpClient && p === p2Player) isActivePlayerForClient = true;
 
                 if (isActivePlayerForClient && !isIntroScene && !p.isRef) {
-                    ctx.save(); let pulse = 1 + Math.sin(Date.now() / 150) * 0.1; let rot = Date.now() / 300; let radius = PPY * 1.6 * pulse; let pSize = Math.max(4, PPY * 0.3); 
-                    ctx.translate(p.x * PPY, p.y * PPY); ctx.scale(1 / X_STRETCH, 1); ctx.rotate(rot); ctx.fillStyle = '#facc15'; 
-                    let bracketLen = radius * 0.6; let r = radius;
-                    ctx.fillRect(-r, -r, bracketLen, pSize); ctx.fillRect(-r, -r, pSize, bracketLen); ctx.fillRect(r - bracketLen, -r, bracketLen, pSize); ctx.fillRect(r - pSize, -r, pSize, bracketLen); ctx.fillRect(-r, r - pSize, bracketLen, pSize); ctx.fillRect(-r, r - bracketLen, pSize, bracketLen); ctx.fillRect(r - bracketLen, r - pSize, bracketLen, pSize); ctx.fillRect(r - pSize, r - bracketLen, pSize, bracketLen);
-                    let innerPulse = Math.abs(Math.sin(Date.now() / 150));
-                    if (innerPulse > 0.5) { let r2 = radius * 0.6; ctx.fillStyle = 'rgba(239, 68, 68, 0.8)'; ctx.fillRect(-pSize/2, -r2 - pSize/2, pSize, pSize); ctx.fillRect(-pSize/2, r2 - pSize/2, pSize, pSize); ctx.fillRect(-r2 - pSize/2, -pSize/2, pSize, pSize); ctx.fillRect(r2 - pSize/2, -pSize/2, pSize, pSize); }
-                    ctx.restore();
+                    const hasSt = p.rp && p.rp.stam != null && window.StatsBridge && StatsBridge.active(), st = hasSt ? p.rp.stam : 100;
+                    const spr = getStaRing(Math.ceil(st / 100 * 20), st > 60 ? 0 : st > 30 ? 1 : 2, st < 25 && Math.floor(Date.now() / 140) % 2 === 0);
+                    const sc = (PPY * 1.05) / 14.5, dsz = spr.width * sc;
+                    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(p.x * PPY, p.y * PPY); ctx.scale(1 / X_STRETCH, 1);
+                    ctx.drawImage(spr, -dsz / 2, -dsz / 2, dsz, dsz); ctx.restore();
                 }
 
                 if ((p.isTargetReceiver || p.isIntercepter) && isPassing && !p.isRef) {
@@ -4516,12 +4529,6 @@ const PXS = (function () {
                 ctx.restore();
             });
 
-            if (typeof player !== 'undefined' && player && player.rp && player.rp.stam != null && player.rp.stam < 92 && !isIntroScene && window.StatsBridge && StatsBridge.active()) {
-                const sp = toScreen(player.x, player.y), z = camera.zoom, bw = z * 1.1, bh = Math.max(4, z * 0.1), bx = sp.x - bw / 2, by = sp.y - z * 1.5, st = player.rp.stam;
-                const col = st > 60 ? '#4ade80' : st > 30 ? '#facc15' : '#ef4444';
-                ctx.save(); ctx.fillStyle = '#000'; ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4); ctx.fillStyle = '#1e293b'; ctx.fillRect(bx, by, bw, bh);
-                ctx.fillStyle = (st < 20 && Math.floor(Date.now() / 150) % 2) ? '#ffffff' : col; ctx.fillRect(bx, by, bw * st / 100, bh); ctx.restore();
-            }
             if (window._mpMirror) { ctx.setTransform(1, 0, 0, 1, 0, 0); window._mpOverlay = true; } // screen-space overlays (kick meter, text) must not be flipped
             let kicker = players.find(p => p.isKicker && ((isMultiplayer && isMpHost) ? !p.isCPU : !p.isCPU));
             if (isMultiplayer && isMpClient) kicker = players.find(p => p.isKicker && p.isCPU === !!window._mpClientKicks) || players.find(p => p.isKicker);
@@ -4980,8 +4987,8 @@ const PXS = (function () {
                 blockRating: (a, pass) => a && a.PBK != null ? (pass ? a.PBK : a.RBK) * 0.55 + gv(a, 'STR', 60) * 0.30 + gv(a, 'AWR', 70) * 0.15 : 60,
                 shedRating: (a, pass) => a && a.PRS != null ? (pass ? a.PRS : a.STR) * 0.7 + a.STR * 0.3 : (a && a.TKL != null && a.STR != null && a.AWR != null ? (a.TKL + a.STR) / 2 : 55),
                 shedFrames: (d, b, pass) => clamp((FX.shedRating(d, pass) - FX.blockRating(b, pass)) * 1.1, -45, 45),
-                fatigue: a => clamp(1 + (70 - gv(a, 'STA', 70)) * 0.022, 0.55, 1.9),                 // how fast a player tires (1 = average)
-                staMul: st => st >= 60 ? 1 : 0.72 + 0.28 * Math.max(0, st) / 60,                // speed once tired (down to -28%)
+                fatigue: a => clamp(1 + (70 - gv(a, 'STA', 70)) * 0.012, 0.6, 1.3),                 // how fast a player tires (1 = average)
+                staMul: st => st >= 40 ? 1 : 0.9 + 0.1 * Math.max(0, st) / 40,                // speed once tired (down to -28%)
                 whiff: (c, h) => clamp(0.08 + ((gv(c, 'AGI', 60) + gv(c, 'STR', 55)) / 2 - gv(h, 'TKL', 60)) * 0.011, 0.02, 0.45)
             };
 
@@ -5391,6 +5398,157 @@ const PXS = (function () {
                     <div class="sh-tabs">${SH_TABS.map(t => `<button class="sh-tab ${t.id === shopTab ? 'active' : ''}" data-tab="${t.id}" onclick="shTab('${t.id}')"><i class="sh-ico">${t.icon}</i>${t.label}</button>`).join('')}</div>
                     <div id="sh-body">${shPanel(shopTab)}</div></div>`;
             }
+            // ================= SEASON: 12-game random schedule, standings, league sim =================
+            const SEASON_GAMES = 12;
+            const shuf = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+            const gauss = () => { let u = 0; for (let i = 0; i < 4; i++) u += Math.random(); return (u - 2) * 1.73; };
+            function newSeason(num) {
+                const N = qpTeams.length, me = career.teamIdx, others = qpTeams.map((_, i) => i).filter(i => i !== me);
+                const opps = shuf(others).slice(0, SEASON_GAMES), homes = shuf(Array.from({ length: SEASON_GAMES }, (_, i) => i < SEASON_GAMES / 2));
+                const sched = opps.map((o, w) => ({ week: w + 1, opp: o, home: homes[w], result: null }));
+                // league games for every week: you vs your opponent, everyone else paired at random (one team sits out each week; 19 teams is an odd number)
+                const byes = {}, met = new Set(); others.forEach(i => { byes[i] = 0; }); const key = (a, b) => a < b ? a + '_' + b : b + '_' + a;
+                const league = sched.map(g => {
+                    const rest = others.filter(i => i !== g.opp); const minBye = Math.min(...rest.map(i => byes[i]));
+                    const bye = shuf(rest.filter(i => byes[i] === minBye))[0]; byes[bye]++;
+                    let best = null, bestRep = 1e9;
+                    for (let tries = 0; tries < 40; tries++) {
+                        const pool = shuf(rest.filter(i => i !== bye)), pairs = []; let rep = 0;
+                        for (let k = 0; k + 1 < pool.length; k += 2) { pairs.push([pool[k], pool[k + 1]]); if (met.has(key(pool[k], pool[k + 1]))) rep++; }
+                        if (rep < bestRep) { best = pairs; bestRep = rep; if (!rep) break; }
+                    }
+                    best.forEach(([a, b]) => met.add(key(a, b)));
+                    return { games: best.map(([a, b]) => (Math.random() < 0.5 ? { home: a, away: b, played: false } : { home: b, away: a, played: false })), bye };
+                });
+                const stand = {}; for (let i = 0; i < N; i++) stand[i] = { w: 0, l: 0, t: 0, pf: 0, pa: 0 };
+                career.season = { num, week: 0, sched, league, stand };
+                return career.season;
+            }
+            function seasonOf() { return career.season || newSeason(1); }
+            function simScore(off, oppDef, home) { const mean = clamp(21 + (off - oppDef) * 0.7 + (home ? 1.5 : 0), 7, 45); const td = Math.max(0, Math.round(mean * 0.75 / 7 + gauss() * 1.15)), fg = Math.max(0, Math.round(0.9 + gauss() * 0.8)); return td * 7 + fg * 3; }
+            function simLeagueGame(g) {
+                const H = qpTeams[g.home], A = qpTeams[g.away]; let hs = simScore(H.off, A.def, true), as = simScore(A.off, H.def, false);
+                if (hs === as) { const pH = 1 / (1 + Math.exp(-(H.ovr - A.ovr) / 10)); const pts = Math.random() < 0.6 ? 3 : 7; if (Math.random() < pH) hs += pts; else as += pts; }
+                g.hs = hs; g.as = as; g.played = true; return g;
+            }
+            function addResult(s, i, pf, pa) { const r = s.stand[i]; r.pf += pf; r.pa += pa; if (pf > pa) r.w++; else if (pf < pa) r.l++; else r.t++; }
+            // called when YOUR game finishes: records it, then simulates every other game that week from team overalls
+            window.careerGameOver = function (us, them) {
+                const cg = window._careerGame; window._careerGame = null; if (!cg || !career) return;
+                const s = seasonOf(), g = s.sched[s.week]; if (!g || g.opp !== cg.oppIdx) return;
+                g.result = { us, them }; addResult(s, career.teamIdx, us, them); addResult(s, g.opp, them, us);
+                s.league[s.week].games.forEach(x => { simLeagueGame(x); addResult(s, x.home, x.hs, x.as); addResult(s, x.away, x.as, x.hs); });
+                s.week++; const me = s.stand[career.teamIdx]; career.wins = me.w; career.losses = me.l; career.pf = me.pf; career.pa = me.pa;
+                const word = us > them ? 'WIN' : us < them ? 'LOSS' : 'TIE', col = us > them ? '#4ade80' : us < them ? '#f87171' : '#facc15', rk = rankTable(s).findIndex(x => x.i === career.teamIdx) + 1;
+                window._careerNote = `<p class="result-down" style="color:#94a3b8;margin-top:14px;font-size:clamp(8px,2.4vw,11px);line-height:1.8">SEASON ${s.num} · WEEK ${s.week} COMPLETE<br><span style="color:${col}">${word}</span> · RECORD ${me.w}-${me.l}${me.t ? '-' + me.t : ''} · #${rk} IN LEAGUE${s.week >= SEASON_GAMES ? '<br><span style="color:#facc15">SEASON COMPLETE!</span>' : ''}</p>`;
+            };
+            const winPct = r => (r.w + r.t / 2) / Math.max(1, r.w + r.l + r.t);
+            function rankTable(s) { return qpTeams.map((t, i) => ({ i, name: t.name, tm: t, ...s.stand[i] })).sort((a, b) => (winPct(b) - winPct(a)) || ((b.pf - b.pa) - (a.pf - a.pa)) || (b.pf - a.pf) || a.name.localeCompare(b.name)); }
+            window.startNextSeason = function () { newSeason(seasonOf().num + 1); renderHome(); };
+
+            // ================= MATCHUP SCREEN (opens from PLAY NEXT GAME) =================
+            const muCss = document.createElement('style'); muCss.textContent = `
+                #mu-screen { position: fixed; inset: 0; z-index: 2600; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; color: #fff; padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom)); gap: 12px; box-sizing: border-box; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(2,6,23,0) 30%, rgba(2,6,23,.55) 100%); }
+                #mu-screen * { box-sizing: border-box; }
+                .mu-bar { display: flex; align-items: center; gap: 14px; background: rgba(8,15,34,.94); padding: 10px 16px; box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 6px 8px 0 0 rgba(0,0,0,.6); flex: 0 0 auto; margin: 4px; }
+                .mu-bar .mu-h { width: 46px; height: 46px; flex: 0 0 auto; }
+                .mu-sch { flex: 1; min-width: 0; font-size: clamp(11px, 2.4vw, 22px); color: #facc15; text-shadow: 3px 3px 0 #000; line-height: 1.3; overflow-wrap: anywhere; }
+                .mu-sch small { display: block; color: #7dd3fc; font-size: clamp(6px, 1.2vw, 10px); text-shadow: none; margin-top: 8px; line-height: 1.6; }
+                .mu-pill { display: flex; align-items: center; gap: 8px; background: #0f1a33; font-size: clamp(8px, 1.5vw, 12px); padding: 10px 12px; color: #4ade80; box-shadow: 0 -3px 0 0 #334155, 0 3px 0 0 #334155, -3px 0 0 0 #334155, 3px 0 0 0 #334155; }
+                .mu-ovrb { text-align: center; background: #0f1a33; padding: 8px 12px 7px; min-width: 62px; box-shadow: 0 -3px 0 0 var(--oc), 0 3px 0 0 var(--oc), -3px 0 0 0 var(--oc), 3px 0 0 0 var(--oc); }
+                .mu-ovrb i { display: block; font-style: normal; font-size: 7px; color: #94a3b8; margin-bottom: 6px; } .mu-ovrb b { font-weight: normal; font-size: clamp(16px, 2.6vw, 24px); color: var(--oc); text-shadow: 3px 3px 0 #000; }
+                .mu-main { flex: 1 1 auto; display: grid; grid-template-columns: minmax(200px, 24%) minmax(0, 1fr) minmax(200px, 24%); gap: 14px; min-height: 0; }
+                .mu-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+                .mu-card { background: rgba(8,15,34,.93); margin: 4px; display: flex; flex-direction: column; box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 6px 8px 0 0 rgba(0,0,0,.6); }
+                .mu-card > h4 { margin: 0; font-weight: normal; color: #facc15; font-size: clamp(8px, 1.3vw, 11px); padding: 12px 14px 10px; text-shadow: 2px 2px 0 #000; border-bottom: 4px solid #1e3a8a; background: #101b36; }
+                .mu-row { display: flex; justify-content: space-between; gap: 8px; padding: 9px 14px 7px; font-size: clamp(7px, 1.1vw, 9px); color: #cbd5e1; line-height: 1.6; border-bottom: 3px solid #14203d; } .mu-row:last-child { border-bottom: 0; }
+                .mu-row b { font-weight: normal; color: #fff; text-shadow: 2px 2px 0 #000; text-align: right; }
+                .mu-gap { height: 4px; background: #1e3a8a; margin: 4px 14px; }
+                .mu-kp { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px; border-bottom: 3px solid #14203d; } .mu-kp:last-child { border-bottom: 0; }
+                .mu-kp .mu-kh { width: 34px; height: 34px; flex: 0 0 auto; } .mu-kp .mu-kh svg { filter: none !important; }
+                .mu-kp div { min-width: 0; font-size: clamp(6px, 1vw, 8px); line-height: 1.9; color: #7dd3fc; } .mu-kp div span { color: #fff; } .mu-kp div em { font-style: normal; color: #94a3b8; }
+                .mu-stage { background: radial-gradient(ellipse at 50% 55%, rgba(2,6,23,.62) 0%, rgba(2,6,23,.35) 55%, rgba(2,6,23,0) 78%); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 4px; min-width: 0; }
+                .mu-banner { background: rgba(8,15,34,.92); padding: 12px 26px 10px; text-align: center; font-size: clamp(8px, 1.4vw, 13px); line-height: 1.7; text-shadow: 2px 2px 0 #000; box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 5px 6px 0 0 rgba(0,0,0,.6); }
+                .mu-banner small { display: block; color: #7dd3fc; font-size: .7em; margin-top: 4px; }
+                .mu-vs { display: flex; align-items: center; justify-content: center; gap: 2%; width: 100%; }
+                .mu-team { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 9px; text-align: center; text-shadow: 3px 3px 0 #000; }
+                .mu-team .mu-bigh { width: clamp(84px, 24vh, 230px); height: clamp(84px, 24vh, 230px); }
+                .mu-team .mu-nm { font-size: clamp(9px, 1.9vw, 20px); line-height: 1.3; overflow-wrap: anywhere; } .mu-team .mu-mn { font-size: clamp(7px, 1.2vw, 12px); color: #facc15; }
+                .mu-team .mu-st svg { width: clamp(12px, 1.7vw, 20px); height: auto; margin: 0 1px; shape-rendering: crispEdges; }
+                .mu-team .mu-ov { font-size: clamp(9px, 1.6vw, 16px); color: #38bdf8; } .mu-team .mu-ov small { display: block; font-size: .55em; color: #94a3b8; margin-top: 7px; text-shadow: none; }
+                .mu-team .mu-rec { background: rgba(8,15,34,.92); padding: 9px 18px 7px; font-size: clamp(8px, 1.3vw, 13px); box-shadow: 0 -3px 0 0 #1e3a8a, 0 3px 0 0 #1e3a8a, -3px 0 0 0 #1e3a8a, 3px 0 0 0 #1e3a8a; }
+                .mu-vsb { font-size: clamp(20px, 4.2vw, 46px); color: #facc15; text-shadow: 4px 4px 0 #000; flex: 0 0 auto; }
+                .mu-btns { display: grid; grid-template-columns: 1fr 1.25fr 1.9fr; gap: 14px; flex: 0 0 auto; margin: 4px; }
+                .mu-btn { font-family: inherit; cursor: pointer; border: 0; color: #fff; background: rgba(8,15,34,.95); padding: 16px 12px 14px; font-size: clamp(9px, 1.6vw, 15px); text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; gap: 12px; line-height: 1.6;
+                    box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 6px 8px 0 0 rgba(0,0,0,.6); transition: transform .08s; }
+                .mu-btn:hover { background: #12214a; transform: translateY(-2px); } .mu-btn:active { transform: translateY(2px); }
+                .mu-btn small { display: block; font-size: .62em; color: #94a3b8; margin-top: 7px; text-shadow: none; }
+                .mu-btn svg { width: clamp(16px, 2.4vw, 26px); height: auto; shape-rendering: crispEdges; flex: 0 0 auto; }
+                .mu-btn.go { background: #facc15; color: #1e293b; text-shadow: none; box-shadow: 0 -3px 0 0 #fff, 0 3px 0 0 #a16207, -3px 0 0 0 #fff, 3px 0 0 0 #fff, 6px 8px 0 0 rgba(0,0,0,.6); } .mu-btn.go:hover { background: #fde047; } .mu-btn.go small { color: #422006; }
+                @media (max-width: 900px), (orientation: portrait) {
+                    .mu-main { grid-template-columns: 1fr; flex: 0 0 auto; min-height: auto; } .mu-stage { order: -1; background: rgba(2,6,23,.62); } .mu-btns { position: sticky; bottom: 0; padding: 14px 0 4px; background: linear-gradient(rgba(2,6,23,0), rgba(2,6,23,.92) 30%); z-index: 2; } .mu-team .mu-bigh { width: clamp(70px, 19vw, 150px); height: clamp(70px, 19vw, 150px); }
+                    .mu-btns { grid-template-columns: 1fr 1fr; } .mu-btn.go { grid-column: 1 / -1; order: -1; } .mu-pill { display: none; }
+                }
+                .hm-sch { display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 6px 5px; font-size: clamp(7px, 2vw, 8px); color: #e2e8f0; line-height: 1.5; border-bottom: 3px solid #14203d; }
+                .hm-sch .hm-h { width: 22px; height: 22px; } .hm-sch .hm-h svg { filter: none !important; } .hm-sch > span:first-child { color: #64748b; text-align: center; }
+                .hm-sch.cur { background: rgba(250,204,21,.13); box-shadow: inset 4px 0 0 #facc15; } .hm-sch .w { color: #4ade80; } .hm-sch .l { color: #f87171; } .hm-sch .t { color: #facc15; } .hm-sch .n { color: #475569; }
+            `; document.head.appendChild(muCss);
+            const muEl = document.createElement('div'); muEl.id = 'mu-screen'; document.body.appendChild(muEl);
+            const mirrorHelm = t => { const s = csHelmet(t); return s.replace(/(<svg[^>]*>)/, '$1<g transform="translate(32 0) scale(-1 1)">').replace('<text x="12"', '</g><text x="20"'); };
+            const shortName = n => { const p = String(n).split(' '); return p.length > 1 ? p[0][0] + '. ' + p.slice(1).join(' ') : n; };
+            const recStr = r => `${r.w} - ${r.l}${r.t ? ' - ' + r.t : ''}`;
+            const muFade = fn => { const ov = document.getElementById('transition-overlay'); if (!ov) { fn(); return; } ov.style.pointerEvents = 'auto'; ov.style.opacity = '1'; setTimeout(() => { fn(); setTimeout(() => { ov.style.opacity = '0'; setTimeout(() => { ov.style.pointerEvents = 'none'; }, 500); }, 250); }, 450); };
+            const IC_BACK = '<svg viewBox="0 0 9 9"><path fill="#fff" d="M4 0h1v1h1v1H4v2h5v1H4v2h2v1H5v1H4V8H3V7H2V6H1V5H0V4h1V3h1V2h1V1h1z"/></svg>';
+            const IC_LINE = '<svg viewBox="0 0 12 9"><path fill="#fff" d="M3 0h2v1h1v2H5v1H3V3H2V1h1zM8 1h2v1h1v2h-1v1H8V4H7V2h1zM1 6h5v1h1v2H0V7h1zM7 6h4v1h1v2H7z"/></svg>';
+            const IC_PLAY = '<svg viewBox="0 0 8 10"><path fill="#1e293b" d="M0 0h2v1h1v1h1v1h1v1h1v2H5v1H4v1H3v1H2v1H0z"/></svg>';
+            function keyPlayersHTML(roster, team) {
+                return roster.filter(p => p.pos !== 'K').slice().sort((a, b) => b.ovr - a.ovr).slice(0, 4).map(p => `<div class="mu-kp"><span class="mu-kh">${csHelmet(team)}</span><div><span>#${p.num} ${hmEsc(shortName(p.name))}</span> <em>(${p.pos})</em><br>OVR ${p.ovr}</div></div>`).join('');
+            }
+            function renderMatchup() {
+                const s = seasonOf(), g = s.sched[s.week]; if (!g) return;
+                const me = teamOf(), opp = qpTeams[g.opp], home = g.home ? me : opp, r = ensureRoster(), tr = ratingsOf(r), oR = rosterFor(g.opp);
+                const mr = s.stand[career.teamIdx], or = s.stand[g.opp], oOvr = opp.ovr;
+                const side = (t, ovr, rec, offv, defv, mirror) => `<div class="mu-team"><div class="mu-bigh">${mirror ? mirrorHelm(t) : csHelmet(t)}</div>
+                    <div class="mu-nm">${hmEsc(t.name.split(' ').slice(0, -1).join(' ').toUpperCase())}<div class="mu-mn">${hmEsc(t.name.split(' ').slice(-1)[0].toUpperCase())}</div></div>
+                    <div class="mu-st">${csStarsSVG(csStarRating(ovr))}</div><div class="mu-ov">OVR ${ovr}<small>OFF ${offv} · DEF ${defv}</small></div><div class="mu-rec">${rec}</div></div>`;
+                muEl.innerHTML = `
+                    <div class="mu-bar"><span class="mu-h">${csHelmet(me)}</span>
+                        <div class="mu-sch">${hmEsc(me.name.toUpperCase())}<small>SEASON ${s.num} &nbsp;|&nbsp; WEEK ${s.week + 1} OF ${SEASON_GAMES} &nbsp;|&nbsp; ${g.home ? 'HOME GAME' : 'AWAY GAME'}</small></div>
+                        <div class="mu-pill">${csFmtMoney(career.funds || 0)}</div>
+                        <div class="mu-ovrb" style="--oc:${tierOf(tr.ovr).c}"><i>OVR</i><b>${tr.ovr}</b></div></div>
+                    <div class="mu-main">
+                        <div class="mu-col">
+                            <div class="mu-card"><h4>TEAM STATS</h4><div class="mu-row"><span>Offense</span><b>${tr.off}</b></div><div class="mu-row"><span>Defense</span><b>${tr.def}</b></div><div class="mu-row"><span>Special Teams</span><b>${tr.st}</b></div><div class="mu-gap"></div><div class="mu-row"><span>Points For</span><b>${mr.pf}</b></div><div class="mu-row"><span>Points Against</span><b>${mr.pa}</b></div></div>
+                            <div class="mu-card"><h4>KEY PLAYERS (${hmEsc(me.name.split(' ').slice(-1)[0].toUpperCase())})</h4>${keyPlayersHTML(r, me)}</div>
+                        </div>
+                        <div class="mu-stage"><div class="mu-banner">REGULAR SEASON<small>WEEK ${s.week + 1}</small></div>
+                            <div class="mu-vs">${side(me, tr.ovr, recStr(mr), tr.off, tr.def, false)}<div class="mu-vsb">VS</div>${side(opp, oOvr, recStr(or), opp.off, opp.def, true)}</div><div></div></div>
+                        <div class="mu-col">
+                            <div class="mu-card"><h4>GAME DETAILS</h4><div class="mu-row"><span>Week</span><b>${s.week + 1} of ${SEASON_GAMES}</b></div><div class="mu-row"><span>Site</span><b>${g.home ? 'Home' : 'Away'}</b></div><div class="mu-row"><span>Location</span><b>${hmEsc(home.name)} Stadium</b></div><div class="mu-row"><span>Weather</span><b>Clear</b></div><div class="mu-row"><span>Quarters</span><b>${timeLabels[qpState.timeIdx] || '2 MIN'}</b></div></div>
+                            <div class="mu-card"><h4>KEY PLAYERS (${hmEsc(opp.name.split(' ').slice(-1)[0].toUpperCase())})</h4>${keyPlayersHTML(oR, opp)}</div>
+                        </div>
+                    </div>
+                    <div class="mu-btns"><button class="mu-btn" onclick="muBack()">${IC_BACK}BACK</button><button class="mu-btn" onclick="muLineup()">${IC_LINE}<span>LINEUP<small>Edit your starting lineup</small></span></button><button class="mu-btn go" onclick="muKickoff()">${IC_PLAY}<span>KICK OFF<small>Start the game</small></span></button></div>`;
+            }
+            function muClose() { muEl.style.display = 'none'; CsScene.stop(); }
+            window.openMatchup = function () {
+                if (!career || tut.on) return; const s = seasonOf(); if (s.week >= SEASON_GAMES) return; const g = s.sched[s.week];
+                muFade(() => {
+                    renderMatchup(); document.getElementById('hub-container').style.display = 'none';
+                    const homeIdx = g.home ? career.teamIdx : g.opp; try { updateFieldLogo(qpTeams[homeIdx]); } catch (e) { console.error(e); }   // the HOME team's stadium
+                    qpState.homeIdx = homeIdx; qpState.awayIdx = g.home ? g.opp : career.teamIdx; qpState.playerSide = g.home ? 'HOME' : 'AWAY';
+                    CsScene.start(); muEl.scrollTop = 0; muEl.style.display = 'flex';
+                });
+            };
+            window.muBack = function () { muFade(() => { muClose(); document.getElementById('hub-container').style.display = 'flex'; switchHubTab('HOME'); }); };
+            window.muLineup = function () { muFade(() => { muClose(); document.getElementById('hub-container').style.display = 'flex'; switchHubTab('OFFICE'); ofEdit = true; renderOffice(); }); };
+            window.muKickoff = function () {
+                const s = seasonOf(), g = s.sched[s.week]; if (!g) return;
+                window._careerGame = { season: s.num, week: s.week, oppIdx: g.opp };
+                qpState.homeIdx = g.home ? career.teamIdx : g.opp; qpState.awayIdx = g.home ? g.opp : career.teamIdx; qpState.playerSide = g.home ? 'HOME' : 'AWAY';
+                muEl.style.display = 'none'; CsScene.stop(); document.getElementById('hub-container').style.display = 'none'; startQuickPlayGame();
+            };
+
             // ================= Home tab =================
             const hmEsc = x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
             const hmHelm = (t, cls) => `<div class="${cls || 'hm-helmet'}">${csHelmet(t)}</div>`;
@@ -5398,25 +5556,28 @@ const PXS = (function () {
                 const content = document.getElementById('hub-content'); if (!content || !career) return;
                 const r = ensureRoster(); if (!r) return;
                 const t = teamOf(), tr = ratingsOf(r), bench = career.bench || [], packs = career.packSeq || 0, funds = career.funds || 0;
-                // opponent = the team currently lined up as the quick-play opponent
-                let oi = qpState.awayIdx; if (oi === career.teamIdx || !qpTeams[oi]) oi = (career.teamIdx + 1) % qpTeams.length;
-                const o = qpTeams[oi];
+                const s = seasonOf(), done = s.week >= SEASON_GAMES, g = s.sched[Math.min(s.week, SEASON_GAMES - 1)], o = qpTeams[g.opp], me = s.stand[career.teamIdx];
                 const cmp = (lbl, a, b) => `<div class="hm-bar"><span>${lbl}</span><b>${a}</b><div class="l"><i style="width:${a}%;background:${a >= b ? '#4ade80' : '#475569'}"></i></div><div class="r"><i style="width:${b}%;background:${b >= a ? '#f87171' : '#475569'}"></i></div><b>${b}</b></div>`;
-                // league rankings by record (everyone starts 0-0; ties sorted A-Z)
-                const rec = i => i === career.teamIdx ? { w: career.wins || 0, l: career.losses || 0, pf: career.pf || 0, pa: career.pa || 0 } : { w: 0, l: 0, pf: 0, pa: 0 };
-                const table = qpTeams.map((x, i) => ({ i, name: x.name, t: x, ...rec(i) })).sort((a, b) => (b.w - a.w) || (a.l - b.l) || ((b.pf - b.pa) - (a.pf - a.pa)) || a.name.localeCompare(b.name));
-                const rows = table.map((x, k) => `<div class="hm-rank ${x.i === career.teamIdx ? 'me' : ''}"><span>${k + 1}.</span>${hmHelm(x.t, 'hm-h')}<span>${hmEsc(x.name)}</span><b>${x.w}</b><b>${x.l}</b><b>${x.pf}</b><b>${x.pa}</b></div>`).join('');
+                const table = rankTable(s), place = table.findIndex(x => x.i === career.teamIdx) + 1;
+                const rows = table.map((x, k) => `<div class="hm-rank ${x.i === career.teamIdx ? 'me' : ''}"><span>${k + 1}.</span>${hmHelm(x.tm, 'hm-h')}<span>${hmEsc(x.name)}</span><b>${x.w}</b><b>${x.l}</b><b>${x.pf}</b><b>${x.pa}</b></div>`).join('');
+                const sch = s.sched.map((x, k) => { const q = qpTeams[x.opp], cur = k === s.week; const res = x.result ? (x.result.us > x.result.them ? `<b class="w">W ${x.result.us}-${x.result.them}</b>` : x.result.us < x.result.them ? `<b class="l">L ${x.result.us}-${x.result.them}</b>` : `<b class="t">T ${x.result.us}-${x.result.them}</b>`) : `<b class="n">${cur ? 'NEXT' : '—'}</b>`; return `<div class="hm-sch ${cur ? 'cur' : ''}"><span>${x.week}</span>${hmHelm(q, 'hm-h')}<span>${x.home ? 'vs' : '@'} ${hmEsc(q.name)}</span>${res}</div>`; }).join('');
+                const next = done
+                    ? `<div class="hm-card"><div class="hm-hd"><span>SEASON ${s.num} COMPLETE</span><small>FINAL</small></div>
+                        <div class="hm-rows"><div class="hm-row"><span>FINAL RECORD</span><b>${recStr(me)}</b></div><div class="hm-row"><span>LEAGUE FINISH</span><b>#${place} OF ${qpTeams.length}</b></div><div class="hm-row"><span>POINTS FOR / AGAINST</span><b>${me.pf} / ${me.pa}</b></div></div>
+                        <button class="retro-btn hm-play" id="hm-play" onclick="startNextSeason()">START SEASON ${s.num + 1} ▶</button></div>`
+                    : `<div class="hm-card"><div class="hm-hd"><span>NEXT MATCHUP</span><small>WEEK ${s.week + 1} · ${g.home ? 'HOME' : 'AWAY'}</small></div>
+                        <div class="hm-vs"><div class="hm-side">${hmHelm(t)}${hmEsc(t.name.toUpperCase())}<em>OVR ${tr.ovr}</em></div><b>VS</b><div class="hm-side">${hmHelm(o)}${hmEsc(o.name.toUpperCase())}<em>OVR ${o.ovr}</em></div></div>
+                        <div class="hm-cmp">${cmp('OFFENSE', tr.off, o.off)}${cmp('DEFENSE', tr.def, o.def)}</div>
+                        <button class="retro-btn hm-play" id="hm-play" onclick="openMatchup()">PLAY NEXT GAME ▶</button></div>`;
                 content.style.justifyContent = 'flex-start';
                 content.innerHTML = `<div class="of-wrap">
                     <div class="hm-grid">
-                        <div class="hm-card"><div class="hm-hd"><span>NEXT MATCHUP</span><small>QUICK GAME</small></div>
-                            <div class="hm-vs"><div class="hm-side">${hmHelm(t)}${hmEsc(t.name.toUpperCase())}<em>OVR ${tr.ovr}</em></div><b>VS</b><div class="hm-side">${hmHelm(o)}${hmEsc(o.name.toUpperCase())}<em>OVR ${o.ovr}</em></div></div>
-                            <div class="hm-cmp">${cmp('OFFENSE', tr.off, o.off)}${cmp('DEFENSE', tr.def, o.def)}</div>
-                            <button class="retro-btn hm-play" id="hm-play" onclick="switchHubTab('PLAY')">PLAY NEXT GAME ▶</button></div>
+                        ${next}
                         <div class="hm-card"><div class="hm-hd"><span>TEAM OVERVIEW</span><small>${hmEsc(t.name.toUpperCase())}</small></div>
                             <div class="of-rate" style="padding:0">${[[tr.ovr, 'TEAM OVR', 1], [tr.off, 'OFFENSE'], [tr.def, 'DEFENSE'], [tr.st, 'KICKER']].map(([v, l, big]) => `<div class="of-plate ${big ? 'big' : ''}"><b style="color:${tierOf(v).c}">${v}</b><i>${l}</i></div>`).join('')}</div>
-                            <div class="hm-rows"><div class="hm-row"><span>STARTERS</span><b>${r.length}</b></div><div class="hm-row"><span>BENCH PLAYERS</span><b>${bench.length}</b></div><div class="hm-row"><span>PACKS OPENED</span><b>${packs}</b></div><div class="hm-row"><span>SCHOOL FUNDS</span><b style="color:#4ade80">${csFmtMoney(funds)}</b></div></div></div>
-                        <div class="hm-card"><div class="hm-hd"><span>LEAGUE RANKINGS</span><small>BY RECORD</small></div>
+                            <div class="hm-rows"><div class="hm-row"><span>SEASON ${s.num} RECORD</span><b>${recStr(me)}</b></div><div class="hm-row"><span>STARTERS</span><b>${r.length}</b></div><div class="hm-row"><span>BENCH PLAYERS</span><b>${bench.length}</b></div><div class="hm-row"><span>PACKS OPENED</span><b>${packs}</b></div><div class="hm-row"><span>SCHOOL FUNDS</span><b style="color:#4ade80">${csFmtMoney(funds)}</b></div></div></div>
+                        <div class="hm-card"><div class="hm-hd"><span>SCHEDULE</span><small>SEASON ${s.num}</small></div><div class="hm-scroll">${sch}</div></div>
+                        <div class="hm-card"><div class="hm-hd"><span>LEAGUE STANDINGS</span><small>BY RECORD</small></div>
                             <div class="hm-rank hm-th"><span></span><span></span><span>TEAM</span><b>W</b><b>L</b><b>PF</b><b>PA</b></div><div class="hm-scroll">${rows}</div></div>
                         <div class="hm-card"><div class="hm-hd"><span>ACHIEVEMENTS</span></div><div class="hm-blank"></div></div>
                     </div></div>`;
@@ -5530,7 +5691,7 @@ const PXS = (function () {
                         bodies.forEach(p => { if (p.rp) p.st = p.rp.attrs; });
                     });
                 },
-                STA_DRAIN: 0.03, STA_REGEN: 0.01, STA_REST: 12,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
+                STA_DRAIN: 0.02, STA_REGEN: 0.015, STA_REST: 18,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
                 resetStamina() { const all = (career && career.roster ? career.roster.concat(career.bench || []) : []).concat(...Object.values(rosterCache)); all.forEach(r => { r.stam = 100; }); },
                 staMul(st) { return FX.staMul(st); },
                 pushFactor(b, d) { if (!b || !d || !b.st || !d.st) return 1; return clamp(1 - FX.shedFrames(d.st, b.st, false) / 45, 0.3, 1.9); },
