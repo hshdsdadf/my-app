@@ -1980,7 +1980,7 @@
             const wrs = players.filter(wr => wr.isCPU === qb.isCPU && !wr.isLineman && !wr.isQB);
             if (!wrs.length) return { target: null, throwNow: false };
             const defs = players.filter(d => d.isCPU !== qb.isCPU && !d.isLineman && !d.isQB && !d.isReturner);
-            const rushers = players.filter(d => d.isCPU !== qb.isCPU && d.isLineman);
+            const rushers = players.filter(d => d.isCPU !== qb.isCPU && !d.isRef && !d.isKicker); // anyone can rush him, not just the D-line (e.g. a blitzing LB)
             let nearestRush = 99; rushers.forEach(d => { const dd = Math.hypot(d.x - qb.x, d.y - qb.y); if (dd < nearestRush) nearestRush = dd; });
             const qd = StatsBridge.qbDiff(qb);
             const range = StatsBridge.throwRange(qb);
@@ -1999,8 +1999,9 @@
                 if (score > bestScore) { bestScore = score; best = wr; bestOpen = open; }
             });
             const pressured = nearestRush < 3.5, heavy = nearestRush < 2.0;
-            const minHold = pressured ? 14 : 32;
-            const thr = Math.max(2.4, 4.8 - qb.cpuHold * 0.015) - (pressured ? 1.4 : 0);
+            const scr = !!qb.cpuScramble;
+            const minHold = scr ? 8 : (pressured ? 14 : 32);
+            const thr = Math.max(2.4, 4.8 - qb.cpuHold * 0.015) - (pressured ? 1.4 : 0) - (scr ? 0.8 : 0);
             if (qb.cpuHold < minHold) return { target: best, throwNow: false };
             if (cpuPassTimer <= 0 || heavy) { qb.cpuReact = undefined; return { target: best, throwNow: true }; } // out of time / getting hit: just get it out
             if (bestOpen >= thr) {
@@ -2009,6 +2010,46 @@
                 if (qb.cpuReact <= 0) { qb.cpuReact = undefined; return { target: best, throwNow: true }; }
             } else qb.cpuReact = undefined;
             return { target: best, throwNow: false };
+        }
+
+
+        // CPU QB awareness: notices a rusher closing in (after a human-ish reaction beat), rolls away from him, and
+        // if there's room upfield he tucks it and runs. Returns 'RUN' (he's now a runner), 'ROLL' (escaping but can still throw) or null.
+        function cpuQbEvade(qb) {
+            const dir = offenseDirection, W = FIELD_WIDTH_YARDS / 2;
+            const foes = players.filter(d => d.isCPU !== qb.isCPU && !d.isRef && !d.isKicker);
+            const blockers = players.filter(o => o.isCPU === qb.isCPU && o.isLineman);
+            let threat = null, tDist = 99;
+            foes.forEach(d => {
+                const dist = Math.hypot(d.x - qb.x, d.y - qb.y);
+                const closing = Math.hypot(d.prevX - qb.prevX, d.prevY - qb.prevY) - dist;
+                const engaged = dist > 2.2 && blockers.some(o => Math.hypot(o.x - d.x, o.y - d.y) < 1.8); // tied up by my line
+                if (dist < 7 && (dist < 3.5 || !(closing <= 0.005)) && !engaged && dist < tDist) { threat = d; tDist = dist; }
+            });
+            const ahead = foes.filter(d => (d.x - qb.x) * dir > 1 && (d.x - qb.x) * dir < 10 && Math.abs(d.y - qb.y) < 5 && d !== threat).length;
+            if (!threat) { qb.cpuNotice = undefined; if (qb.cpuScramble === 'ROLL') qb.cpuRollT = (qb.cpuRollT || 0) + 1; }
+            else if (!qb.cpuScramble) {
+                if (qb.cpuNotice === undefined) qb.cpuNotice = Math.max(2, Math.round(5 + Math.random() * 9 - StatsBridge.qbDiff(qb) * 3)); // reaction beat
+                if (qb.cpuNotice-- > 0) return null;
+                qb.cpuScramble = 'ROLL'; qb.cpuRollT = 0; qb.cpuBias = 0.35 + Math.random() * 0.55; // how willing he is to take off
+            }
+            if (!qb.cpuScramble) return null;
+            const behind = (lineOfScrimmage - qb.x) * dir;
+            if (behind < -0.2 && qb.cpuScramble === 'ROLL') qb.cpuScramble = 'RUN'; // already across the line: can't throw, so he's a runner now
+            if (threat) {
+                let ex = qb.x - threat.x, ey = qb.y - threat.y, m = Math.hypot(ex, ey) || 1; ex /= m; ey /= m;
+                if (Math.abs(ey) < 0.25) ey = (qb.y > 0 ? 1 : -1) * 0.6; // rusher head-on: pick a side
+                if (qb.y > W - 4) ey = -Math.abs(ey) - 0.3; else if (qb.y < -W + 4) ey = Math.abs(ey) + 0.3; // don't run out of bounds
+                qb.cpuRollT = (qb.cpuRollT || 0) + 1;
+                if (qb.cpuScramble === 'ROLL') {
+                    const canBack = behind < 9 ? 1 : 0;
+                    qb.x += ex * qb.speed * 0.45 * canBack * (ex * dir < 0 ? 1 : 0); qb.y += ey * qb.speed * 0.8; qb.facing = dir;
+                    const laneOpen = ahead <= 1;
+                    if (laneOpen && ((qb.cpuRollT > 12 && Math.random() < qb.cpuBias * 0.08) || tDist < 2.6 && Math.random() < 0.25)) qb.cpuScramble = 'RUN';
+                } else { qb.y += ey * qb.speed * 0.55; } // juke away from the rusher while running
+            } else if (qb.cpuScramble === 'ROLL' && qb.cpuRollT > 20 && ahead <= 1) qb.cpuScramble = 'RUN'; // rusher gone/missed: take the open grass
+            qb.y = Math.max(-W + 1, Math.min(W - 1, qb.y));
+            return qb.cpuScramble;
         }
 
         function screenToWorldGround(sx, sy) {
@@ -3108,8 +3149,8 @@
                                 else { let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU; if (isOffense && currentOffensePlay === 'INSIDE_RUN' && !p.isLineman && !p.isQB && !p.isReturner) { p.x += p.facing * (p.speed * 0.65); p.animTimer += 0.3; } }
                             } else if (p.hasBall && p.isCPU) {
                                 const cpuRunSpeed = p.speed * 0.80; 
-                                if (isPassPlay(currentOffensePlay) && p.isQB) {
-                                    if (Math.abs(p.x - lineOfScrimmage) < 6) p.x -= p.facing * 0.04; 
+                                if (isPassPlay(currentOffensePlay) && p.isQB && cpuQbEvade(p) !== 'RUN') {
+                                    if (Math.abs(p.x - lineOfScrimmage) < 6 && !p.cpuScramble) p.x -= p.facing * 0.04; 
                                     if (p.pocketPhase === undefined) p.pocketPhase = Math.random() * Math.PI * 2; p.pocketPhase += 0.04; p.y += Math.sin(p.pocketPhase) * 0.04; p.animTimer += 0.15; cpuPassTimer--;
                                     if (!isPassing) {
                                         let _dec = cpuReadProgression(p, currentOffensePlay); let targetWR = _dec.target;
