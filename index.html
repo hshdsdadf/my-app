@@ -1883,13 +1883,81 @@
         };
         window.addEventListener('touchend', handlePassTouchEnd); window.addEventListener('touchcancel', handlePassTouchEnd);
 
+        // Once the QB's crossed the blue line (line of scrimmage) he can't throw a forward pass anymore
+        function qbPastLOS(qb) {
+            if (!qb || lineOfScrimmage <= 0) return false;
+            return (offenseDirection === -1) ? (qb.x < lineOfScrimmage) : (offenseDirection === 1 ? qb.x > lineOfScrimmage : false);
+        }
         function canAimPass() {
             if (gameState !== 'PLAYING') return false;
+            if (qbPastLOS(player)) return false;
             if (isMultiplayer && isMpClient) {
                 return offenseDirection === 1 && isPassPlay(cpuSelectedPlay) && player && player.isQB && player.hasBall && !isPassing && !player.isDiving && !player.isBlocking;
             } else {
                 return offenseDirection === -1 && isPassPlay(selectedPlay) && player && player.isQB && player.hasBall && !isPassing && !player.isDiving && !player.isBlocking && introScriptState !== 'SCRIPTED_RUN';
             }
+        }
+
+
+        // ===== CPU offense brain =====
+        let lastCpuPlay = null;
+        function pickCpuPlay() {
+            const dist = Math.max(1, Math.abs(firstDownLine - lineOfScrimmage));
+            const toGoal = 110 - lineOfScrimmage;
+            const w = { INSIDE_RUN: 3, SWEEP_RIGHT: 2, SWEEP_LEFT: 2, FLY: 1.5, DOUBLE_SLANT: 2.5, OUTS: 2.5 };
+            const run = k => { w.INSIDE_RUN *= k; w.SWEEP_RIGHT *= k; w.SWEEP_LEFT *= k; };
+            const pass = k => { w.FLY *= k; w.DOUBLE_SLANT *= k; w.OUTS *= k; };
+            if (dist >= 8) { pass(1.9); run(0.6); }
+            else if (dist >= 5) { pass(1.3); }
+            else if (dist <= 3) { run(1.8); pass(0.8); w.FLY *= 0.5; }
+            if (down === 3 && dist >= 5) { pass(1.8); w.OUTS *= 1.2; }
+            if (down === 3 && dist <= 2) w.INSIDE_RUN *= 2;
+            if (down === 4) { pass(1.2); }
+            if (toGoal <= 12) { w.FLY *= 0.2; w.INSIDE_RUN *= 1.5; w.DOUBLE_SLANT *= 1.3; }
+            if (toGoal >= 85) { w.FLY *= 1.2; }
+            const lateGame = (quarter >= 4 && gameClock < 240) || quarter > 4;
+            if (lateGame && cpuScore < playerScore) { pass(1.7); run(0.6); }
+            else if (lateGame && cpuScore > playerScore) { run(1.7); pass(0.6); }
+            if (lastCpuPlay && w[lastCpuPlay] !== undefined) w[lastCpuPlay] *= 0.35; // don't call the same play over and over
+            const keys = Object.keys(w); let total = keys.reduce((a, k) => a + w[k], 0), r = Math.random() * total, pick = keys[0];
+            for (const k of keys) { r -= w[k]; if (r <= 0) { pick = k; break; } }
+            lastCpuPlay = pick; return pick;
+        }
+        // QB reads his receivers like a person: waits for someone to get open, takes a beat to react, throws early under pressure
+        function cpuReadProgression(qb, play) {
+            qb.cpuHold = (qb.cpuHold || 0) + 1;
+            const wrs = players.filter(wr => wr.isCPU === qb.isCPU && !wr.isLineman && !wr.isQB);
+            if (!wrs.length) return { target: null, throwNow: false };
+            const defs = players.filter(d => d.isCPU !== qb.isCPU && !d.isLineman && !d.isQB && !d.isReturner);
+            const rushers = players.filter(d => d.isCPU !== qb.isCPU && d.isLineman);
+            let nearestRush = 99; rushers.forEach(d => { const dd = Math.hypot(d.x - qb.x, d.y - qb.y); if (dd < nearestRush) nearestRush = dd; });
+            const qd = StatsBridge.qbDiff(qb);
+            const range = StatsBridge.throwRange(qb);
+            let best = null, bestScore = -Infinity, bestOpen = -Infinity;
+            wrs.forEach(wr => {
+                const hang = 55; let lx = wr.x + wr.facing * wr.speed * hang * 0.7, ly = wr.y;
+                if (play === 'OUTS' && Math.abs(wr.y) > 8) ly += (wr.y < 0 ? -1 : 1) * wr.speed * hang * 0.8;
+                let sepNow = 99, sepLead = 99;
+                defs.forEach(d => { sepNow = Math.min(sepNow, Math.hypot(d.x - wr.x, d.y - wr.y)); sepLead = Math.min(sepLead, Math.hypot(d.x - lx, d.y - ly)); });
+                let open = Math.min(sepNow, sepLead + 1.5);
+                const depth = Math.abs(wr.x - lineOfScrimmage);
+                if (depth < 2) open -= 1.5; // still at the line: not a real route yet
+                if (Math.abs(ly) > FIELD_WIDTH_YARDS / 2 - 1) open -= 3; // would be thrown out of bounds
+                if (Math.hypot(lx - qb.x, ly - qb.y) > range) open -= 3;
+                const score = open + depth * 0.06;
+                if (score > bestScore) { bestScore = score; best = wr; bestOpen = open; }
+            });
+            const pressured = nearestRush < 3.5, heavy = nearestRush < 2.0;
+            const minHold = pressured ? 14 : 32;
+            const thr = Math.max(2.4, 4.8 - qb.cpuHold * 0.015) - (pressured ? 1.4 : 0);
+            if (qb.cpuHold < minHold) return { target: best, throwNow: false };
+            if (cpuPassTimer <= 0 || heavy) { qb.cpuReact = undefined; return { target: best, throwNow: true }; } // out of time / getting hit: just get it out
+            if (bestOpen >= thr) {
+                if (qb.cpuReact === undefined) qb.cpuReact = Math.max(3, Math.round(8 + Math.random() * 14 - qd * 4)); // reaction beat
+                else qb.cpuReact--;
+                if (qb.cpuReact <= 0) { qb.cpuReact = undefined; return { target: best, throwNow: true }; }
+            } else qb.cpuReact = undefined;
+            return { target: best, throwNow: false };
         }
 
         function screenToWorldGround(sx, sy) {
@@ -1908,6 +1976,7 @@
 
         function executePass() {
             if (gameState !== 'PLAYING') return; 
+            if (qbPastLOS(player)) { isAimingPass = false; aimPointerId = null; return; }
             
             if (isMultiplayer && isMpClient) {
                 if (Math.hypot(aimStartX - aimCurrentX, aimStartY - aimCurrentY) < 15) return;
@@ -2341,8 +2410,7 @@
                 if (isMultiplayer && isMpHost) {
                     if (!cpuSelectedPlay) { gameState = 'PLAY_CALL'; playClock = PLAY_CLOCK_SECONDS; return; }
                 } else if (!isMultiplayer) {
-                    const plays = ['INSIDE_RUN', 'SWEEP_RIGHT', 'SWEEP_LEFT', 'FLY', 'DOUBLE_SLANT', 'OUTS'];
-                    if (!cpuSelectedPlay) cpuSelectedPlay = plays[Math.floor(Math.random() * plays.length)];
+                    cpuSelectedPlay = pickCpuPlay(); // fresh call every snap, based on the situation
                 }
                 let baseHold = (cpuSelectedPlay === 'FLY') ? 70 : (cpuSelectedPlay === 'OUTS') ? 45 : 55;
                 cpuPassTimer = baseHold + Math.random() * 40 + Math.random() * 40 + Math.random() * 30; 
@@ -2899,6 +2967,7 @@
                 let carrier = players.find(p => p.hasBall) || players.find(p => p.isReturner || p.isTargetReceiver); let carrierPastLOS = false;
                 if (carrier && gameState === 'PLAYING' && offenseDirection !== 0) { if (offenseDirection === -1 && carrier.x <= lineOfScrimmage) carrierPastLOS = true; if (offenseDirection === 1 && carrier.x >= lineOfScrimmage) carrierPastLOS = true; }
                 let currentOffensePlay = (offenseDirection === -1) ? selectedPlay : cpuSelectedPlay;
+                if (isAimingPass && qbPastLOS(player)) { isAimingPass = false; aimPointerId = null; } // crossed the line mid-aim: drop the trajectory
 
                 players.forEach(p => { let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU; p.runningRoute = isOffense && !p.isLineman && !p.isQB && !p.isReturner && !p.hasBall && isPassPlay(currentOffensePlay) && gameState === 'PLAYING' && !carrierPastLOS; });
                 players.forEach(p => {
@@ -2991,9 +3060,9 @@
                                 if (isPassPlay(currentOffensePlay) && p.isQB) {
                                     if (Math.abs(p.x - lineOfScrimmage) < 6) p.x -= p.facing * 0.04; 
                                     if (p.pocketPhase === undefined) p.pocketPhase = Math.random() * Math.PI * 2; p.pocketPhase += 0.04; p.y += Math.sin(p.pocketPhase) * 0.04; p.animTimer += 0.15; cpuPassTimer--;
-                                    if (cpuPassTimer <= 0 && !isPassing) {
-                                        let eligible = players.filter(wr => wr.isCPU === p.isCPU && !wr.isLineman && !wr.isQB); let targetWR = eligible[Math.floor(Math.random() * eligible.length)];
-                                        if (targetWR) {
+                                    if (!isPassing) {
+                                        let _dec = cpuReadProgression(p, currentOffensePlay); let targetWR = _dec.target;
+                                        if (targetWR && _dec.throwNow) {
                                             p.hasBall = false; let hangTime = 55; let leadX = targetWR.x + (targetWR.facing * targetWR.speed * hangTime * 0.7); let leadY = targetWR.y;
                                             if (currentOffensePlay === 'OUTS' && Math.abs(targetWR.y) > 8) leadY += (targetWR.y < 0 ? -1 : 1) * targetWR.speed * hangTime * 0.8;
                                             let nearestRusher = players.filter(pl => pl.isCPU !== p.isCPU && pl.isLineman).sort((a,b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0]; let underPressure = nearestRusher && Math.hypot(nearestRusher.x - p.x, nearestRusher.y - p.y) < 3.5; const _qd = StatsBridge.qbDiff(p); let cleanBadRate = Math.max(0.03, Math.min(0.6, 0.28 - _qd * 0.18)); let pressureBadRate = Math.max(0.1, Math.min(0.95, 0.45 - _qd * 0.35)); ball.isBadPass = Math.random() < (underPressure ? pressureBadRate : cleanBadRate);
@@ -3004,7 +3073,7 @@
                                             ball.vx = (ball.destX - p.x) / hangTime; ball.vy = (ball.destY - p.y) / hangTime; let z0 = 1.2; let g = 0.008; ball.vz = ((1.0 - z0) / hangTime) + (g * hangTime / 2) + (g / 2); ball.z = z0; ball.x = p.x; ball.y = p.y; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
                                             players.forEach(pl => { pl.isTargetReceiver = false; pl.isIntercepter = false; }); targetWR.isTargetReceiver = true;
                                             let COVERAGE_RADIUS = ball.isBadPass ? 4.5 : 2.6; players.filter(pl => pl.isCPU !== p.isCPU && !pl.isLineman && !pl.isQB).forEach(def => { if (Math.sqrt(Math.pow(def.x - ball.destX, 2) + Math.pow(def.y - ball.destY, 2)) < COVERAGE_RADIUS) def.isIntercepter = true; });
-                                        } else p.x += cpuRunSpeed * p.facing; 
+                                        } else if (!targetWR) p.x += cpuRunSpeed * p.facing; 
                                     }
                                 } else {
                                     let distFromLOS = Math.abs(p.x - lineOfScrimmage);
@@ -5182,6 +5251,23 @@ const PXS = (function () {
                 for (let n = 0; n < 25 && calcOvr(p) < minOvr; n++) adj.forEach(k => { attrs[k] = clamp(attrs[k] + 1, 30, 99); });
                 p.ovr = calcOvr(p); return p;
             }
+            // Rookie Pack: 2 players 55-62, 1 player 62-70, 1 player 70-80 (random positions, random ovr inside each band)
+            function genRookiePack() {
+                const rnd = mulberry((Date.now() ^ (Math.random() * 1e9)) | 0), names = new Set(), nums = new Set(), bench = career.bench || [];
+                career.roster.concat(bench).forEach(p => { names.add(p.name); nums.add(p.num); });
+                const bump = (career.packSeq = (career.packSeq || 0) + 1) * 10;
+                const posPool = ['QB', 'WR', 'OL', 'DL', 'LB', 'CB', 'K'];
+                const bands = [[55, 62], [55, 62], [62, 70], [70, 80]];
+                const list = bands.map(([lo, hi], i) => {
+                    let p, tries = 0;
+                    do {
+                        const pos = posPool[Math.floor(rnd() * posPool.length)], tgt = lo + Math.floor(rnd() * (hi - lo + 1));
+                        p = makePlayer(pos, tgt, 0, rnd, names, nums, 'b' + (bump + i));
+                    } while ((p.ovr < lo || p.ovr > hi) && ++tries < 25);
+                    return p;
+                });
+                return list.sort((a, b) => a.ovr - b.ovr);
+            }
             function genPack() {
                 const rnd = mulberry((Date.now() ^ (Math.random() * 1e9)) | 0), names = new Set(), nums = new Set(), bench = career.bench || [];
                 career.roster.concat(bench).forEach(p => { names.add(p.name); nums.add(p.num); });
@@ -5353,7 +5439,7 @@ const PXS = (function () {
             }
 
             // ================= Shop (tabbed) =================
-            const PACK_PRICE = 1000;
+            const PACK_PRICE = 5000;
             // ---- shop tabs ----
             const shIcon = (rects, c, d) => { const { g, R } = mkGrid(8, 8); rects.forEach(r => R(r[0], r[1], r[2], r[3], r[4] ? d : c)); return pxSVG(g); };
             const SH_TABS = [
@@ -5376,13 +5462,14 @@ const PXS = (function () {
                 const t = SH_TABS.find(x => x.id === id) || SH_TABS[0], PRICE = PACK_PRICE;
                 const head = `<div class="of-sec"><span>${t.label}</span><small>${t.sub}</small></div>`;
                 if (id === 'player') return `<div class="sh-panel">${head}
-                    <div class="sh-card"><div class="sh-art sh-stage"><div class="sh-tag">LOCKED</div><div style="opacity:.45;filter:grayscale(.85)">${packHTML(124)}</div></div>
+                    <div class="sh-card"><div class="sh-art sh-stage"><div class="sh-tag">NEW</div>${packHTML(124)}</div>
                     <div class="sh-info"><div class="sh-name">ROOKIE PACK</div>
-                        <div class="sh-line"><i class="sh-ico">${ICON_PERSON}</i><span>4 PLAYERS<small>(1 GUARANTEED 90+ OVR)</small></span></div>
-                        <div class="sh-line"><i class="sh-sq" style="background:#fbbf24"></i><span>1 LEGEND<small>90+ OVR</small></span></div>
-                        <div class="sh-line"><i class="sh-sq" style="background:#38bdf8"></i><span>3 PLAYERS<small>72-82 OVR</small></span></div>
-                        <div class="sh-buy"><span class="sh-price"><i class="sh-ico">${ICON_COIN}</i>${PRICE.toLocaleString('en-US')}</span>
-                        <button class="sh-btn" id="sh-open" disabled>LOCKED</button></div></div></div></div>`;
+                        <div class="sh-line"><i class="sh-ico">${ICON_PERSON}</i><span>4 PLAYERS<small>(RANDOM POSITIONS)</small></span></div>
+                        <div class="sh-line"><i class="sh-sq" style="background:#94a3b8"></i><span>2 PLAYERS<small>55-62 OVR</small></span></div>
+                        <div class="sh-line"><i class="sh-sq" style="background:#4ade80"></i><span>1 PLAYER<small>62-70 OVR</small></span></div>
+                        <div class="sh-line"><i class="sh-sq" style="background:#38bdf8"></i><span>1 PLAYER<small>70-80 OVR</small></span></div>
+                        <div class="sh-buy"><span class="sh-price" style="color:#4ade80">${csFmtMoney(PRICE)}</span>
+                        <button class="sh-btn" id="sh-open" onclick="shOpen()">BUY &amp; OPEN</button></div></div></div></div>`;
                 if (id === 'special') { const done = !!career.welcomeClaimed; return `<div class="sh-panel">${head}
                     <div class="sh-card ${done ? 'done' : ''}"><div class="sh-art sh-stage"><div class="sh-tag">${done ? 'OPENED' : 'ONE-TIME'}</div>${packHTML(124, { a: 'WELCOME', b: 'PACK', i: 'PLAYERS + PLAYS' })}</div>
                     <div class="sh-info"><div class="sh-name">WELCOME PACK</div>
@@ -5627,7 +5714,7 @@ const PXS = (function () {
                 if (cfg.cost && (career.funds || 0) < cfg.cost) { toast('NOT ENOUGH CASH!'); return; }
                 if (cfg.cost) { career.funds -= cfg.cost; const hc = document.getElementById('hub-cash'); if (hc) hc.textContent = csFmtMoney(career.funds); }
                 if (tut.on && tut.phase === 'pack') unpoint();
-                const cards = genPack(), plays = cfg.plays || []; let stage = 0, shown = 0;
+                const cards = (cfg.gen || genPack)(), plays = cfg.plays || []; let stage = 0, shown = 0;
                 const dots = (n, i) => `<div class="pk-dots">${Array.from({ length: n }, (_, k) => `<i class="${k <= i ? 'on' : ''}"></i>`).join('')}</div>`;
                 let pi = 0;   // play index
                 function draw() {
@@ -5658,7 +5745,10 @@ const PXS = (function () {
                 };
                 draw(); pk.style.display = 'flex';
             }
-            window.shOpen = function () { toast('ROOKIE PACK IS LOCKED'); };   // locked: the only pack that opens is the one-time welcome pack
+            window.shOpen = function () {
+                if (tut.on) { toast('FINISH THE TUTORIAL FIRST'); return; }
+                openPack({ title: 'ROOKIE PACK', cost: PACK_PRICE, gen: genRookiePack });
+            };
             window.shOpenWelcome = function () {
                 if (career.welcomeClaimed) return;
                 if (!tut.on || tut.phase !== 'pack') { toast('THE WELCOME PACK OPENS DURING THE TUTORIAL'); return; }
