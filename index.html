@@ -4889,13 +4889,13 @@ const PXS = (function () {
             csOffers = []; let hi = 0, oi = 0; for (let i = 0; i < n; i++) csOffers.push(slots.includes(i) ? hiring[hi++] : others[oi++]);
             csSel.team = null; document.getElementById('cs-accept').disabled = true; csUpdateBar();
             document.getElementById('cs-teams').innerHTML = csOffers.map(o => {
-                const t = qpTeams[o.idx];
+                const t = qpTeams[o.idx]; let shownOvr = t.ovr; try { shownOvr = window.getTeamOvr(o.idx, o.hiring ? csSel.name : null); } catch (e) {}
                 return `<button type="button" class="cs-team ${o.hiring ? 'hiring' : 'locked'}" data-idx="${o.idx}" style="--c1:${t.c1};--c2:${t.c2}" ${o.hiring ? `onclick="csPickTeam(${o.idx})"` : 'tabindex="-1" aria-disabled="true"'}>
                     ${o.hiring ? '<span class="cs-tag">HIRING</span>' : '<span class="cs-stamp">FILLED</span>'}
                     <span class="cs-helmet">${csHelmet(t)}</span>
                     <span class="cs-tmain"><span class="cs-tname">${t.name.toUpperCase()}</span>
                     <span class="cs-tmeta"><span class="cs-stars">${csStarsSVG(o.stars)}</span><span class="cs-funds"><span class="cs-coin">${csIconSVG(CS_COIN, { o: '#92400e', y: '#fbbf24', w: '#fff3c4' })}</span>${csFmtMoney(o.funds)}</span></span></span>
-                    <span class="cs-ovr"><b>${t.ovr}</b><i>OVR</i></span></button>`;
+                    <span class="cs-ovr"><b>${shownOvr}</b><i>OVR</i></span></button>`;
             }).join('');
         }
         function csUpdateBar() {
@@ -4988,7 +4988,7 @@ const PXS = (function () {
                 shedRating: (a, pass) => a && a.PRS != null ? (pass ? a.PRS : a.STR) * 0.7 + a.STR * 0.3 : (a && a.TKL != null && a.STR != null && a.AWR != null ? (a.TKL + a.STR) / 2 : 55),
                 shedFrames: (d, b, pass) => clamp((FX.shedRating(d, pass) - FX.blockRating(b, pass)) * 1.1, -45, 45),
                 fatigue: a => clamp(1 + (70 - gv(a, 'STA', 70)) * 0.012, 0.6, 1.3),                 // how fast a player tires (1 = average)
-                staMul: st => st >= 40 ? 1 : 0.9 + 0.1 * Math.max(0, st) / 40,                // speed once tired (down to -28%)
+                staMul: st => st >= 55 ? 1 : 0.72 + 0.28 * Math.max(0, st) / 55,                // speed once tired (down to -28%)
                 whiff: (c, h) => clamp(0.08 + ((gv(c, 'AGI', 60) + gv(c, 'STR', 55)) / 2 - gv(h, 'TKL', 60)) * 0.011, 0.02, 0.45)
             };
 
@@ -5118,6 +5118,8 @@ const PXS = (function () {
             function ratingsOf(r) { const avg = g => { const l = r.filter(p => p.grp === g); return Math.round(l.reduce((s, p) => s + p.ovr, 0) / l.length); }; const off = avg('off'), def = avg('def'), k = avg('st'); return { off, def, st: k, ovr: Math.round(off * 0.45 + def * 0.45 + k * 0.10) }; }
             window.getTeamRatings = function () { return career && career.roster ? ratingsOf(career.roster) : null; };
             window.getTeamRoster = function (idx) { return rosterFor(idx); };
+            // overall of the roster a school actually has this season (CPU schools) or you'd start with (a school you could take over)
+            window.getTeamOvr = function (idx, coachName) { return ratingsOf(coachName ? buildRoster(idx, coachName, START_TEAM) : rosterFor(idx)).ovr; };
 
             // ================= DOM =================
             const body = document.body;
@@ -5448,7 +5450,7 @@ const PXS = (function () {
 
             // ================= MATCHUP SCREEN (opens from PLAY NEXT GAME) =================
             const muCss = document.createElement('style'); muCss.textContent = `
-                #mu-screen { position: fixed; inset: 0; z-index: 2600; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; color: #fff; padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom)); gap: 12px; box-sizing: border-box; overflow-y: auto; background: radial-gradient(ellipse at 50% 40%, rgba(2,6,23,0) 30%, rgba(2,6,23,.55) 100%); }
+                #mu-screen { position: fixed; inset: 0; z-index: 2600; display: none; flex-direction: column; font-family: 'Press Start 2P', monospace; color: #fff; padding: max(10px, env(safe-area-inset-top)) 14px max(10px, env(safe-area-inset-bottom)); gap: 12px; box-sizing: border-box; overflow: hidden; height: 100vh; height: 100dvh; background: radial-gradient(ellipse at 50% 40%, rgba(2,6,23,0) 30%, rgba(2,6,23,.55) 100%); }
                 #mu-screen * { box-sizing: border-box; }
                 .mu-bar { display: flex; align-items: center; gap: 14px; background: rgba(8,15,34,.94); padding: 10px 16px; box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 6px 8px 0 0 rgba(0,0,0,.6); flex: 0 0 auto; margin: 4px; }
                 .mu-bar .mu-h { width: 46px; height: 46px; flex: 0 0 auto; }
@@ -5478,17 +5480,19 @@ const PXS = (function () {
                 .mu-team .mu-ov { font-size: clamp(9px, 1.6vw, 16px); color: #38bdf8; } .mu-team .mu-ov small { display: block; font-size: .55em; color: #94a3b8; margin-top: 7px; text-shadow: none; }
                 .mu-team .mu-rec { background: rgba(8,15,34,.92); padding: 9px 18px 7px; font-size: clamp(8px, 1.3vw, 13px); box-shadow: 0 -3px 0 0 #1e3a8a, 0 3px 0 0 #1e3a8a, -3px 0 0 0 #1e3a8a, 3px 0 0 0 #1e3a8a; }
                 .mu-vsb { font-size: clamp(20px, 4.2vw, 46px); color: #facc15; text-shadow: 4px 4px 0 #000; flex: 0 0 auto; }
-                .mu-btns { display: grid; grid-template-columns: 1fr 1.25fr 1.9fr; gap: 14px; flex: 0 0 auto; margin: 4px; }
-                .mu-btn { font-family: inherit; cursor: pointer; border: 0; color: #fff; background: rgba(8,15,34,.95); padding: 16px 12px 14px; font-size: clamp(9px, 1.6vw, 15px); text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; gap: 12px; line-height: 1.6;
+                .mu-btns { display: grid; grid-template-columns: 1fr 1.25fr 1.6fr; gap: 10px; flex: 0 0 auto; margin: 4px; }
+                .mu-btn { font-family: inherit; cursor: pointer; border: 0; color: #fff; background: rgba(8,15,34,.95); padding: 9px 10px 8px; font-size: clamp(8px, 1.2vw, 12px); text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.6;
                     box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 6px 8px 0 0 rgba(0,0,0,.6); transition: transform .08s; }
                 .mu-btn:hover { background: #12214a; transform: translateY(-2px); } .mu-btn:active { transform: translateY(2px); }
-                .mu-btn small { display: block; font-size: .62em; color: #94a3b8; margin-top: 7px; text-shadow: none; }
-                .mu-btn svg { width: clamp(16px, 2.4vw, 26px); height: auto; shape-rendering: crispEdges; flex: 0 0 auto; }
+                .mu-btn small { display: block; font-size: .58em; color: #94a3b8; margin-top: 4px; text-shadow: none; }
+                .mu-btn svg { width: clamp(12px, 1.6vw, 18px); height: auto; shape-rendering: crispEdges; flex: 0 0 auto; }
                 .mu-btn.go { background: #facc15; color: #1e293b; text-shadow: none; box-shadow: 0 -3px 0 0 #fff, 0 3px 0 0 #a16207, -3px 0 0 0 #fff, 3px 0 0 0 #fff, 6px 8px 0 0 rgba(0,0,0,.6); } .mu-btn.go:hover { background: #fde047; } .mu-btn.go small { color: #422006; }
                 @media (max-width: 900px), (orientation: portrait) {
-                    .mu-main { grid-template-columns: 1fr; flex: 0 0 auto; min-height: auto; } .mu-stage { order: -1; background: rgba(2,6,23,.62); } .mu-btns { position: sticky; bottom: 0; padding: 14px 0 4px; background: linear-gradient(rgba(2,6,23,0), rgba(2,6,23,.92) 30%); z-index: 2; } .mu-team .mu-bigh { width: clamp(70px, 19vw, 150px); height: clamp(70px, 19vw, 150px); }
-                    .mu-btns { grid-template-columns: 1fr 1fr; } .mu-btn.go { grid-column: 1 / -1; order: -1; } .mu-pill { display: none; }
+                    .mu-main { grid-template-columns: 1fr; min-height: 0; } .mu-col { display: none; } .mu-stage { background: rgba(2,6,23,.62); justify-content: space-around; min-height: 0; }
+                    .mu-team .mu-bigh { width: clamp(60px, 16vh, 140px); height: clamp(60px, 16vh, 140px); } .mu-pill { display: none; }
+                    .mu-btn small { display: none; } .mu-btn { padding: 11px 6px 9px; }
                 }
+                @media (max-height: 560px) { #mu-screen { gap: 6px; } .mu-bar { padding: 6px 12px; } .mu-bar .mu-h { width: 32px; height: 32px; } .mu-banner { padding: 6px 18px 5px; } .mu-btn small { display: none; } .mu-btn { padding: 7px 8px 6px; } .mu-team .mu-bigh { width: clamp(50px, 20vh, 120px); height: clamp(50px, 20vh, 120px); } }
                 .hm-sch { display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 6px 5px; font-size: clamp(7px, 2vw, 8px); color: #e2e8f0; line-height: 1.5; border-bottom: 3px solid #14203d; }
                 .hm-sch .hm-h { width: 22px; height: 22px; } .hm-sch .hm-h svg { filter: none !important; } .hm-sch > span:first-child { color: #64748b; text-align: center; }
                 .hm-sch.cur { background: rgba(250,204,21,.13); box-shadow: inset 4px 0 0 #facc15; } .hm-sch .w { color: #4ade80; } .hm-sch .l { color: #f87171; } .hm-sch .t { color: #facc15; } .hm-sch .n { color: #475569; }
@@ -5507,7 +5511,7 @@ const PXS = (function () {
             function renderMatchup() {
                 const s = seasonOf(), g = s.sched[s.week]; if (!g) return;
                 const me = teamOf(), opp = qpTeams[g.opp], home = g.home ? me : opp, r = ensureRoster(), tr = ratingsOf(r), oR = rosterFor(g.opp);
-                const mr = s.stand[career.teamIdx], or = s.stand[g.opp], oOvr = opp.ovr;
+                const mr = s.stand[career.teamIdx], or = s.stand[g.opp], oRt = ratingsOf(oR), oOvr = oRt.ovr;
                 const side = (t, ovr, rec, offv, defv, mirror) => `<div class="mu-team"><div class="mu-bigh">${mirror ? mirrorHelm(t) : csHelmet(t)}</div>
                     <div class="mu-nm">${hmEsc(t.name.split(' ').slice(0, -1).join(' ').toUpperCase())}<div class="mu-mn">${hmEsc(t.name.split(' ').slice(-1)[0].toUpperCase())}</div></div>
                     <div class="mu-st">${csStarsSVG(csStarRating(ovr))}</div><div class="mu-ov">OVR ${ovr}<small>OFF ${offv} · DEF ${defv}</small></div><div class="mu-rec">${rec}</div></div>`;
@@ -5522,7 +5526,7 @@ const PXS = (function () {
                             <div class="mu-card"><h4>KEY PLAYERS (${hmEsc(me.name.split(' ').slice(-1)[0].toUpperCase())})</h4>${keyPlayersHTML(r, me)}</div>
                         </div>
                         <div class="mu-stage"><div class="mu-banner">REGULAR SEASON<small>WEEK ${s.week + 1}</small></div>
-                            <div class="mu-vs">${side(me, tr.ovr, recStr(mr), tr.off, tr.def, false)}<div class="mu-vsb">VS</div>${side(opp, oOvr, recStr(or), opp.off, opp.def, true)}</div><div></div></div>
+                            <div class="mu-vs">${side(me, tr.ovr, recStr(mr), tr.off, tr.def, false)}<div class="mu-vsb">VS</div>${side(opp, oOvr, recStr(or), oRt.off, oRt.def, true)}</div><div></div></div>
                         <div class="mu-col">
                             <div class="mu-card"><h4>GAME DETAILS</h4><div class="mu-row"><span>Week</span><b>${s.week + 1} of ${SEASON_GAMES}</b></div><div class="mu-row"><span>Site</span><b>${g.home ? 'Home' : 'Away'}</b></div><div class="mu-row"><span>Location</span><b>${hmEsc(home.name)} Stadium</b></div><div class="mu-row"><span>Weather</span><b>Clear</b></div><div class="mu-row"><span>Quarters</span><b>${timeLabels[qpState.timeIdx] || '2 MIN'}</b></div></div>
                             <div class="mu-card"><h4>KEY PLAYERS (${hmEsc(opp.name.split(' ').slice(-1)[0].toUpperCase())})</h4>${keyPlayersHTML(oR, opp)}</div>
@@ -5691,7 +5695,7 @@ const PXS = (function () {
                         bodies.forEach(p => { if (p.rp) p.st = p.rp.attrs; });
                     });
                 },
-                STA_DRAIN: 0.02, STA_REGEN: 0.015, STA_REST: 18,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
+                STA_DRAIN: 0.085, STA_REGEN: 0.008, STA_REST: 7,   // per-tick drain at a full sprint, per-tick recovery standing still, recovery between plays
                 resetStamina() { const all = (career && career.roster ? career.roster.concat(career.bench || []) : []).concat(...Object.values(rosterCache)); all.forEach(r => { r.stam = 100; }); },
                 staMul(st) { return FX.staMul(st); },
                 pushFactor(b, d) { if (!b || !d || !b.st || !d.st) return 1; return clamp(1 - FX.shedFrames(d.st, b.st, false) / 45, 0.3, 1.9); },
