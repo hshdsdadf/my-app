@@ -3784,18 +3784,15 @@ const PXS = (function () {
         const _staRingCache = {};
         function getStaRing(lit, tone, flash) {
             const key = lit + '_' + tone + '_' + (flash ? 1 : 0); if (_staRingCache[key]) return _staRingCache[key];
-            const S = 40, c = S / 2 - 0.5, RI = 12, RO = 17, N = 20, cv = document.createElement('canvas'); cv.width = cv.height = S;
-            const g = cv.getContext('2d'), img = g.createImageData(S, S), set = (x, y, hex) => { const i = (y * S + x) * 4; img.data[i] = parseInt(hex.slice(1, 3), 16); img.data[i + 1] = parseInt(hex.slice(3, 5), 16); img.data[i + 2] = parseInt(hex.slice(5, 7), 16); img.data[i + 3] = 255; };
-            const pal = [['#4ade80', '#bbf7d0', '#15803d'], ['#facc15', '#fef08a', '#a16207'], ['#ef4444', '#fecaca', '#991b1b']][tone];
-            for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
-                const dx = x - c, dy = y - c, d = Math.sqrt(dx * dx + dy * dy); if (d > RO + 1.6 || d < RI - 1.6) continue;
-                if (d > RO + 0.5 || d < RI - 0.5) { set(x, y, '#000000'); continue; }
-                let ang = Math.atan2(dx, -dy); if (ang < 0) ang += Math.PI * 2;      // 0 at top, clockwise
-                const f = ang / (Math.PI * 2) * N, seg = Math.floor(f), edge = f - seg;
-                if (edge < 0.1 || edge > 0.9) { set(x, y, '#000000'); continue; }  // chunky black dividers
-                const outer = d > RO - 1.2, inner = d < RI + 1.2;
-                if (seg < lit) { if (flash) set(x, y, outer ? '#ffffff' : '#fca5a5'); else set(x, y, outer ? pal[1] : inner ? pal[2] : pal[0]); }
-                else set(x, y, outer ? '#475569' : inner ? '#0f172a' : '#1e293b');
+            const W = 21, H = 11, cx = (W - 1) / 2, cy = (H - 1) / 2, N = 10, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+            const g = cv.getContext('2d'), img = g.createImageData(W, H), set = (x, y, hex) => { const i = (y * W + x) * 4; img.data[i] = parseInt(hex.slice(1, 3), 16); img.data[i + 1] = parseInt(hex.slice(3, 5), 16); img.data[i + 2] = parseInt(hex.slice(5, 7), 16); img.data[i + 3] = 255; };
+            const col = ['#4ade80', '#facc15', '#ef4444'][tone], e = (x, y, rx, ry) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+            for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+                if (e(x, y, 10.5, 5.5) > 1 || e(x, y, 6.5, 1.5) <= 1) continue;                  // outside the ring / the hole
+                if (e(x, y, 9.5, 4.5) > 1 || e(x, y, 7.5, 2.5) <= 1) { set(x, y, '#000000'); continue; }   // 1px black outline
+                let ang = Math.atan2(x - cx, -(y - cy)); if (ang < 0) ang += Math.PI * 2;        // 0 at top, clockwise
+                const on = Math.floor(ang / (Math.PI * 2) * N) < lit;
+                set(x, y, on ? (flash ? '#ffffff' : col) : '#334155');
             }
             g.putImageData(img, 0, 0); return (_staRingCache[key] = cv);
         }
@@ -4313,10 +4310,11 @@ const PXS = (function () {
 
                 if (isActivePlayerForClient && !isIntroScene && !p.isRef) {
                     const hasSt = p.rp && p.rp.stam != null && window.StatsBridge && StatsBridge.active(), st = hasSt ? p.rp.stam : 100;
-                    const spr = getStaRing(Math.ceil(st / 100 * 20), st > 60 ? 0 : st > 30 ? 1 : 2, st < 25 && Math.floor(Date.now() / 140) % 2 === 0);
-                    const sc = (PPY * 1.05) / 14.5, dsz = spr.width * sc;
-                    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(p.x * PPY, p.y * PPY); ctx.scale(1 / X_STRETCH, 1);
-                    ctx.drawImage(spr, -dsz / 2, -dsz / 2, dsz, dsz); ctx.restore();
+                    const spr = getStaRing(Math.ceil(st / 100 * 10), st > 60 ? 0 : st > 30 ? 1 : 2, st < 25 && Math.floor(Date.now() / 140) % 2 === 0);
+                    const spx = Math.max(0.45, camera.zoom * 0.04 * 2.9 * 1.22);   // exactly the player sprites' pixel size
+                    const dw = Math.round(spr.width * spx), dh = Math.round(spr.height * spx);
+                    ctx.save(); ctx.translate(p.x * PPY, p.y * PPY); ctx.transform(1, 0, -camera.skew / X_STRETCH, 1, 0, 0); ctx.scale(1 / X_STRETCH, 1 / camera.pitch);   // back to flat screen pixels
+                    ctx.imageSmoothingEnabled = spx < 1.6; ctx.drawImage(spr, Math.round(-dw / 2), Math.round(-dh / 2), dw, dh); ctx.restore();
                 }
 
                 if ((p.isTargetReceiver || p.isIntercepter) && isPassing && !p.isRef) {
@@ -5459,7 +5457,7 @@ const PXS = (function () {
                 .mu-pill { display: flex; align-items: center; gap: 8px; background: #0f1a33; font-size: clamp(8px, 1.5vw, 12px); padding: 10px 12px; color: #4ade80; box-shadow: 0 -3px 0 0 #334155, 0 3px 0 0 #334155, -3px 0 0 0 #334155, 3px 0 0 0 #334155; }
                 .mu-ovrb { text-align: center; background: #0f1a33; padding: 8px 12px 7px; min-width: 62px; box-shadow: 0 -3px 0 0 var(--oc), 0 3px 0 0 var(--oc), -3px 0 0 0 var(--oc), 3px 0 0 0 var(--oc); }
                 .mu-ovrb i { display: block; font-style: normal; font-size: 7px; color: #94a3b8; margin-bottom: 6px; } .mu-ovrb b { font-weight: normal; font-size: clamp(16px, 2.6vw, 24px); color: var(--oc); text-shadow: 3px 3px 0 #000; }
-                .mu-main { flex: 1 1 auto; display: grid; grid-template-columns: minmax(200px, 24%) minmax(0, 1fr) minmax(200px, 24%); gap: 14px; min-height: 0; }
+                .mu-main { flex: 1 1 auto; overflow: hidden; display: grid; grid-template-columns: minmax(200px, 24%) minmax(0, 1fr) minmax(200px, 24%); gap: 14px; min-height: 0; }
                 .mu-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
                 .mu-card { background: rgba(8,15,34,.93); margin: 4px; display: flex; flex-direction: column; box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 6px 8px 0 0 rgba(0,0,0,.6); }
                 .mu-card > h4 { margin: 0; font-weight: normal; color: #facc15; font-size: clamp(8px, 1.3vw, 11px); padding: 12px 14px 10px; text-shadow: 2px 2px 0 #000; border-bottom: 4px solid #1e3a8a; background: #101b36; }
@@ -5469,7 +5467,7 @@ const PXS = (function () {
                 .mu-kp { display: flex; align-items: center; gap: 10px; padding: 8px 12px 6px; border-bottom: 3px solid #14203d; } .mu-kp:last-child { border-bottom: 0; }
                 .mu-kp .mu-kh { width: 34px; height: 34px; flex: 0 0 auto; } .mu-kp .mu-kh svg { filter: none !important; }
                 .mu-kp div { min-width: 0; font-size: clamp(6px, 1vw, 8px); line-height: 1.9; color: #7dd3fc; } .mu-kp div span { color: #fff; } .mu-kp div em { font-style: normal; color: #94a3b8; }
-                .mu-stage { background: radial-gradient(ellipse at 50% 55%, rgba(2,6,23,.62) 0%, rgba(2,6,23,.35) 55%, rgba(2,6,23,0) 78%); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 4px; min-width: 0; }
+                .mu-stage { background: radial-gradient(ellipse at 50% 55%, rgba(2,6,23,.62) 0%, rgba(2,6,23,.35) 55%, rgba(2,6,23,0) 78%); position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 4px; min-width: 0; min-height: 0; overflow: hidden; }
                 .mu-banner { background: rgba(8,15,34,.92); padding: 12px 26px 10px; text-align: center; font-size: clamp(8px, 1.4vw, 13px); line-height: 1.7; text-shadow: 2px 2px 0 #000; box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 5px 6px 0 0 rgba(0,0,0,.6); }
                 .mu-banner small { display: block; color: #7dd3fc; font-size: .7em; margin-top: 4px; }
                 .mu-vs { display: flex; align-items: center; justify-content: center; gap: 2%; width: 100%; }
@@ -5480,7 +5478,7 @@ const PXS = (function () {
                 .mu-team .mu-ov { font-size: clamp(9px, 1.6vw, 16px); color: #38bdf8; } .mu-team .mu-ov small { display: block; font-size: .55em; color: #94a3b8; margin-top: 7px; text-shadow: none; }
                 .mu-team .mu-rec { background: rgba(8,15,34,.92); padding: 9px 18px 7px; font-size: clamp(8px, 1.3vw, 13px); box-shadow: 0 -3px 0 0 #1e3a8a, 0 3px 0 0 #1e3a8a, -3px 0 0 0 #1e3a8a, 3px 0 0 0 #1e3a8a; }
                 .mu-vsb { font-size: clamp(20px, 4.2vw, 46px); color: #facc15; text-shadow: 4px 4px 0 #000; flex: 0 0 auto; }
-                .mu-btns { display: grid; grid-template-columns: 1fr 1.25fr 1.6fr; gap: 10px; flex: 0 0 auto; margin: 4px; }
+                .mu-btns { display: grid; grid-template-columns: 1fr 1.25fr 1.6fr; gap: 10px; flex: 0 0 auto; margin: 4px; position: relative; z-index: 5; }
                 .mu-btn { font-family: inherit; cursor: pointer; border: 0; color: #fff; background: rgba(8,15,34,.95); padding: 9px 10px 8px; font-size: clamp(8px, 1.2vw, 12px); text-shadow: 2px 2px 0 #000; display: flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.6;
                     box-shadow: 0 -3px 0 0 #2563eb, 0 3px 0 0 #2563eb, -3px 0 0 0 #2563eb, 3px 0 0 0 #2563eb, 6px 8px 0 0 rgba(0,0,0,.6); transition: transform .08s; }
                 .mu-btn:hover { background: #12214a; transform: translateY(-2px); } .mu-btn:active { transform: translateY(2px); }
@@ -5488,16 +5486,43 @@ const PXS = (function () {
                 .mu-btn svg { width: clamp(12px, 1.6vw, 18px); height: auto; shape-rendering: crispEdges; flex: 0 0 auto; }
                 .mu-btn.go { background: #facc15; color: #1e293b; text-shadow: none; box-shadow: 0 -3px 0 0 #fff, 0 3px 0 0 #a16207, -3px 0 0 0 #fff, 3px 0 0 0 #fff, 6px 8px 0 0 rgba(0,0,0,.6); } .mu-btn.go:hover { background: #fde047; } .mu-btn.go small { color: #422006; }
                 @media (max-width: 900px), (orientation: portrait) {
-                    .mu-main { grid-template-columns: 1fr; min-height: 0; } .mu-col { display: none; } .mu-stage { background: rgba(2,6,23,.62); justify-content: space-around; min-height: 0; }
+                    .mu-main { grid-template-columns: 1fr; } .mu-col { display: none; } .mu-stage { background: rgba(2,6,23,.62); justify-content: space-around; }
                     .mu-team .mu-bigh { width: clamp(60px, 16vh, 140px); height: clamp(60px, 16vh, 140px); } .mu-pill { display: none; }
                     .mu-btn small { display: none; } .mu-btn { padding: 11px 6px 9px; }
                 }
-                @media (max-height: 560px) { #mu-screen { gap: 6px; } .mu-bar { padding: 6px 12px; } .mu-bar .mu-h { width: 32px; height: 32px; } .mu-banner { padding: 6px 18px 5px; } .mu-btn small { display: none; } .mu-btn { padding: 7px 8px 6px; } .mu-team .mu-bigh { width: clamp(50px, 20vh, 120px); height: clamp(50px, 20vh, 120px); } }
+                @media (max-height: 560px) {
+                    #mu-screen { gap: 6px; padding-top: max(6px, env(safe-area-inset-top)); padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+                    .mu-bar { padding: 5px 12px; gap: 10px; } .mu-bar .mu-h { width: 30px; height: 30px; }
+                    .mu-sch { font-size: 12px; } .mu-sch small { font-size: 6px; margin-top: 4px; }
+                    .mu-ovrb { padding: 4px 8px 3px; min-width: 48px; } .mu-ovrb i { margin-bottom: 3px; font-size: 6px; } .mu-ovrb b { font-size: 14px; }
+                    .mu-banner { display: none; } .mu-stage { justify-content: center; gap: 4px; }
+                    .mu-team { gap: 4px; } .mu-team .mu-bigh { width: clamp(40px, 15vh, 84px); height: clamp(40px, 15vh, 84px); }
+                    .mu-team .mu-nm { font-size: 11px; } .mu-team .mu-mn { font-size: 8px; } .mu-team .mu-ov { font-size: 11px; } .mu-team .mu-ov small { margin-top: 3px; font-size: 6px; }
+                    .mu-team .mu-st svg { width: 11px; } .mu-team .mu-rec { padding: 5px 10px 4px; font-size: 9px; } .mu-sb { padding: 6px 8px 5px; font-size: 7px; }
+                    .mu-btn { padding: 8px 8px 7px; font-size: 9px; } .mu-btn small { display: none; }
+                    .mu-sp { padding: 4px 10px 3px; } .mu-sp .mu-kh { width: 24px; height: 24px; }
+                }
+                .mu-recrow { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+                .mu-sb { font-family: inherit; cursor: pointer; border: 0; color: #facc15; background: rgba(8,15,34,.95); padding: 8px 10px 7px; font-size: clamp(7px, 1.1vw, 10px); text-shadow: 2px 2px 0 #000; line-height: 1.4; box-shadow: 0 -3px 0 0 #facc15, 0 3px 0 0 #a16207, -3px 0 0 0 #facc15, 3px 0 0 0 #facc15; } .mu-sb:active { transform: translateY(2px); }
+                #mu-modal { position: fixed; inset: 0; z-index: 2610; display: none; align-items: center; justify-content: center; background: rgba(2,6,23,.84); font-family: 'Press Start 2P', monospace; color: #fff; padding: 12px; box-sizing: border-box; }
+                .mu-mbox { background: rgba(8,15,34,.98); width: min(440px, 100%); max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; box-shadow: 0 -4px 0 0 #facc15, 0 4px 0 0 #facc15, -4px 0 0 0 #facc15, 4px 0 0 0 #facc15, 6px 8px 0 0 rgba(0,0,0,.6); }
+                .mu-mbox h4 { margin: 0; font-weight: normal; color: #facc15; font-size: 11px; padding: 12px 14px 10px; background: #101b36; border-bottom: 4px solid #1e3a8a; text-shadow: 2px 2px 0 #000; line-height: 1.5; } .mu-mbox h4 small { display: block; color: #7dd3fc; font-size: 7px; margin-top: 5px; text-shadow: none; }
+                .mu-sp { display: flex; align-items: center; gap: 10px; padding: 7px 12px 5px; border-bottom: 3px solid #14203d; } .mu-sp .mu-kh { width: 30px; height: 30px; flex: 0 0 auto; } .mu-sp .mu-kh svg { filter: none !important; }
+                .mu-spn { flex: 1; min-width: 0; font-size: 8px; line-height: 1.8; overflow-wrap: anywhere; } .mu-spn em { display: block; font-style: normal; color: #94a3b8; font-size: 6px; } .mu-sp b { font-weight: normal; font-size: 15px; text-shadow: 2px 2px 0 #000; }
+                .mu-mbox > .mu-btn { margin: 10px; }
                 .hm-sch { display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 7px 6px 5px; font-size: clamp(7px, 2vw, 8px); color: #e2e8f0; line-height: 1.5; border-bottom: 3px solid #14203d; }
                 .hm-sch .hm-h { width: 22px; height: 22px; } .hm-sch .hm-h svg { filter: none !important; } .hm-sch > span:first-child { color: #64748b; text-align: center; }
                 .hm-sch.cur { background: rgba(250,204,21,.13); box-shadow: inset 4px 0 0 #facc15; } .hm-sch .w { color: #4ade80; } .hm-sch .l { color: #f87171; } .hm-sch .t { color: #facc15; } .hm-sch .n { color: #475569; }
             `; document.head.appendChild(muCss);
             const muEl = document.createElement('div'); muEl.id = 'mu-screen'; document.body.appendChild(muEl);
+            const muModal = document.createElement('div'); muModal.id = 'mu-modal'; document.body.appendChild(muModal); let muCtx = null;
+            window.muStarsClose = function () { muModal.style.display = 'none'; };
+            muModal.addEventListener('click', e => { if (e.target === muModal) window.muStarsClose(); });
+            window.muStars = function (which) {
+                if (!muCtx) return; const t = which ? muCtx.opp : muCtx.me, ro = which ? muCtx.oR : muCtx.r, top = ro.slice().sort((a, b) => b.ovr - a.ovr).slice(0, 6);
+                muModal.innerHTML = `<div class="mu-mbox"><h4>${hmEsc(t.name.toUpperCase())}<small>STAR PLAYERS</small></h4>${top.map(p => `<div class="mu-sp"><span class="mu-kh">${csHelmet(t)}</span><div class="mu-spn"><span>#${p.num} ${hmEsc(p.name)}</span><em>${p.pos} · ${hmEsc(traitsOf(p)[0])}</em></div><b style="color:${tierOf(p.ovr).c}">${p.ovr}</b></div>`).join('')}<button class="mu-btn" onclick="muStarsClose()">CLOSE</button></div>`;
+                muModal.style.display = 'flex';
+            };
             const mirrorHelm = t => { const s = csHelmet(t); return s.replace(/(<svg[^>]*>)/, '$1<g transform="translate(32 0) scale(-1 1)">').replace('<text x="12"', '</g><text x="20"'); };
             const shortName = n => { const p = String(n).split(' '); return p.length > 1 ? p[0][0] + '. ' + p.slice(1).join(' ') : n; };
             const recStr = r => `${r.w} - ${r.l}${r.t ? ' - ' + r.t : ''}`;
@@ -5512,9 +5537,9 @@ const PXS = (function () {
                 const s = seasonOf(), g = s.sched[s.week]; if (!g) return;
                 const me = teamOf(), opp = qpTeams[g.opp], home = g.home ? me : opp, r = ensureRoster(), tr = ratingsOf(r), oR = rosterFor(g.opp);
                 const mr = s.stand[career.teamIdx], or = s.stand[g.opp], oRt = ratingsOf(oR), oOvr = oRt.ovr;
-                const side = (t, ovr, rec, offv, defv, mirror) => `<div class="mu-team"><div class="mu-bigh">${mirror ? mirrorHelm(t) : csHelmet(t)}</div>
+                muCtx = { me, opp, r, oR }; const side = (t, ovr, rec, offv, defv, mirror) => `<div class="mu-team"><div class="mu-bigh">${mirror ? mirrorHelm(t) : csHelmet(t)}</div>
                     <div class="mu-nm">${hmEsc(t.name.split(' ').slice(0, -1).join(' ').toUpperCase())}<div class="mu-mn">${hmEsc(t.name.split(' ').slice(-1)[0].toUpperCase())}</div></div>
-                    <div class="mu-st">${csStarsSVG(csStarRating(ovr))}</div><div class="mu-ov">OVR ${ovr}<small>OFF ${offv} · DEF ${defv}</small></div><div class="mu-rec">${rec}</div></div>`;
+                    <div class="mu-st">${csStarsSVG(csStarRating(ovr))}</div><div class="mu-ov">OVR ${ovr}<small>OFF ${offv} · DEF ${defv}</small></div><div class="mu-recrow"><div class="mu-rec">${rec}</div><button class="mu-sb" onclick="muStars(${mirror ? 1 : 0})">&#9733; STARS</button></div></div>`;
                 muEl.innerHTML = `
                     <div class="mu-bar"><span class="mu-h">${csHelmet(me)}</span>
                         <div class="mu-sch">${hmEsc(me.name.toUpperCase())}<small>SEASON ${s.num} &nbsp;|&nbsp; WEEK ${s.week + 1} OF ${SEASON_GAMES} &nbsp;|&nbsp; ${g.home ? 'HOME GAME' : 'AWAY GAME'}</small></div>
@@ -5534,7 +5559,7 @@ const PXS = (function () {
                     </div>
                     <div class="mu-btns"><button class="mu-btn" onclick="muBack()">${IC_BACK}BACK</button><button class="mu-btn" onclick="muLineup()">${IC_LINE}<span>LINEUP<small>Edit your starting lineup</small></span></button><button class="mu-btn go" onclick="muKickoff()">${IC_PLAY}<span>KICK OFF<small>Start the game</small></span></button></div>`;
             }
-            function muClose() { muEl.style.display = 'none'; CsScene.stop(); }
+            function muClose() { muEl.style.display = 'none'; muModal.style.display = 'none'; CsScene.stop(); }
             window.openMatchup = function () {
                 if (!career || tut.on) return; const s = seasonOf(); if (s.week >= SEASON_GAMES) return; const g = s.sched[s.week];
                 muFade(() => {
