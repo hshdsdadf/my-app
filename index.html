@@ -2386,6 +2386,13 @@
             }
         }
 
+        // each offensive lineman is given one defensive lineman to block (nearest free man across from him), instead of everybody chasing the QB's pocket
+        function blkAssign(p) {
+            if (p._blkMan && !p._blkMan.hasBall) return p._blkMan;
+            const taken = new Set(players.filter(o => o !== p && o._blkMan && o.isCPU === p.isCPU).map(o => o._blkMan));
+            const foes = players.filter(e => e.isCPU !== p.isCPU && e.isLineman && !taken.has(e)).sort((a, b) => Math.abs(a.y - p.y) - Math.abs(b.y - p.y));
+            return (p._blkMan = foes[0] || null);
+        }
         function snapBall() { gameState = 'PLAYING'; isAimingPass = false; aimPointerId = null; players.forEach(p => { p.tackleTimer = 0; }); let qb = players.find(p => p.isQB && (offenseDirection === -1 ? !p.isCPU : p.isCPU)); if (qb) qb.hasBall = true; hud.innerHTML = ""; hideUI(); mainClockStarted = true; }
 
         function pfStyleRoutes(h) {
@@ -2914,7 +2921,7 @@
                     }
 
                     let distToCarrier = carrier ? Math.hypot(carrier.x - p.x, carrier.y - p.y) : 100; let canBlock = !isDefending || distToCarrier > 1.8;
-                    if (canBlock && !runningRoute && (gameState === 'BALL_IN_AIR' || gameState === 'PLAYING') && !p.hasBall && !p.isReturner && !p.isLunging && !p.isTackling && !p.isMissedTackle) { let enemies = players.filter(e => e.isCPU !== p.isCPU && !e.hasBall && !e.isReturner && !e.isBlocking && !e.runningRoute && !e.isLunging && !e.isTackling && !e.isMissedTackle); for (let e of enemies) { let engageDist = Math.hypot(e.x - p.x, e.y - p.y); if (engageDist < 1.3) { p.isBlocking = true; p.blockTarget = e; p.blockTimer = 0; e.isBlocking = true; e.blockTarget = p; e.blockTimer = 0; p.facing = (e.x > p.x) ? 1 : -1; e.facing = (p.x > e.x) ? 1 : -1; break; } } }
+                    if (canBlock && !runningRoute && (gameState === 'BALL_IN_AIR' || gameState === 'PLAYING') && !p.hasBall && !p.isReturner && !p.isLunging && !p.isTackling && !p.isMissedTackle) { let enemies = players.filter(e => e.isCPU !== p.isCPU && !e.hasBall && !e.isReturner && !e.isBlocking && !e.runningRoute && !e.isLunging && !e.isTackling && !e.isMissedTackle); const isOffLn = p.isLineman && ((offenseDirection === -1) ? !p.isCPU : p.isCPU), mine = isOffLn ? blkAssign(p) : null; if (mine) enemies.sort((a, b) => (b === mine) - (a === mine)); for (let e of enemies) { let engageDist = Math.hypot(e.x - p.x, e.y - p.y); if (engageDist < (isOffLn && e === mine ? 1.9 : 1.3)) { p.isBlocking = true; p.blockTarget = e; p.blockTimer = 0; e.isBlocking = true; e.blockTarget = p; e.blockTimer = 0; p.facing = (e.x > p.x) ? 1 : -1; e.facing = (p.x > e.x) ? 1 : -1; break; } } }
                     if (p.isBlocking) return;
                     if (p === player && ['PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE'].includes(gameState)) { if (gameState === 'PLAYING' && isDefending && carrier && carrier.isCPU) { let dist = Math.hypot(carrier.x - p.x, carrier.y - p.y); if (touching(p, carrier)) triggerTackle(carrier, p); } return; }
                     
@@ -2976,6 +2983,7 @@
                             } else if (!p.hasBall) {
                                 let bestDef = null; let highestDanger = -Infinity;
                                 players.forEach(d => { let dIsDef = isPassing ? ((d.isCPU && offenseDirection === -1) || (!d.isCPU && offenseDirection === 1)) : ((playState === 'RECEIVE' && d.isCPU) || (playState === 'KICK' && !d.isCPU)); if (dIsDef && !d.isBlocking) { let distToCarrier = carrier ? Math.sqrt(Math.pow(d.x - carrier.x, 2) + Math.pow(d.y - carrier.y, 2)) : 100; let distToBlocker = Math.sqrt(Math.pow(d.x - p.x, 2) + Math.pow(d.y - p.y, 2)); let danger = (100 - distToCarrier * 2.5) - distToBlocker; if (danger > highestDanger) { highestDanger = danger; bestDef = d; } } });
+                                if (p.isLineman) { const mine = blkAssign(p); if (mine) bestDef = mine; }
                                 if (bestDef) { let dx = bestDef.x - p.x + sepX; let dy = bestDef.y - p.y + sepY; let dist = Math.sqrt(dx*dx + dy*dy); if (dist > 0.5) { { const bm = p.speed * 0.85 * worldDirSpeedMul(dx, dy); p.x += (dx / dist) * bm; p.y += (dy / dist) * bm; } p.facing = dx > 0 ? 1 : -1; p.animTimer += 0.3; } } 
                                 else { let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU; if (isOffense && currentOffensePlay === 'INSIDE_RUN' && !p.isLineman && !p.isQB && !p.isReturner) { p.x += p.facing * (p.speed * 0.65); p.animTimer += 0.3; } }
                             } else if (p.hasBall && p.isCPU) {
@@ -3020,7 +3028,7 @@
                         if (player.diveTimer < 20) { let diveSpd = 0.25 * (1 - player.diveTimer/20) * worldDirSpeedMul(player.diveDirX, player.diveDirY); player.x += player.diveDirX * diveSpd; player.y += player.diveDirY * diveSpd; if (player.diveDirX !== 0) player.facing = player.diveDirX > 0 ? 1 : -1; } 
                         else if (player.diveTimer >= 20 && player.diveTimer < 45) { let slideSpd = 0.10 * (1 - (player.diveTimer - 20)/25) * worldDirSpeedMul(player.diveDirX, player.diveDirY); player.x += player.diveDirX * slideSpd; player.y += player.diveDirY * slideSpd; if(Math.random() < 0.4) spawnDust(player.x, player.y); } 
                         else if (player.diveTimer >= 60) { player.isDiving = false; player.diveTimer = 0; }
-                    } else if (['PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE'].includes(gameState)) {
+                    } else if (['PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE'].includes(gameState) || (gameState === 'PRE_SNAP' && offenseDirection === 1 && !isIntroScene && !isMpClient)) {
                         let inputX = 0, inputY = 0; if (joystick && joystick.active) { inputX = joystick.normX; inputY = joystick.normY; if (Math.abs(inputX) < 0.1 && Math.abs(inputY) < 0.1) { inputX = 0; inputY = 0; } } else { if (keys['ArrowUp'] || keys['KeyW']) inputY -= 1; if (keys['ArrowDown'] || keys['KeyS']) inputY += 1; if (keys['ArrowLeft'] || keys['KeyA']) inputX -= 1; if (keys['ArrowRight'] || keys['KeyD']) inputX += 1; }
                         if (window._mpMirror) inputX = -inputX; // mirrored view: screen-right is world-left
                         if (inputX !== 0 || inputY !== 0) { isMoving = true; let dir = screenInputToWorldDir(inputX, inputY); player.x += dir.x * player.speed * dir.mul; player.y += dir.y * player.speed * dir.mul; if (dir.x > 0.05) player.facing = 1; else if (dir.x < -0.05) player.facing = -1; }
@@ -3030,6 +3038,8 @@
                 if (player) {
                     if (isMoving) player.animTimer += 0.3; else if (!(player.isKicker && (gameState === 'BALL_IN_AIR' || gameState === 'KICKER_RUN_UP'))) player.animTimer = 0;
                     player.x = Math.max(0, Math.min(FIELD_LENGTH_YARDS, player.x)); player.y = Math.max(-FIELD_WIDTH_YARDS/2, Math.min(FIELD_WIDTH_YARDS/2, player.y));
+                    // defense, ball not snapped yet: roam anywhere on your side, but you can't cross the blue line
+                    if (gameState === 'PRE_SNAP' && offenseDirection === 1 && !isIntroScene && !isMpClient && player.x < lineOfScrimmage + 0.5) player.x = lineOfScrimmage + 0.5;
                 }
 
                 let ballCarrier = players.find(p => p.hasBall);
@@ -4423,7 +4433,7 @@ const PXS = (function () {
                     else { let ut = (mt - 18) / 14; divePitch = Math.PI * 0.45 * (1 - ut); groundDrop = 14 * (1 - ut); armAngle1 = -Math.PI * 0.4 * (1 - ut); armAngle2 = Math.PI * 0.3 * (1 - ut); legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; } bounce = 0;
                 } else if (isReaching) {
                     divePitch = Math.PI / 16; if (ball.z > 2.5) { armAngle1 = -Math.PI * 0.85; armAngle2 = -Math.PI * 0.75; } else { armAngle1 = -Math.PI * 0.35; armAngle2 = -Math.PI * 0.25; } bounce *= 0.5; 
-                } else if (!p.isRef && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK')))) {
+                } else if (!p.isRef && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK')))) {
                     if (p.isQB || p.isKicker) { groundDrop = 2; divePitch = Math.PI / 12; armAngle1 = -Math.PI / 2.5; armAngle2 = -Math.PI / 2.5; legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; bounce = 0; } 
                     else if (p.isLineman) { groundDrop = 8; divePitch = Math.PI / 6; armAngle1 = -Math.PI / 4.5; armAngle2 = Math.PI / 3; legAngle1 = Math.PI / 3.5; legAngle2 = -Math.PI / 3.5; bounce = 0; } 
                     else { groundDrop = 0; divePitch = 0; armAngle1 = -Math.PI / 4; armAngle2 = Math.PI / 4.5; legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; bounce = 0; }
@@ -4445,7 +4455,7 @@ const PXS = (function () {
                 }
                 
                 // ===== PIXEL SPRITE PLAYER (real pixel art, nearest-neighbour upscaled) =====
-                let isStancePose = (!p.isRef && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK'))));
+                let isStancePose = (!p.isRef && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK'))));
                 let refSignal = (p.isRef && p.state !== 'IDLE' && p.state !== 'RUNNING');
                 let isMovingNow = p.animTimer !== 0; let tAnim = p.animTimer; let cosT = Math.cos(tAnim);
                 if (p.pxSeed === undefined) p.pxSeed = Math.random();
