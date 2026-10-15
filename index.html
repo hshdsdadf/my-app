@@ -5366,13 +5366,13 @@ const PXS = (function () {
                 const t = SH_TABS.find(x => x.id === id) || SH_TABS[0], PRICE = PACK_PRICE;
                 const head = `<div class="of-sec"><span>${t.label}</span><small>${t.sub}</small></div>`;
                 if (id === 'player') return `<div class="sh-panel">${head}
-                    <div class="sh-card"><div class="sh-art sh-stage"><div class="sh-tag">STARTER</div>${packHTML(124)}</div>
+                    <div class="sh-card"><div class="sh-art sh-stage"><div class="sh-tag">LOCKED</div><div style="opacity:.45;filter:grayscale(.85)">${packHTML(124)}</div></div>
                     <div class="sh-info"><div class="sh-name">ROOKIE PACK</div>
                         <div class="sh-line"><i class="sh-ico">${ICON_PERSON}</i><span>4 PLAYERS<small>(1 GUARANTEED 90+ OVR)</small></span></div>
                         <div class="sh-line"><i class="sh-sq" style="background:#fbbf24"></i><span>1 LEGEND<small>90+ OVR</small></span></div>
                         <div class="sh-line"><i class="sh-sq" style="background:#38bdf8"></i><span>3 PLAYERS<small>72-82 OVR</small></span></div>
                         <div class="sh-buy"><span class="sh-price"><i class="sh-ico">${ICON_COIN}</i>${PRICE.toLocaleString('en-US')}</span>
-                        <button class="sh-btn" id="sh-open" onclick="shOpen()">BUY</button></div></div></div></div>`;
+                        <button class="sh-btn" id="sh-open" disabled>LOCKED</button></div></div></div></div>`;
                 if (id === 'special') { const done = !!career.welcomeClaimed; return `<div class="sh-panel">${head}
                     <div class="sh-card ${done ? 'done' : ''}"><div class="sh-art sh-stage"><div class="sh-tag">${done ? 'OPENED' : 'ONE-TIME'}</div>${packHTML(124, { a: 'WELCOME', b: 'PACK', i: 'PLAYERS + PLAYS' })}</div>
                     <div class="sh-info"><div class="sh-name">WELCOME PACK</div>
@@ -5648,12 +5648,10 @@ const PXS = (function () {
                 };
                 draw(); pk.style.display = 'flex';
             }
-            window.shOpen = function () {
-                if (tut.on && tut.phase === 'pack') { toast('OPEN YOUR WELCOME PACK FIRST!'); return; }
-                openPack({ title: 'ROOKIE PACK', cost: PACK_PRICE });
-            };
+            window.shOpen = function () { toast('ROOKIE PACK IS LOCKED'); };   // locked: the only pack that opens is the one-time welcome pack
             window.shOpenWelcome = function () {
                 if (career.welcomeClaimed) return;
+                if (!tut.on || tut.phase !== 'pack') { toast('THE WELCOME PACK OPENS DURING THE TUTORIAL'); return; }
                 openPack({ title: 'WELCOME PACK', cost: 0, plays: PLAY_DEFS.map(d => d.id), art: { a: 'WELCOME', b: 'PACK', i: 'PLAYERS + PLAYS' }, onClaim: () => { career.welcomeClaimed = true; } });
             };
 
