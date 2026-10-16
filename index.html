@@ -878,7 +878,7 @@
         let qpState = { awayIdx: 0, homeIdx: 1, playerSide: 'HOME', timeIdx: 1 };
         const timeOptions = [60, 120, 180, 300]; const timeLabels = ["1 MIN", "2 MIN", "3 MIN", "5 MIN"];
         let isQuickPlay = false; let quickPlayConfig = null; let cpuDifficulty = 0;
-        function computeCpuDifficulty(cpuOvr) { return Math.max(-1, Math.min(1, (cpuOvr - 80) / 14)); }
+        function computeCpuDifficulty(cpuOvr) { return Math.max(-0.4, Math.min(1.6, (cpuOvr - 74) / 12)); } // harder: a ~80 team already plays above 'average', a 94 team is a real problem
         function hexToRgba(hex, alpha) { let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r}, ${g}, ${b}, ${alpha})`; }
 
         function getHelmetSVG(p, s, init) {
@@ -1899,7 +1899,7 @@
         const PLAY_CLOCK_SECONDS = 15; let playClock = PLAY_CLOCK_SECONDS; let offeredPlays = []; let clockRunning = false;
         let celebratingPlayer = null; let celebrationTimer = 0; const CELEBRATION_DURATION = 150; 
         let meterValue = 0; let isPuntPlay = false; let meterDelta = 1.8; let dirValue = 0; let dirDelta = 0.025; let lockedPower = 0; let lockedDir = 0;
-        let selectedPlay = null; let cpuSelectedPlay = null; let cpuPassTimer = 0;
+        let selectedPlay = null; let cpuSelectedPlay = null; let cpuPassTimer = 0; const _carVel = { who: null, px: null, py: null, x: 0, y: 0 };
         
         const PASS_PLAYS = ['FLY', 'DOUBLE_SLANT', 'OUTS']; function isPassPlay(name) { return PASS_PLAYS.includes(name); }
 
@@ -1980,38 +1980,125 @@
             const wrs = players.filter(wr => wr.isCPU === qb.isCPU && !wr.isLineman && !wr.isQB);
             if (!wrs.length) return { target: null, throwNow: false };
             const defs = players.filter(d => d.isCPU !== qb.isCPU && !d.isLineman && !d.isQB && !d.isReturner);
-            const rushers = players.filter(d => d.isCPU !== qb.isCPU && !d.isRef && !d.isKicker); // anyone can rush him, not just the D-line (e.g. a blitzing LB)
+            const rushers = players.filter(d => d.isCPU !== qb.isCPU && !d.isRef && !d.isKicker);
             let nearestRush = 99; rushers.forEach(d => { const dd = Math.hypot(d.x - qb.x, d.y - qb.y); if (dd < nearestRush) nearestRush = dd; });
             const qd = StatsBridge.qbDiff(qb);
             const range = StatsBridge.throwRange(qb);
+            // routes need time to develop: deep routes want depth before he'll pull the trigger
+            const minDepth = play === 'FLY' ? 11 : play === 'OUTS' ? 6 : 4;
             let best = null, bestScore = -Infinity, bestOpen = -Infinity;
             wrs.forEach(wr => {
-                const hang = 55; let lx = wr.x + wr.facing * wr.speed * hang * 0.7, ly = wr.y;
-                if (play === 'OUTS' && Math.abs(wr.y) > 8) ly += (wr.y < 0 ? -1 : 1) * wr.speed * hang * 0.8;
+                const spot = cpuPassSpot(qb, wr, play); const lx = spot.x, ly = spot.y;
                 let sepNow = 99, sepLead = 99;
                 defs.forEach(d => { sepNow = Math.min(sepNow, Math.hypot(d.x - wr.x, d.y - wr.y)); sepLead = Math.min(sepLead, Math.hypot(d.x - lx, d.y - ly)); });
-                let open = Math.min(sepNow, sepLead + 1.5);
+                let open = Math.min(sepNow, sepLead + 1.0);
                 const depth = Math.abs(wr.x - lineOfScrimmage);
-                if (depth < 2) open -= 1.5; // still at the line: not a real route yet
+                if (depth < minDepth && qb.cpuHold < 130) open -= 3.5; // route hasn't developed yet
                 if (Math.abs(ly) > FIELD_WIDTH_YARDS / 2 - 1) open -= 3; // would be thrown out of bounds
                 if (Math.hypot(lx - qb.x, ly - qb.y) > range) open -= 3;
-                const score = open + depth * 0.06;
+                const score = open + depth * 0.05;
                 if (score > bestScore) { bestScore = score; best = wr; bestOpen = open; }
             });
-            const pressured = nearestRush < 3.5, heavy = nearestRush < 2.0;
+            const pressured = nearestRush < 3.2, heavy = nearestRush < 1.5;
             const scr = !!qb.cpuScramble;
-            const minHold = scr ? 8 : (pressured ? 14 : 32);
-            const thr = Math.max(2.4, 4.8 - qb.cpuHold * 0.015) - (pressured ? 1.4 : 0) - (scr ? 0.8 : 0);
+            const dev = play === 'FLY' ? 48 : play === 'OUTS' ? 38 : 30;
+            const minHold = scr ? 10 : (pressured ? Math.round(dev * 0.6) : dev);
+            const thr = Math.max(2.3, 4.4 - qb.cpuHold * 0.012) - (pressured ? 0.8 : 0) - (scr ? 0.6 : 0);
             if (qb.cpuHold < minHold) return { target: best, throwNow: false };
-            if (cpuPassTimer <= 0 || heavy) { qb.cpuReact = undefined; return { target: best, throwNow: true }; } // out of time / getting hit: just get it out
+            // pocket is dead and he's got nowhere to go: only then does he force it, and only to a guy with some window
+            if (heavy && !scr && bestOpen >= thr * 0.55) { qb.cpuReact = undefined; return { target: best, throwNow: true }; }
+            // nobody ever got open and time ran out: tuck it and run instead of chucking it into coverage
+            if (cpuPassTimer <= 0 && bestOpen < thr) return { target: best, throwNow: false, tuck: true };
             if (bestOpen >= thr) {
-                if (qb.cpuReact === undefined) qb.cpuReact = Math.max(3, Math.round(8 + Math.random() * 14 - qd * 4)); // reaction beat
+                if (qb.cpuReact === undefined) qb.cpuReact = Math.max(2, Math.round(5 + Math.random() * 7 - qd * 3)); // short reaction beat
                 else qb.cpuReact--;
                 if (qb.cpuReact <= 0) { qb.cpuReact = undefined; return { target: best, throwNow: true }; }
             } else qb.cpuReact = undefined;
             return { target: best, throwNow: false };
         }
 
+        // Where a receiver will be `frames` from now, following the exact route code the receivers run
+        function cpuRouteAt(wr, play, frames) {
+            let x = wr.x, y = wr.y; const f = wr.facing, sp = wr.speed;
+            for (let i = 0; i < frames; i++) {
+                const dist = Math.abs(x - lineOfScrimmage);
+                if (play === 'DOUBLE_SLANT' && dist > 5) { x += f * sp * 0.85; y += (y < 0 ? 1 : -1) * sp * 0.7; }
+                else if (play === 'OUTS') { if (dist <= 5) x += f * sp; else if (Math.abs(y) < 22) { x += f * sp * 0.15; y += (y < 0 ? -1 : 1) * sp * 0.98; } else x += f * sp * 0.4; }
+                else x += f * sp;
+            }
+            return { x: Math.max(0, Math.min(FIELD_LENGTH_YARDS, x)), y };
+        }
+        // Throw-to spot: solves for the ball's real flight time so the receiver and the ball arrive together
+        function cpuPassSpot(qb, wr, play) {
+            let hang = 45, spot = { x: wr.x, y: wr.y };
+            for (let i = 0; i < 3; i++) {
+                spot = cpuRouteAt(wr, play, Math.round(hang * 0.85));
+                const d = Math.hypot(spot.x - qb.x, spot.y - qb.y);
+                hang = Math.max(32, d * 2.5 * StatsBridge.hangMul(qb));
+            }
+            return { x: spot.x, y: spot.y, hang };
+        }
+
+        // CPU ball carrier (runs, scrambles, kick/punt returns): reads defenders, picks a lane, cuts back, jukes
+        function cpuRunnerMove(p, play) {
+            const dir = offenseDirection === 0 ? (p.facing || 1) : offenseDirection;
+            const W = FIELD_WIDTH_YARDS / 2, dd = Math.max(0, cpuDifficulty);
+            const rm = p.cpuRun || (p.cpuRun = { ang: 0, think: 0, juke: 0, jd: 0, cool: 20, burst: 0, stutter: 0, t: 0, sweep: 0 });
+            if (rm.t === 0 && p.isQB && !isKickReturnPlay) rm.sweep = play === 'SWEEP_RIGHT' ? 1 : play === 'SWEEP_LEFT' ? -1 : 0;
+            rm.t++;
+            const foes = players.filter(f => f.isCPU !== p.isCPU && !f.isRef);
+            const spdBase = p.speed * (1 + 0.03 * dd);
+            const progress = (p.x - lineOfScrimmage) * dir;
+            if (--rm.think <= 0) {
+                rm.think = 3 + Math.floor(Math.random() * 3);
+                const maxA = (p.isQB && !isKickReturnPlay && play === 'INSIDE_RUN' && progress < 3) ? 0.5 : 1.1;
+                let bestA = 0, bestScore = -1e9;
+                for (let a = -maxA; a <= maxA + 1e-6; a += 0.11) {
+                    const hx = Math.cos(a) * dir, hy = Math.sin(a);
+                    let clear = 5;
+                    for (let st = 2; st <= 8; st += 2) {
+                        const px = p.x + hx * st, py = p.y + hy * st;
+                        const tMe = Math.hypot(hx * st * X_STRETCH, hy * st) / Math.max(0.05, spdBase * X_STRETCH);
+                        for (const f of foes) {
+                            if (Math.abs(f.x - p.x) > 16) continue;
+                            const fd = Math.hypot((f.x - px) * X_STRETCH, f.y - py);
+                            const behind = (f.x - p.x) * dir < -2;
+                            const reach = f.speed * X_STRETCH * 0.95 * tMe * (f.isBlocking ? 0.3 : behind ? 0.8 : 1);
+                            clear = Math.min(clear, fd - reach);
+                        }
+                    }
+                    clear = Math.max(-2, clear);
+                    let score = clear * 1.8 + Math.cos(a) * 2.2 - Math.abs(a - rm.ang) * 1.0;
+                    if (rm.sweep && progress < 3 && Math.abs(p.y) < 16) score += rm.sweep * Math.sin(a) * 2.4;
+                    const endY = p.y + Math.sin(a) * 8; if (Math.abs(endY) > W - 1.5) score -= (Math.abs(endY) - (W - 1.5)) * 1.2;
+                    if (score > bestScore) { bestScore = score; bestA = a; }
+                }
+                rm.target = bestA;
+            }
+            const turn = 0.10 + 0.04 * dd;
+            rm.ang += Math.max(-turn, Math.min(turn, (rm.target || 0) - rm.ang));
+            // juke when a defender is about to get a hand on him
+            let nearest = null, nd = 99;
+            foes.forEach(f => { if (f.isBlocking) return; if ((f.x - p.x) * dir < -0.8) return; const d = visDist(p, f); if (d < nd) { nd = d; nearest = f; } });
+            if (rm.cool > 0) rm.cool--;
+            if (rm.juke <= 0 && rm.cool <= 0 && nearest && nd < 3.4 && nd > 1.1 && Math.random() < 0.17 + 0.08 * dd) {
+                const side = p.y - nearest.y;
+                rm.jd = Math.abs(side) < 0.4 ? (Math.random() < 0.5 ? 1 : -1) : Math.sign(side);
+                if (p.y * rm.jd > W - 5) rm.jd = -rm.jd;
+                rm.juke = 10; rm.stutter = Math.random() < 0.4 ? 3 : 0; rm.cool = 34 + Math.random() * 20;
+                spawnDust(p.x, p.y);
+            }
+            let vx = Math.cos(rm.ang) * dir, vy = Math.sin(rm.ang), sp = spdBase;
+            if (rm.juke > 0) {
+                const k = rm.juke / 10; vy = rm.jd * (0.55 + 0.45 * k); vx = dir * 0.75; rm.juke--;
+                if (rm.stutter > 0) { rm.stutter--; sp *= 0.6; } else sp *= 1.1;
+                if (rm.juke === 0) { rm.ang = rm.jd * 0.25; rm.target = rm.ang; rm.think = 0; rm.burst = 16; }
+                p.cpuJuking = true;
+            } else { p.cpuJuking = false; if (rm.burst > 0) { rm.burst--; sp *= 1.08; } }
+            const n = Math.hypot(vx, vy) || 1; vx /= n; vy /= n;
+            const m = worldDirSpeedMul(vx, vy);
+            p.x += vx * sp * m; p.y += vy * sp * m; p.y = Math.max(-W + 1, Math.min(W - 1, p.y)); p.facing = dir;
+        }
 
         // CPU QB awareness: notices a rusher closing in (after a human-ish reaction beat), rolls away from him, and
         // if there's room upfield he tucks it and runs. Returns 'RUN' (he's now a runner), 'ROLL' (escaping but can still throw) or null.
@@ -2029,7 +2116,7 @@
             const ahead = foes.filter(d => (d.x - qb.x) * dir > 1 && (d.x - qb.x) * dir < 10 && Math.abs(d.y - qb.y) < 5 && d !== threat).length;
             if (!threat) { qb.cpuNotice = undefined; if (qb.cpuScramble === 'ROLL') qb.cpuRollT = (qb.cpuRollT || 0) + 1; }
             else if (!qb.cpuScramble) {
-                if (qb.cpuNotice === undefined) qb.cpuNotice = Math.max(2, Math.round(5 + Math.random() * 9 - StatsBridge.qbDiff(qb) * 3)); // reaction beat
+                if (qb.cpuNotice === undefined) qb.cpuNotice = Math.max(1, Math.round(2 + Math.random() * 5 - StatsBridge.qbDiff(qb) * 2)); // reaction beat
                 if (qb.cpuNotice-- > 0) return null;
                 qb.cpuScramble = 'ROLL'; qb.cpuRollT = 0; qb.cpuBias = 0.35 + Math.random() * 0.55; // how willing he is to take off
             }
@@ -2046,7 +2133,7 @@
                     qb.x += ex * qb.speed * 0.45 * canBack * (ex * dir < 0 ? 1 : 0); qb.y += ey * qb.speed * 0.8; qb.facing = dir;
                     const laneOpen = ahead <= 1;
                     if (laneOpen && ((qb.cpuRollT > 12 && Math.random() < qb.cpuBias * 0.08) || tDist < 2.6 && Math.random() < 0.25)) qb.cpuScramble = 'RUN';
-                } else { qb.y += ey * qb.speed * 0.55; } // juke away from the rusher while running
+                } // once he's a runner, cpuRunnerMove does the dodging
             } else if (qb.cpuScramble === 'ROLL' && qb.cpuRollT > 20 && ahead <= 1) qb.cpuScramble = 'RUN'; // rusher gone/missed: take the open grass
             qb.y = Math.max(-W + 1, Math.min(W - 1, qb.y));
             return qb.cpuScramble;
@@ -2150,7 +2237,7 @@
             players.forEach(p => {
                 if (p.isLineman) { p.speed = 0.052 + Math.random() * 0.01; p.girth = 1.35 + Math.random() * 0.45; } 
                 else { if (!p.girth || p.girth === 1.0) p.girth = 0.95 + Math.random() * 0.15; if (!p.speedModified) { p.speed = 0.082 + (Math.random() * 0.008); p.speedModified = true; } }
-                if (p === player) { p.speed = 0.086; if (!p.skinTone) p.skinTone = SKIN_TONES[2]; } else if (p.isCPU && cpuDifficulty !== 0) { p.speed *= (1 + cpuDifficulty * 0.09); }
+                if (p === player) { p.speed = 0.086; if (!p.skinTone) p.skinTone = SKIN_TONES[2]; } else if (p.isCPU && cpuDifficulty !== 0) { p.speed *= (1 + Math.min(cpuDifficulty, 1.2) * 0.08); }
                 if (p.st) { p.speed = StatsBridge.speedFor(p); p.girth = p.rp.girth; p.skinTone = p.rp.skin; p.baseSpeed = p.speed; p._shedVar = null; p._sx = null; if (p.rp.stam == null) p.rp.stam = 100; else p.rp.stam = Math.min(100, p.rp.stam + StatsBridge.STA_REST); p.speed = p.baseSpeed * StatsBridge.staMul(p.rp.stam); }
             });
             
@@ -2504,8 +2591,8 @@
                 } else if (!isMultiplayer) {
                     cpuSelectedPlay = pickCpuPlay(); // fresh call every snap, based on the situation
                 }
-                let baseHold = (cpuSelectedPlay === 'FLY') ? 70 : (cpuSelectedPlay === 'OUTS') ? 45 : 55;
-                cpuPassTimer = baseHold + Math.random() * 40 + Math.random() * 40 + Math.random() * 30; 
+                let baseHold = (cpuSelectedPlay === 'FLY') ? 150 : (cpuSelectedPlay === 'OUTS') ? 115 : 95;
+                cpuPassTimer = baseHold + Math.random() * 50 + Math.random() * 40; 
 
                 let cpuQB = createPlayer(lineOfScrimmage - (dir * 4), 0, true); cpuQB.isQB = true; players.push(cpuQB);
                 let c = createPlayer(lineOfScrimmage, 0, true); c.isLineman = true; players.push(c); 
@@ -3057,6 +3144,7 @@
                 }
                 if (isPassing && gameState === 'BALL_LOOSE' && ball.vx === 0 && ball.vy === 0 && !players.some(p => p.hasBall)) { endIncompletePass(ball.pbuMessage || "INCOMPLETE PASS"); ball.isDeadPass = false; }
                 let carrier = players.find(p => p.hasBall) || players.find(p => p.isReturner || p.isTargetReceiver); let carrierPastLOS = false;
+                if (carrier) { if (_carVel.who === carrier && _carVel.px !== null) { _carVel.x += ((carrier.x - _carVel.px) - _carVel.x) * 0.35; _carVel.y += ((carrier.y - _carVel.py) - _carVel.y) * 0.35; } else { _carVel.x = 0; _carVel.y = 0; } _carVel.who = carrier; _carVel.px = carrier.x; _carVel.py = carrier.y; }
                 if (carrier && gameState === 'PLAYING' && offenseDirection !== 0) { if (offenseDirection === -1 && carrier.x <= lineOfScrimmage) carrierPastLOS = true; if (offenseDirection === 1 && carrier.x >= lineOfScrimmage) carrierPastLOS = true; }
                 let currentOffensePlay = (offenseDirection === -1) ? selectedPlay : cpuSelectedPlay;
                 if (isAimingPass && qbPastLOS(player)) { isAimingPass = false; aimPointerId = null; } // crossed the line mid-aim: drop the trajectory
@@ -3124,11 +3212,12 @@
                             if (carrier && (!p.isKicker || (p.isKicker && gameState === 'PLAYING'))) {
                                 let targetX = carrier.x; let targetY = carrier.y;
                                 if (gameState === 'PLAYING' && !carrierPastLOS && p.aiRole && p.aiRole !== 'BLITZ' && p.aiRole !== 'PURSUE') { if (p.aiRole === 'ZONE') { targetX = lineOfScrimmage + (offenseDirection * 7); targetY = carrier.y; } else if (p.aiRole === 'MAN' || p.aiRole === 'PRESS') { let myWR = players.find(e => e.isCPU !== p.isCPU && !e.isLineman && !e.isQB && !e.isReturner && Math.abs(e.y - p.y) < 6); if (myWR) { targetX = myWR.x + (offenseDirection * (p.aiRole === 'MAN' ? 3 : 0)); targetY = myWR.y; } } }
+                                if (p.isCPU && carrier.hasBall && gameState === 'PLAYING' && targetX === carrier.x && targetY === carrier.y) { const _dC = Math.hypot(targetX - p.x, targetY - p.y); const _tF = Math.min(16, _dC / Math.max(0.05, p.speed * 0.95)) * (0.35 + 0.3 * Math.max(0, cpuDifficulty)); targetX += _carVel.x * _tF; targetY += _carVel.y * _tF; }
                                 if (p.isMissedTackle) { p.missedTackleTimer = (p.missedTackleTimer || 0) + 1; p.animTimer = 0; if (p.missedTackleTimer > 32) { p.isMissedTackle = false; p.missedTackleTimer = 0; } } 
                                 else if (p.isLunging) { p.lungeTimer = (p.lungeTimer || 0) + 1; { const lm = 0.14 * worldDirSpeedMul(p.lungeDirX, p.lungeDirY); p.x += p.lungeDirX * lm; p.y += p.lungeDirY * lm; } p.animTimer = 0; let lungeDist = Math.sqrt(Math.pow(carrier.x - p.x, 2) + Math.pow(carrier.y - p.y, 2)); if (touching(p, carrier) && gameState === 'PLAYING' && carrier.hasBall) triggerTackle(carrier, p); else if (p.lungeTimer > 12) { p.isLunging = false; p.isMissedTackle = true; p.missedTackleTimer = 0; } } 
                                 else {
                                     let dx = targetX - p.x + sepX; let dy = targetY - p.y + sepY; let dist = Math.sqrt(dx*dx + dy*dy);
-                                    if (dist > 0.5 && !p.isIntercepter) { const cm = p.speed * 0.95 * worldDirSpeedMul(dx, dy); p.x += (dx / dist) * cm; p.y += (dy / dist) * cm; p.facing = dx > 0 ? 1 : -1; p.animTimer += 0.3; }
+                                    if (dist > 0.5 && !p.isIntercepter) { const cm = p.speed * (p.isCPU ? 0.97 + 0.04 * Math.max(0, cpuDifficulty) : 0.95) * worldDirSpeedMul(dx, dy); p.x += (dx / dist) * cm; p.y += (dy / dist) * cm; p.facing = dx > 0 ? 1 : -1; p.animTimer += 0.3; }
                                     let actualDistToCarrier = Math.sqrt(Math.pow(carrier.x - p.x, 2) + Math.pow(carrier.y - p.y, 2));
                                     const touchNow = touching(p, carrier); if (touchNow && gameState === 'PLAYING' && carrier.hasBall) triggerTackle(carrier, p);
                                     else if (!touchNow && visDist(p, carrier) < 2.4 && gameState === 'PLAYING' && carrier.hasBall && Math.random() < Math.max(0.02, 0.08 + (p.isCPU ? cpuDifficulty : -cpuDifficulty) * 0.06)) { let ldx = carrier.x - p.x, ldy = carrier.y - p.y; let llen = Math.sqrt(ldx * ldx + ldy * ldy) || 1; p.isLunging = true; p.lungeTimer = 0; p.lungeDirX = ldx / llen; p.lungeDirY = ldy / llen; p.facing = ldx > 0 ? 1 : -1; }
@@ -3148,17 +3237,16 @@
                                 if (bestDef) { let dx = bestDef.x - p.x + sepX; let dy = bestDef.y - p.y + sepY; let dist = Math.sqrt(dx*dx + dy*dy); if (dist > 0.5) { { const bm = p.speed * 0.85 * worldDirSpeedMul(dx, dy); p.x += (dx / dist) * bm; p.y += (dy / dist) * bm; } p.facing = dx > 0 ? 1 : -1; p.animTimer += 0.3; } } 
                                 else { let isOffense = (offenseDirection === -1) ? !p.isCPU : p.isCPU; if (isOffense && currentOffensePlay === 'INSIDE_RUN' && !p.isLineman && !p.isQB && !p.isReturner) { p.x += p.facing * (p.speed * 0.65); p.animTimer += 0.3; } }
                             } else if (p.hasBall && p.isCPU) {
-                                const cpuRunSpeed = p.speed * 0.80; 
+                                const cpuRunSpeed = p.speed * (1 + 0.03 * Math.max(0, cpuDifficulty)); 
                                 if (isPassPlay(currentOffensePlay) && p.isQB && cpuQbEvade(p) !== 'RUN') {
                                     if (Math.abs(p.x - lineOfScrimmage) < 6 && !p.cpuScramble) p.x -= p.facing * 0.04; 
                                     if (p.pocketPhase === undefined) p.pocketPhase = Math.random() * Math.PI * 2; p.pocketPhase += 0.04; p.y += Math.sin(p.pocketPhase) * 0.04; p.animTimer += 0.15; cpuPassTimer--;
                                     if (!isPassing) {
-                                        let _dec = cpuReadProgression(p, currentOffensePlay); let targetWR = _dec.target;
+                                        let _dec = cpuReadProgression(p, currentOffensePlay); let targetWR = _dec.target; if (_dec.tuck && !qbPastLOS(p)) { p.cpuScramble = 'RUN'; }
                                         if (targetWR && _dec.throwNow) {
-                                            p.hasBall = false; let hangTime = 55; let leadX = targetWR.x + (targetWR.facing * targetWR.speed * hangTime * 0.7); let leadY = targetWR.y;
-                                            if (currentOffensePlay === 'OUTS' && Math.abs(targetWR.y) > 8) leadY += (targetWR.y < 0 ? -1 : 1) * targetWR.speed * hangTime * 0.8;
-                                            let nearestRusher = players.filter(pl => pl.isCPU !== p.isCPU && pl.isLineman).sort((a,b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0]; let underPressure = nearestRusher && Math.hypot(nearestRusher.x - p.x, nearestRusher.y - p.y) < 3.5; const _qd = StatsBridge.qbDiff(p); let cleanBadRate = Math.max(0.03, Math.min(0.6, 0.28 - _qd * 0.18)); let pressureBadRate = Math.max(0.1, Math.min(0.95, 0.45 - _qd * 0.35)); ball.isBadPass = Math.random() < (underPressure ? pressureBadRate : cleanBadRate);
-                                            if (ball.isBadPass) { let missDist = 6 + Math.random() * 8; let missAngle = Math.random() * Math.PI * 2; leadX += Math.cos(missAngle) * missDist; leadY += Math.sin(missAngle) * missDist; }
+                                            p.hasBall = false; const _spot = cpuPassSpot(p, targetWR, currentOffensePlay); let hangTime = _spot.hang; let leadX = _spot.x; let leadY = _spot.y;
+                                            let nearestRusher = players.filter(pl => pl.isCPU !== p.isCPU && !pl.isRef && !pl.isKicker).sort((a,b) => Math.hypot(a.x-p.x,a.y-p.y) - Math.hypot(b.x-p.x,b.y-p.y))[0]; let underPressure = nearestRusher && Math.hypot(nearestRusher.x - p.x, nearestRusher.y - p.y) < 3.0; const _qd = StatsBridge.qbDiff(p); let cleanBadRate = Math.max(0.015, Math.min(0.3, 0.07 - _qd * 0.05)) + (p.cpuScramble ? 0.05 : 0); let pressureBadRate = Math.max(0.08, Math.min(0.8, 0.30 - _qd * 0.2)); ball.isBadPass = Math.random() < (underPressure ? pressureBadRate : cleanBadRate);
+                                            if (ball.isBadPass) { let missDist = 3 + Math.random() * 5; let missAngle = Math.random() * Math.PI * 2; leadX += Math.cos(missAngle) * missDist; leadY += Math.sin(missAngle) * missDist; }
                                             ball.destX = leadX; ball.destY = Math.max(-(FIELD_WIDTH_YARDS/2) - 3, Math.min((FIELD_WIDTH_YARDS/2) + 3, leadY));
                                             if (p.st) { const _dx = ball.destX - p.x, _dy = ball.destY - p.y, _d = Math.hypot(_dx, _dy) || 1, _rg = StatsBridge.throwRange(p); if (_d > _rg) { ball.destX = p.x + _dx * _rg / _d; ball.destY = p.y + _dy * _rg / _d; } const _sc = StatsBridge.scatter(p, Math.min(_d, _rg)); if (_sc > 0) { const _a = Math.random() * Math.PI * 2, _r = Math.sqrt(Math.random()) * _sc; ball.destX += Math.cos(_a) * _r; ball.destY += Math.sin(_a) * _r; } }
                                             let actualDist = Math.sqrt(Math.pow(ball.destX - p.x, 2) + Math.pow(ball.destY - p.y, 2)); hangTime = Math.max(32, actualDist * 2.5 * StatsBridge.hangMul(p));
@@ -3168,10 +3256,7 @@
                                         } else if (!targetWR) p.x += cpuRunSpeed * p.facing; 
                                     }
                                 } else {
-                                    let distFromLOS = Math.abs(p.x - lineOfScrimmage);
-                                    if (currentOffensePlay === 'SWEEP_RIGHT') { if (distFromLOS < 2) { p.y += cpuRunSpeed * 0.85; p.x += cpuRunSpeed * 0.3 * p.facing; } else { p.x += cpuRunSpeed * p.facing; p.y += sepY * 0.35; } } 
-                                    else if (currentOffensePlay === 'SWEEP_LEFT') { if (distFromLOS < 2) { p.y -= cpuRunSpeed * 0.85; p.x += cpuRunSpeed * 0.3 * p.facing; } else { p.x += cpuRunSpeed * p.facing; p.y += sepY * 0.35; } } 
-                                    else { p.x += cpuRunSpeed * p.facing; p.y += sepY * 0.35; } p.animTimer += 0.25;
+                                    cpuRunnerMove(p, currentOffensePlay); p.animTimer += 0.25;
                                 }
                             }
                         }
