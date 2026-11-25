@@ -681,7 +681,7 @@
         };
 
         function addScreenShake(amount) { screenShake.trauma = Math.min(1, screenShake.trauma + amount); }
-        function updateScreenShake() { if (screenShake.trauma > 0) { screenShake.trauma = Math.max(0, screenShake.trauma - 0.05); let shakeAmt = screenShake.trauma * screenShake.trauma; let maxOffset = 20; screenShake.x = (Math.random() * 2 - 1) * maxOffset * shakeAmt; screenShake.y = (Math.random() * 2 - 1) * maxOffset * shakeAmt * 0.6; } else { screenShake.x = 0; screenShake.y = 0; } }
+        function updateScreenShake() { if (screenShake.trauma > 0) { screenShake.trauma = Math.max(0, screenShake.trauma - 0.05); let shakeAmt = screenShake.trauma * screenShake.trauma; let maxOffset = 11; screenShake.x = (Math.random() * 2 - 1) * maxOffset * shakeAmt; screenShake.y = (Math.random() * 2 - 1) * maxOffset * shakeAmt * 0.6; } else { screenShake.x = 0; screenShake.y = 0; } }
         function spawnImpactBurst(x, y, count) { for (let i = 0; i < count; i++) { let angle = Math.random() * Math.PI * 2; let spd = 0.02 + Math.random() * 0.1; particles.push({ type: 'impact', x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, z: 0.1, vz: 0.15 + Math.random() * 0.2, gravity: 0.02, life: 20 + Math.random() * 15, maxLife: 35, size: 3 + Math.random() * 5, color: Math.random() > 0.5 ? '#94a3b8' : '#cbd5e1' }); } hitMarkers.push({ x, y, life: 12, maxLife: 12 }); }
         function spawnSweat(p) { const n = 1 + (Math.random() < 0.5 ? 1 : 0); for (let i = 0; i < n; i++) particles.push({ type: 'sweat', x: p.x + (Math.random() - 0.5) * 0.35, y: p.y + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.05 - (p.facing || 1) * 0.012, vy: (Math.random() - 0.5) * 0.03, z: 1.4 + Math.random() * 0.4, vz: 0.03 + Math.random() * 0.05, gravity: 0.007, life: 28 + Math.random() * 10, maxLife: 36, size: 3.5 + Math.random() * 2.5, color: Math.random() > 0.4 ? '#7dd3fc' : '#e0f2fe' }); }
         function spawnDust(x, y, zOffset = 0) { let angle = Math.random() * Math.PI * 2; particles.push({ type: 'dust', x: x + (Math.random()-0.5)*0.5, y: y + (Math.random()-0.5)*0.5, vx: Math.cos(angle) * 0.02, vy: Math.sin(angle) * 0.02, z: zOffset, vz: 0.02 + Math.random() * 0.03, gravity: -0.001, life: 15 + Math.random() * 10, maxLife: 25, size: 4 + Math.random() * 4, color: 'rgba(200, 200, 200, 0.5)' }); }
@@ -712,7 +712,7 @@
             let hLen = Math.sqrt(carrier.hitDirX * carrier.hitDirX + carrier.hitDirY * carrier.hitDirY) || 1; carrier.hitDirX /= hLen; carrier.hitDirY /= hLen;
             let gangTacklers = players.filter(pl => pl !== hitter && pl !== carrier && pl.isCPU !== carrier.isCPU && Math.sqrt(Math.pow(pl.x - carrier.x, 2) + Math.pow(pl.y - carrier.y, 2)) < 1.6);
             [hitter, ...gangTacklers].forEach(t => { let dx = carrier.x - t.x, dy = carrier.y - t.y; let len = Math.sqrt(dx * dx + dy * dy) || 1; t.tackleHitDirX = dx / len; t.tackleHitDirY = dy / len; if (Math.abs(dx) > 0.05) t.facing = dx > 0 ? 1 : -1; t.isTackling = true; t.tackleAnimTimer = 0; t.isLunging = false; t.isMissedTackle = false; t.isDiving = false; });
-            let gangCount = gangTacklers.length; spawnImpactBurst(carrier.x, carrier.y, 15 + gangCount * 8); addScreenShake(0.6 + gangCount * 0.2); hitStopTimer = Math.min(15, 6 + gangCount * 3);
+            let gangCount = gangTacklers.length; spawnImpactBurst(carrier.x, carrier.y, 15 + gangCount * 8); addScreenShake(0.25 + gangCount * 0.08); hitStopTimer = Math.min(8, 3 + gangCount * 2);
             const goofy = goofyTackle(carrier, hitter, gangTacklers); const bwMs = brawlOnTackle(carrier, hitter, gangTacklers); setTimeout(() => { endPlay("TACKLED!"); }, Math.max(goofy ? 3200 : 1200, bwMs));
         }
 
@@ -735,8 +735,8 @@
         }
         function goofyBowl(o, vx, vy, depth) {
             if (o.gf) { o.gf.vx += vx; o.gf.vy += vy; o.gf.vz = Math.max(o.gf.vz, 1.7); o.gf.resting = false; o.gf.hitsLeft = Math.max(o.gf.hitsLeft, 1); if (o.gf.rg) o.gf.rg.forEach(l => l.w += (Math.random() - 0.5) * 2.5); return; }
-            const sgn = Math.random() < 0.5 ? -1 : 1, spinny = Math.random() < 0.35, sp = Math.hypot(vx, vy), rag = sp > 0.05 && Math.random() < 0.85;
-            goofyMake(o, { vx, vy, vz: 1.7 + Math.random() * 0.7, g: 0.14, rest: rag ? 0.55 : 0.45, maxBounce: rag ? 3 : 1, rotV: spinny ? 0 : sgn * GF_TAU * (1 + Math.floor(Math.random() * 2)) / 30, sV: spinny ? GF_TAU * 2 / 30 : 0, hitsLeft: depth < 9 ? 3 : 0, depth, ragdoll: rag, grip: 0.9 });
+            const sgn = Math.random() < 0.5 ? -1 : 1, spinny = Math.random() < 0.35, sp = Math.hypot(vx, vy), rag = sp > 0.05 && Math.random() < 0.6;
+            goofyMake(o, { vx, vy, vz: 1.4 + Math.random() * 0.4, g: 0.14, rest: rag ? 0.5 : 0.4, maxBounce: rag ? 2 : 1, rotV: spinny ? 0 : sgn * GF_TAU * (1 + Math.floor(Math.random() * 2)) / 30, sV: spinny ? GF_TAU * 2 / 30 : 0, hitsLeft: depth < 6 ? 2 : 0, depth, ragdoll: rag, grip: 0.9 });
             if (sp > 0.15 && Math.random() < 0.2) goofyStars(o, 80);
             if (depth >= 2 && !goofyChainPopped) { goofyChainPopped = true; goofyPop(o.x, o.y, 'BOINK!', '#fb923c'); }
         }
@@ -758,7 +758,7 @@
                 let dx = -fx, dy = hy * 0.35, l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
                 const D = 5 + Math.random() * 4.5, vx = dx * D / 90, vy = dy * D / 90;
                 goofyMake(carrier, { vx, vy, vz: 3.4, g: 0.13, rest: 0.5, maxBounce: 2, rotV: sgnOf(vx) * GF_TAU * (2 + Math.floor(Math.random() * 2)) / 52, hits: exempt.slice(), hitsLeft: 3, hitZ: 48, grip: 0.88 });
-                addScreenShake(1); hitStopTimer = 18; spawnImpactBurst(carrier.x, carrier.y, 55); goofyPop(carrier.x, carrier.y, 'KABONK!', '#f87171');
+                addScreenShake(0.4); hitStopTimer = 8; spawnImpactBurst(carrier.x, carrier.y, 35); goofyPop(carrier.x, carrier.y, 'KABONK!', '#f87171');
             } else if (type === 'PINBALL') {
                 const tgt = (nearTeam && Math.random() < 0.5) ? nearTeam : near;
                 let dx = tgt.x - carrier.x, dy = tgt.y - carrier.y, l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
@@ -782,7 +782,7 @@
                 cg.maxBounce += 2; cg.rest = Math.min(0.8, cg.rest + 0.15); cg.grip = 0.93;
                 if (cg.wob) { cg.wob = 0; cg.rotV = sgnOf(cg.vx) * GF_TAU * 2 / 40; }
                 if (type !== 'LAUNCH') goofyPop(carrier.x, carrier.y, ['WHAM!', 'THUD!', 'SPLAT!'][Math.floor(Math.random() * 3)], '#f472b6');
-                addScreenShake(0.5);
+                addScreenShake(0.15);
             }
             if (dizzy) goofyStars(carrier, 120);
             // tackled INTO somebody: drive him at the nearest player so the chain reaction actually happens
@@ -813,8 +813,8 @@
                     if (dist > 1.2) continue;
                     const sa = spd(a), sb = spd(b);
                     if (sa < 0.025 && sb < 0.025) continue;
-                    const hard = (sa + sb) > 0.11 && dist < 0.95;   // two players running into each other (teammates included)
-                    if (Math.random() > (hard ? 0.3 : 0.08)) continue;
+                    const hard = (sa + sb) > 0.11 && dist < 0.95, route = a.runningRoute || b.runningRoute;   // two players running into each other (teammates included)
+                    if (Math.random() > (hard ? 0.09 : 0.03) * (route ? 0.35 : 1)) continue;
                     const [t, v] = sa >= sb ? [a, b] : [b, a];
                     let mx = t.x - (t.prevX === undefined ? t.x : t.prevX), my = t.y - (t.prevY === undefined ? t.y : t.prevY), l = Math.hypot(mx, my) || 1; mx /= l; my /= l;
                     if (l < 0.0001) { mx = t.facing || 1; my = 0; }
@@ -823,13 +823,13 @@
                         goofyBowl(v, mx * 0.13, my * 0.13, 2);
                         goofyPop((t.x + v.x) / 2, (t.y + v.y) / 2, t.isCPU === v.isCPU ? 'KABONK!' : 'WHAM!', '#f97316');
                         if (Math.random() < 0.25) goofyStars(t, 90); if (Math.random() < 0.3) goofyStars(v, 100);
-                        spawnImpactBurst((t.x + v.x) / 2, (t.y + v.y) / 2, 18); addScreenShake(0.35);
+                        spawnImpactBurst((t.x + v.x) / 2, (t.y + v.y) / 2, 12); addScreenShake(0.1);
                     } else {
                         goofyMake(t, { vx: mx * 0.12, vy: my * 0.12, vz: 1.5, g: 0.14, rest: 0.35, maxBounce: 2, rotV: ((mx * (t.facing || 1)) >= 0 ? 1 : -1) * GF_TAU / 22, hitsLeft: 2, grip: 0.88 });
                         goofyBowl(v, -mx * 0.1, -my * 0.1, 3);
                         goofyPop(t.x, t.y, 'THUNK!', '#a3e635'); if (Math.random() < 0.15) goofyStars(t, 80);
                     }
-                    goofyTripCool = 40 + Math.floor(Math.random() * 100);
+                    goofyTripCool = 150 + Math.floor(Math.random() * 200);
                     return;
                 }
             }
@@ -858,7 +858,7 @@
                 if (p.y < -ymax) { p.y = -ymax; g.vy = Math.abs(g.vy) * 0.6; } if (p.y > ymax) { p.y = ymax; g.vy = -Math.abs(g.vy) * 0.6; }
                 if (g.z <= 0) {
                     g.z = 0;
-                    if (g.vz < -0.9 && g.bounces < g.maxBounce) { g.bounces++; g.vz = -g.vz * g.rest; g.vx *= 0.85; g.vy *= 0.85; spawnDust(p.x, p.y); spawnDust(p.x, p.y); spawnImpactBurst(p.x, p.y, 5); addScreenShake(0.15); if (g.rg) g.rg.forEach(l => l.w += (Math.random() - 0.5) * 1.8); }
+                    if (g.vz < -0.9 && g.bounces < g.maxBounce) { g.bounces++; g.vz = -g.vz * g.rest; g.vx *= 0.85; g.vy *= 0.85; spawnDust(p.x, p.y); spawnDust(p.x, p.y); spawnImpactBurst(p.x, p.y, 4); addScreenShake(0.03); if (g.rg) g.rg.forEach(l => l.w += (Math.random() - 0.5) * 1.8); }
                     else { g.vz = 0; g.resting = true; g.vx *= g.grip; g.vy *= g.grip; if (Math.random() < 0.3) spawnDust(p.x, p.y); }
                 }
                 if (g.z > 3 && g.t % 5 === 0) spawnDust(p.x, p.y);
@@ -867,9 +867,9 @@
                         if (o === p || g.hits.includes(o)) continue;
                         if (live && (o.hasBall || o === player)) continue;
                         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
-                        if (d < 1.7) {
+                        if (d < 1.45) {
                             g.hits.push(o); g.hitsLeft--;
-                            const nx = d > 0.01 ? dx / d : 1, ny = d > 0.01 ? dy / d : 0, sp = Math.hypot(g.vx, g.vy), kick = Math.min(0.24, 0.09 + sp * 0.75) * Math.max(0.35, 1 - g.depth * 0.06);
+                            const nx = d > 0.01 ? dx / d : 1, ny = d > 0.01 ? dy / d : 0, sp = Math.hypot(g.vx, g.vy), kick = Math.min(0.18, 0.07 + sp * 0.6) * Math.max(0.35, 1 - g.depth * 0.06);
                             goofyBowl(o, nx * kick, ny * kick, g.depth + 1);
                             if (o.gf && o.gf.depth === 0 && g.depth + 1 > 0) o.gf.depth = g.depth + 1;
                             if (o.isCPU === p.isCPU) goofyPop(o.x, o.y, 'BOINK!', '#facc15'); else goofyPop(o.x, o.y, 'BONK!', '#fb923c');
@@ -877,7 +877,7 @@
                             if (!g.wob) g.rotV += (Math.random() < 0.5 ? -1 : 1) * 0.12; g.sV += 0.08;
                             if (g.rg) g.rg.forEach(l => l.w += (Math.random() - 0.5) * 3);
                             if (sp > 0.18 && Math.random() < 0.25) goofyStars(p, 90);
-                            spawnImpactBurst((p.x + o.x) / 2, (p.y + o.y) / 2, 20); addScreenShake(0.4);
+                            spawnImpactBurst((p.x + o.x) / 2, (p.y + o.y) / 2, 12); addScreenShake(0.1);
                             break;
                         }
                     }
@@ -898,14 +898,14 @@
         // Now and then a scuffle breaks out: 2-4 players throw hands while everybody else stops playing and crowds around to watch.
         // It can start mid-play (blockers get into it) or right after a tackle (a teammate runs in to defend his guy).
         const BRAWL_TEST_MODE = true;   // true = fights happen A LOT (for testing). Set to false to make them rare.
-        const BW_RATE_PLAY = BRAWL_TEST_MODE ? 0.004 : 0.00012;   // chance per frame that a fight starts mid-play
+        const BW_RATE_PLAY = BRAWL_TEST_MODE ? 0.002 : 0.00012;   // chance per frame that a fight starts mid-play
         const BW_RATE_TACKLE = BRAWL_TEST_MODE ? 0.5 : 0.025;     // chance that a tackle turns into a fight
         const BW_LIVE = ['PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE', 'TACKLED'];
         const BW_WORDS = ['BONK!', 'POW!', 'WHAP!', 'BOP!', 'SMACK!', 'THWACK!', 'BIFF!', 'WHAM!'];
         let brawls = [], brawlPending = null, brawlPlayT = 0, brawlThisPlay = false;
         function bwOkSpec(q, dead) {
             const base = !q.gf && !q.hasBall && q !== player && q !== p2Player && !q.isKicker && !q.bw;
-            return dead ? base : (base && !q.isQB && !q.isReturner && !q.isTargetReceiver && !q.isIntercepter);
+            return dead ? base : (base && !q.isQB && !q.isReturner && !q.isTargetReceiver && !q.isIntercepter && !q.runningRoute);
         }
         function bwJoin(B, q, role) {
             if (!q.gfLie) { q.isTackling = false; q.isLunging = false; q.isDiving = false; q.isMissedTackle = false; }
@@ -973,11 +973,11 @@
             if (!b.bw || b.gf) return;
             if (Math.hypot(b.x - a.x, b.y - a.y) > 1.4 || Math.random() < 0.2) return;   // swung at air
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-            spawnImpactBurst(mx, my, 6); addScreenShake(0.07);
+            spawnImpactBurst(mx, my, 5); addScreenShake(0.02);
             b.x += dx * 0.08; b.y += dy * 0.08; b.bw.hurt = 9;
             if (Math.random() < 0.4) goofyPop(mx, my, BW_WORDS[Math.floor(Math.random() * BW_WORDS.length)], '#fbbf24');
             if (Math.random() < 0.05) {   // haymaker: sends him flying
-                goofyBowl(b, dx * 0.13, dy * 0.13, 2); goofyPop(b.x, b.y, 'KABONK!', '#f87171'); addScreenShake(0.3);
+                goofyBowl(b, dx * 0.13, dy * 0.13, 2); goofyPop(b.x, b.y, 'KABONK!', '#f87171'); addScreenShake(0.1);
                 if (Math.random() < 0.4) goofyStars(b, 90);
             }
         }
@@ -1036,6 +1036,78 @@
                 }
             } else if (!brawls.length && !brawlThisPlay && gameState === 'PLAYING' && brawlPlayT > 75 && !isFieldGoalPlay && !isKickReturnPlay && !isPAT && lineOfScrimmage > 0 && Math.random() < BW_RATE_PLAY) bwTryPlay();
             brawls.forEach(bwStep); brawls = brawls.filter(B => !B.done);
+        }
+
+        // ===================== FAN GAG =====================
+        // When you go to hike, sometimes a (kinda fat, very goofy) fan sprints in from the top of the screen, swaps the football for a
+        // beach ball, says something helpful, and runs off with the real ball. You can't hike until he's gone.
+        const FAN_TEST_MODE = true;   // true = happens a lot (for testing). Set to false to make it rare.
+        const FAN_RATE = FAN_TEST_MODE ? 0.6 : 0.06;   // chance each play that the fan shows up when you go to hike
+        const FAN_LINES = ['HERE, TAKE THIS!', 'HERE, THIS WILL HELP!'];
+        const FAN_KEEP_BEACH = ['PRE_SNAP', 'PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE', 'TACKLED', 'PLAY_DEAD', 'DIALOG', 'PAUSED'];
+        let fan = null, fanRolled = false;
+        function fanBlocksSnap() {   // called when the hike button is pressed: true = swallow the hike
+            if (fan) return true;
+            if (fanRolled || isIntroScene || isMultiplayer || isFieldGoalPlay || isPAT || isPuntPlay) return false;
+            fanRolled = true;
+            if (Math.random() > FAN_RATE) return false;
+            const L = ball.x, topY = camera.currentY - (canvas.height * 0.5 / (camera.zoom * camera.pitch)) - 3;
+            fan = {
+                isFan: true, x: L - 9, y: Math.max(-(FIELD_WIDTH_YARDS / 2 + 10), topY), facing: 1, animTimer: 0, skinTone: '#f2b48a', girth: 1.45, pxSeed: 0.5,
+                hasBall: true, holdBeach: true, hopOffset: 0, mode: 'run', t: 0, swapT: 0, say: null, sayT: 0, tx: L - 1.0, ty: -1.8, spin: 0
+            };
+            return true;
+        }
+        function updateFan() {
+            if (gameState === 'PAUSED' || gameState === 'DIALOG') return;
+            if (!fan) {
+                if (gameState !== 'PRE_SNAP') fanRolled = false;
+                if (ball.beach && !FAN_KEEP_BEACH.includes(gameState)) ball.beach = false;
+                return;
+            }
+            if (gameState !== 'PRE_SNAP' || isIntroScene) { fan = null; return; }
+            const F = fan; F.t++; F.spin++;
+            if (F.say) F.sayT++;
+            if (F.mode === 'run') {
+                let dx = F.tx - F.x, dy = F.ty - F.y; const d = Math.hypot(dx, dy) || 0.01; dx /= d; dy /= d;
+                const sp = 0.2; F.x += dx * Math.min(sp, d); F.y += dy * Math.min(sp, d);
+                if (Math.abs(dx) > 0.05) F.facing = dx > 0 ? 1 : -1;
+                F.animTimer += 0.42; F.hopOffset = Math.abs(Math.sin(F.animTimer)) * 0.11;   // waddle
+                if (d < 8 && !F.say) { F.say = FAN_LINES[Math.floor(Math.random() * FAN_LINES.length)]; F.sayT = 0; }
+                if (d < 0.3) { F.mode = 'talk'; F.t = 0; F.animTimer = 0; F.facing = 1; }
+            } else if (F.mode === 'talk') {   // bouncing with excitement, holding the beach ball out
+                F.hopOffset = Math.abs(Math.sin(F.t * 0.28)) * 0.1;
+                if (F.t > 60) { F.mode = 'swap'; F.swapT = 0; F.hopOffset = 0; }
+            } else if (F.mode === 'swap') {   // snatch the football, plop the beach ball down
+                F.swapT++;
+                if (F.swapT === 14) {
+                    ball.beach = true; F.holdBeach = false;   // he now holds the real football
+                    spawnConfettiBurst(ball.x, ball.y, 14); for (let i = 0; i < 5; i++) spawnDust(ball.x, ball.y, 0.2);
+                }
+                if (F.swapT > 36) { F.mode = 'flee'; F.t = 0; F.say = null; }
+            } else {   // flee with the real football held high
+                const sp = 0.27, vx = -0.45, vy = -1, l = Math.hypot(vx, vy);
+                F.x += vx / l * sp; F.y += vy / l * sp; F.facing = -1; F.animTimer += 0.6; F.hopOffset = Math.abs(Math.sin(F.animTimer)) * 0.16;
+                if (toScreen(F.x, F.y).y < -140 || F.y < -(FIELD_WIDTH_YARDS / 2 + 12) || F.t > 600) fan = null;
+            }
+        }
+        function drawFanBubble() {
+            if (!fan || !fan.say) return;
+            const sc = toScreen(fan.x, fan.y), spx = Math.max(0.45, camera.zoom * 0.04 * 2.9 * 1.22) * playerSizeScale;
+            const fs = Math.max(11, Math.round(spx * 4)), txt = fan.say, shown = txt.slice(0, Math.min(txt.length, Math.floor(fan.sayT / 2) + 1));
+            ctx.save(); ctx.font = fs + 'px "Press Start 2P", monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+            const pad = fs * 0.8, w = ctx.measureText(txt).width + pad * 2, h = fs + pad * 2;
+            let bx = Math.max(8, Math.min(canvas.width - w - 8, sc.x - w / 2)), by = Math.max(8, sc.y - 25 * spx - h);
+            const pop = Math.min(1, 0.55 + fan.sayT / 10 * 0.45), cx0 = bx + w / 2, cy0 = by + h;
+            ctx.translate(cx0, cy0); ctx.scale(pop, pop); ctx.translate(-cx0, -cy0);
+            ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(bx + 4, by + 4, w, h);
+            ctx.fillStyle = '#000'; ctx.fillRect(bx - 3, by - 3, w + 6, h + 6);
+            ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, w, h);
+            const tx = Math.max(bx + 10, Math.min(bx + w - 10, sc.x)), ts = Math.max(6, fs * 0.6);   // little tail pointing at him
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(tx - ts - 3, by + h + 2); ctx.lineTo(tx + ts + 3, by + h + 2); ctx.lineTo(tx, by + h + ts + 6); ctx.fill();
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(tx - ts, by + h); ctx.lineTo(tx + ts, by + h); ctx.lineTo(tx, by + h + ts + 2); ctx.fill();
+            ctx.fillStyle = '#111827'; ctx.fillText(shown, bx + pad, by + h / 2 + 1);
+            ctx.restore();
         }
 
         const keys = {}; let spacePressed = false; window.addEventListener('keydown', (e) => { keys[e.code] = true; }); window.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -1842,7 +1914,7 @@
         }
 
         function setupScrimmage() {
-            gameState = 'PRE_SNAP'; players = []; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+            gameState = 'PRE_SNAP'; players = []; ball.beach = false; fan = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
             isFieldGoalPlay = false; isPuntPlay = false; isPAT = false; interceptionAttempted = false; ensureRefsExist(); flagsOnField = []; penaltyData = null; isRefCam = false; isRefPenaltyZoom = false;
             let dir = offenseDirection; let isPlayerOffense = (dir === -1); 
             
@@ -2073,7 +2145,7 @@
         function update() {
             ensureRefsExist(); updateScreenShake(); updateParticles();
             if (hitStopTimer > 0) { hitStopTimer--; return; }
-            updateGoofy(); updateBrawl();
+            updateGoofy(); updateBrawl(); updateFan();
 
             let hideControls = gameState === 'PAUSED' || gameState === 'DIALOG' || gameState === 'PLAY_CALL' || gameState === 'COIN_TOSS' || gameState === 'KICK_CHOICE' || gameState === 'FLIPPING' || gameState === 'GAME_OVER' || (isIntroScene && introScriptState !== 'SCRIPTED_RUN' && introScriptState !== 'PRE_SNAP_WAIT');
             let mc = document.getElementById('mobile-controls');
@@ -2095,7 +2167,7 @@
             let isPlayerOffenseNow = offenseDirection === -1;
             if (isPlayerOffenseNow && (gameState === 'PLAY_CALL' || gameState === 'PRE_SNAP') && !isIntroScene && (!isMultiplayer || isMpHost)) { 
                 playClockEl.classList.add('show'); 
-                if (playClock > 0 && gameState !== 'PENALTY_SEQUENCE') { 
+                if (playClock > 0 && gameState !== 'PENALTY_SEQUENCE' && !fan) { 
                     playClock -= 1 / 60; 
                     if (playClock <= 0) { playClock = 0; triggerPenalty('DELAY_OF_GAME'); } 
                 } 
@@ -2153,7 +2225,7 @@
                     let canSnap = true; if (isIntroScene) canSnap = false; 
                     
                     if (gameState === 'PRE_SNAP' && canSnap) {
-                        if (offenseDirection === -1 && isP1) snapBall();
+                        if (offenseDirection === -1 && isP1) { if (!fanBlocksSnap()) snapBall(); }
                         if (offenseDirection === 1 && isP2) snapBall(); 
                     }
                     else if (gameState === 'KICK_POWER') { 
@@ -2575,6 +2647,11 @@
             }
             else { if (Math.abs(camera.zoom - camera.baseZoom) > 0.01) camera.zoom += (camera.baseZoom - camera.zoom) * 0.08; }
 
+            if (brawls.length && (gameState === 'PLAYING' || gameState === 'TACKLED')) {   // fight: camera focuses on it until it is over
+                const B0 = brawls[0]; if (!window._bwCam) window._bwCam = { x: B0.cx, y: B0.cy };
+                window._bwCam.x += (B0.cx - window._bwCam.x) * 0.15; window._bwCam.y += (B0.cy - window._bwCam.y) * 0.15;
+                camera.target = window._bwCam; camera.zoom += (camera.baseZoom * 1.1 - camera.zoom) * 0.08;
+            } else if (window._bwCam) { window._bwCam = null; camera.target = players.find(p => p.hasBall) || player; }
             if (camera.target) {
                 camera.x = camera.target.x; camera.y = (cameraMode === 'free' || isIntroScene) ? camera.target.y : camYFollow(camera.target.y);
             }
@@ -2727,7 +2804,20 @@ const PXS = (function () {
         leg(0.5, o.legA2, o.legK2, 0);
         const tuck = !!o.hasBall && o.armA2 > -0.5;   // ball tucked under the front arm, held against the ribs (dives still reach out with it)
         // football: pixel ellipse, tilted along (dirx,diry), laces on top, darker belly underneath
+        const BEACH = ['#ef4444', '#fafafa', '#3b82f6', '#fafafa', '#fde047', '#fafafa'];
         const drawBall = (bx, by, ang, bs) => {
+            if (o.beachBall) {   // oversized beach ball instead of the football
+                const R = 3.4 * bs;
+                for (let y = Math.floor(by - R - 1); y <= Math.ceil(by + R + 1); y++) for (let x = Math.floor(bx - R - 1); x <= Math.ceil(bx + R + 1); x++) {
+                    const dx = x + .5 - bx, dy = y + .5 - by, r = Math.hypot(dx, dy); if (r > R) continue;
+                    const sec = (((Math.floor(((Math.atan2(dy, dx) + 0.5) / (Math.PI * 2) + 2) * 6)) % 6) + 6) % 6;
+                    const [rr, gg, bb] = hex2rgb(BEACH[sec]); let c = pack(rr, gg, bb);
+                    if (dy > R * 0.35 || r > R - 0.6) c = dimC(c, 0.78);
+                    if (dx < -R * 0.3 && dy < -R * 0.3 && r < R * 0.8) c = pack(255, 255, 255);
+                    put(x, y, c);
+                }
+                flush(0); return;
+            }
             const ca = Math.cos(ang), sa = Math.sin(ang), A = 2.7 * bs, B = 1.7 * bs;
             for (let y = Math.floor(by - A - 1); y <= Math.ceil(by + A + 1); y++) for (let x = Math.floor(bx - A - 1); x <= Math.ceil(bx + A + 1); x++) {
                 const dx = x + .5 - bx, dy = y + .5 - by; const u = dx * ca + dy * sa, v = -dx * sa + dy * ca;
@@ -4002,7 +4092,7 @@ const PXS = (function () {
                 return R;
             };
 
-            let allEntities = [...players, ...refs];
+            let allEntities = [...players, ...refs, ...(fan ? [fan] : [])];
             allEntities.sort((a, b) => a.y - b.y);
 
             allEntities.forEach(p => {
@@ -4037,7 +4127,7 @@ const PXS = (function () {
             });
             
             if (gameState !== 'COIN_TOSS' && (!players.some(p => p.hasBall) || players.some(p => p.snapT > 0)) && gameState !== 'PENALTY_SEQUENCE') {
-                let ballShadowSize = PPY * 0.4 * ballSizeScale; if (ball.z > 0) ballShadowSize = Math.max(PPY * 0.1, PPY * 0.4 * ballSizeScale - (ball.z * 0.08));
+                let ballShadowSize = PPY * 0.4 * ballSizeScale * (ball.beach ? 1.6 : 1); if (ball.z > 0) ballShadowSize = Math.max(PPY * 0.1, PPY * 0.4 * ballSizeScale - (ball.z * 0.08));
                 drawPixelShadow(ball.x, ball.y, ballShadowSize / X_STRETCH, ballShadowSize, PPY, 'rgba(0,0,0,0.32)');
             }
             ctx.restore(); 
@@ -4072,7 +4162,9 @@ const PXS = (function () {
                 const cSkin = p.skinTone || '#d4a373'; 
                 let cJersey, cPants, cHelmet, cJerseyDetail, cHelmetStripe, cPantsStripe;
                 
-                if (p.isRef) {
+                if (p.isFan) {
+                    cJersey = '#f97316'; cPants = '#2563eb'; cHelmet = '#dc2626'; cJerseyDetail = '#fde047'; cHelmetStripe = '#ffffff'; cPantsStripe = '#1d4ed8';
+                } else if (p.isRef) {
                     cJersey = '#ffffff'; cPants = '#0f172a'; cHelmet = p.id === 1 ? '#ffffff' : '#111827'; cJerseyDetail = '#ffffff';
                 } else if ((isQuickPlay || isMultiplayer) && quickPlayConfig) {
                     let teamColors, isHome;
@@ -4121,7 +4213,7 @@ const PXS = (function () {
                     else { let ut = (mt - 18) / 14; divePitch = Math.PI * 0.45 * (1 - ut); groundDrop = 14 * (1 - ut); armAngle1 = -Math.PI * 0.4 * (1 - ut); armAngle2 = Math.PI * 0.3 * (1 - ut); legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; } bounce = 0;
                 } else if (isReaching) {
                     divePitch = Math.PI / 16; if (ball.z > 2.5) { armAngle1 = -Math.PI * 0.85; armAngle2 = -Math.PI * 0.75; } else { armAngle1 = -Math.PI * 0.35; armAngle2 = -Math.PI * 0.25; } bounce *= 0.5; 
-                } else if (!p.isRef && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK')))) {
+                } else if (!p.isRef && !p.isFan && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK')))) {
                     if (p.isQB || p.isKicker) { groundDrop = 2; divePitch = Math.PI / 12; armAngle1 = -Math.PI / 2.5; armAngle2 = -Math.PI / 2.5; legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; bounce = 0; } 
                     else if (p.isLineman) { groundDrop = 8; divePitch = Math.PI / 6; armAngle1 = -Math.PI / 4.5; armAngle2 = Math.PI / 3; legAngle1 = Math.PI / 3.5; legAngle2 = -Math.PI / 3.5; bounce = 0; } 
                     else { groundDrop = 0; divePitch = 0; armAngle1 = -Math.PI / 4; armAngle2 = Math.PI / 4.5; legAngle1 = Math.PI / 8; legAngle2 = -Math.PI / 8; bounce = 0; }
@@ -4143,7 +4235,7 @@ const PXS = (function () {
                 }
                 
                 // ===== PIXEL SPRITE PLAYER (real pixel art, nearest-neighbour upscaled) =====
-                let isStancePose = (!p.isRef && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK'))));
+                let isStancePose = (!p.isRef && !p.isFan && !(p === player && gameState === 'PRE_SNAP' && p.animTimer !== 0) && (gameState === 'PRE_SNAP' || gameState === 'PRE_KICK' || (gameState === 'DIALOG' && (previousGameState === 'PRE_SNAP' || previousGameState === 'PRE_KICK'))));
                 let refSignal = (p.isRef && p.state !== 'IDLE' && p.state !== 'RUNNING');
                 let isMovingNow = p.animTimer !== 0; let tAnim = p.animTimer; let cosT = Math.cos(tAnim);
                 if (p.pxSeed === undefined) p.pxSeed = Math.random();
@@ -4183,10 +4275,17 @@ const PXS = (function () {
                         else if (sd < 0.75) { armAngle1 = armAngle2 = -Math.PI * 0.9; aB1 = aB2 = 2.2; bobPx = Math.floor(ph / 14) % 2; }
                         else { armAngle2 = -1.45; aB2 = 0.05; armAngle1 = -0.3; aB1 = 0.9; bobPx = 0; }
                     } }
+                if (p.isFan) { const F = p, ph = F.mode === 'run' || F.mode === 'flee' ? F.animTimer : F.t * 0.3; plantPose = false; pitchQ = 0; breathPx = 0; divePitch = 0; groundDrop = 0; diveHeight = 0; leanA = 0.08; bobPx = 0;
+                    if (F.mode === 'run') { legAngle1 = -Math.sin(ph) * 0.8; legAngle2 = Math.sin(ph) * 0.8; kn1 = 0.2 + 0.9 * Math.max(0, Math.cos(ph)); kn2 = 0.2 + 0.9 * Math.max(0, -Math.cos(ph)); armAngle1 = -1.25 + Math.sin(ph) * 0.1; armAngle2 = -1.3 + Math.sin(ph) * 0.1; aB1 = 0.25; aB2 = 0.25; leanA = 0.12; }   // hugging the beach ball out in front
+                    else if (F.mode === 'talk') { legAngle1 = 0.1; legAngle2 = -0.1; kn1 = 0.15; kn2 = 0.15; armAngle1 = -1.15 + Math.sin(ph) * 0.12; armAngle2 = -1.3; aB1 = 0.3; aB2 = 0.25; }
+                    else if (F.mode === 'swap') { const sw = Math.min(1, F.swapT / 8) * (1 - Math.max(0, (F.swapT - 22) / 14)); groundDrop = 5 * sw; legAngle1 = 0.5 * sw; legAngle2 = -0.5 * sw; kn1 = 0.9 * sw; kn2 = 0.9 * sw; leanA = 0.35 * sw; armAngle1 = -0.9 * sw; armAngle2 = -0.7 * sw; aB1 = 0.3; aB2 = 0.3; if (F.swapT > 14) { armAngle2 = -1.3 * sw - 0.4; } }
+                    else { legAngle1 = -Math.sin(ph) * 0.9; legAngle2 = Math.sin(ph) * 0.9; kn1 = 0.2 + 1.1 * Math.max(0, Math.cos(ph)); kn2 = 0.2 + 1.1 * Math.max(0, -Math.cos(ph)); armAngle2 = -2.7; aB2 = 0.15; armAngle1 = -2.2 + Math.sin(ph) * 0.6; aB1 = 0.4; leanA = 0.1; }   // flee: real football held high
+                }
                 let frontArmA = armAngle2, frontArmB = aB2;
                 if (p.hasBall && !(p.snapT > 0) && !isStancePose) { if (p.isDiving) { frontArmA = -Math.PI * 0.8; frontArmB = 0.1; } else if (isTackledCarrier && tcp) { frontArmA = tcp.fa; frontArmB = tcp.fb; } else { frontArmA = 0.3; frontArmB = 2.3; } }
+                if (p.isFan) { frontArmA = armAngle2; frontArmB = aB2; }
                 let spriteCanvas = PXS.cached({
-                    facing: p.facing, girth: (p.girth || 1.0), isRef: !!p.isRef, hasFlag: !!p.hasFlag, hasBall: !!p.hasBall && !(p.snapT > 0), ballScale: ballSizeScale,
+                    facing: p.facing, girth: (p.girth || 1.0), isRef: !!p.isRef, hasFlag: !!p.hasFlag, hasBall: !!p.hasBall && !(p.snapT > 0), ballScale: ballSizeScale, bare: !!p.isFan, beachBall: p.isFan ? !!p.holdBeach : !!(p.hasBall && ball.beach),
                     skin: cSkin, jersey: cJersey, pants: cPants, helmet: cHelmet, jerseyDetail: cJerseyDetail, helmetStripe: cHelmetStripe, pantsStripe: cPantsStripe,
                     pitch: pitchQ, lean: leanA, plant: plantPose, bob: bobPx, breath: breathPx,
                     armA1: armAngle1, armA2: frontArmA, armB1: aB1, armB2: frontArmB, legA1: legAngle1, legA2: legAngle2, legK1: kn1, legK2: kn2
@@ -4199,6 +4298,13 @@ const PXS = (function () {
                     for (let i = 0; i < 4; i++) { const an = tm + i * GF_TAU / 4, sx = Math.round(Math.cos(an) * Rx), sy = Math.round(cy0 + Math.sin(an) * Ry); ctx.fillStyle = '#facc15'; ctx.fillRect(sx - ss / 2, sy - ss * 1.5, ss, ss * 3); ctx.fillRect(sx - ss * 1.5, sy - ss / 2, ss * 3, ss); ctx.fillStyle = '#fff7ae'; ctx.fillRect(sx - ss / 2, sy - ss / 2, ss, ss); } }
                 if (gfOn && (p.gf.rot || p.gf.spin)) { const cy = spriteTop + PXS.H * spx * 0.5; ctx.translate(0, cy); ctx.rotate(p.gf.rot); ctx.scale(Math.cos(p.gf.spin) || 0.02, 1); ctx.translate(0, -cy); }
                 ctx.drawImage(spriteCanvas, Math.round(-PXS.HX * spx), spriteTop, Math.round(PXS.W * spx), Math.round(PXS.H * spx));
+                if (p.isFan) { const bx0 = Math.round(-PXS.HX * spx), ub = 17, u1 = Math.max(1, Math.round(spx));
+                    ctx.fillStyle = '#f7c9a5'; ctx.fillRect(Math.round((-3.6) * spx), Math.round(spriteTop + (ub - 2.4) * spx), Math.round(8.2 * spx), Math.round(2.2 * spx));   // belly hanging out of a too-small shirt
+                    ctx.fillStyle = '#c98f66'; ctx.fillRect(Math.round(0.6 * spx), Math.round(spriteTop + (ub - 1.6) * spx), u1, u1);   // belly button
+                    const pw = Math.abs(Math.cos(Date.now() / 60)) * 5.2, hy0 = spriteTop + (ub - 12.4) * spx;
+                    ctx.fillStyle = '#fde047'; ctx.fillRect(Math.round(-0.3 * spx), Math.round(hy0), u1, Math.round(2 * spx));   // propeller beanie
+                    ctx.fillStyle = '#ef4444'; ctx.fillRect(Math.round((-0.3 - pw / 2) * spx), Math.round(hy0 - spx), Math.round(pw / 2 * spx + u1), u1);
+                    ctx.fillStyle = '#3b82f6'; ctx.fillRect(Math.round(-0.3 * spx), Math.round(hy0 - spx), Math.round(pw / 2 * spx + u1), u1); }
                 ctx.restore();
             });
             // ---- clarity markers, drawn on top of every sprite: YELLOW arrow = ball carrier, BLUE arrow = YOU ----
@@ -4213,6 +4319,7 @@ const PXS = (function () {
                 if (_bc && gameState === 'PLAYING') _arrow(_bc, '#facc15');
                 if (_me && _me !== _bc && players.includes(_me)) _arrow(_me, '#38bdf8');
             }
+            drawFanBubble();
             drawSideline(1);
             drawGrounds(0, NEAR_T);
             drawStands(1);
@@ -4239,12 +4346,23 @@ const PXS = (function () {
                 // pixel-art football: same colours as the one carried in the players' hands, no outline, one pixel = one player-sprite pixel
                 { const u = Math.max(2, camera.zoom * 0.2123); const Rr = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x * u, y * u, w * u, h * u); };
                   const BR = '#b45309', SH = '#78350f', WH = '#fafafa';
+                  if (ball.beach) {   // big pixel-art beach ball
+                    const C1 = ['#ef4444', '#fafafa', '#3b82f6', '#fafafa', '#fde047', '#fafafa'], C2 = ['#b91c1c', '#cbd5e1', '#1d4ed8', '#cbd5e1', '#ca8a04', '#cbd5e1'];
+                    ball.beachRot = (ball.beachRot || 0) + 0.02;
+                    for (let yy = -5; yy <= 5; yy++) for (let xx = -5; xx <= 5; xx++) {
+                        const r = Math.hypot(xx, yy); if (r > 4.7) continue;
+                        const sec = (((Math.floor(((Math.atan2(yy, xx) + ball.beachRot) / (Math.PI * 2) + 2) * 6)) % 6) + 6) % 6;
+                        let c = (yy > 1.8 || r > 3.9) ? C2[sec] : C1[sec]; if (xx <= -2 && yy <= -2 && r > 2.2 && r < 3.7) c = '#ffffff';
+                        Rr(xx, yy, 1, 1, c);
+                    }
+                  } else {
                   Rr(-2, -2, 5, 1, BR);
                   Rr(-3, -1, 7, 1, BR);
                   Rr(-3, 0, 7, 1, SH);
                   Rr(-2, 1, 5, 1, SH);
                   let lf = 0; if (isSpiralPass) lf = Math.floor(ball.spinAngle * 0.5) % 3;   // laces roll around as the ball spins
                   Rr(-1, lf === 0 ? -1 : (lf === 1 ? 0 : 1), 3, 1, WH);
+                  }
                 }
                 ctx.restore();
             }
