@@ -897,9 +897,9 @@
         // ===================== BRAWLS =====================
         // Now and then a scuffle breaks out: 2-4 players throw hands while everybody else stops playing and crowds around to watch.
         // It can start mid-play (blockers get into it) or right after a tackle (a teammate runs in to defend his guy).
-        const BRAWL_TEST_MODE = true;   // true = fights happen A LOT (for testing). Set to false to make them rare.
-        const BW_RATE_PLAY = BRAWL_TEST_MODE ? 0.002 : 0.00012;   // chance per frame that a fight starts mid-play
-        const BW_RATE_TACKLE = BRAWL_TEST_MODE ? 0.5 : 0.025;     // chance that a tackle turns into a fight
+        const BRAWL_TEST_MODE = false;   // true = fights happen A LOT (for testing). Set to false to make them rare.
+        const BW_RATE_PLAY = BRAWL_TEST_MODE ? 0.002 : 0.00007;   // chance per frame that a fight starts mid-play
+        const BW_RATE_TACKLE = BRAWL_TEST_MODE ? 0.5 : 0.015;     // chance that a tackle turns into a fight
         const BW_LIVE = ['PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE', 'TACKLED'];
         const BW_WORDS = ['BONK!', 'POW!', 'WHAP!', 'BOP!', 'SMACK!', 'THWACK!', 'BIFF!', 'WHAM!'];
         let brawls = [], brawlPending = null, brawlPlayT = 0, brawlThisPlay = false;
@@ -1041,20 +1041,22 @@
         // ===================== FAN GAG =====================
         // When you go to hike, sometimes a (kinda fat, very goofy) fan sprints in from the top of the screen, swaps the football for a
         // beach ball, says something helpful, and runs off with the real ball. You can't hike until he's gone.
-        const FAN_TEST_MODE = true;   // true = happens a lot (for testing). Set to false to make it rare.
-        const FAN_RATE = FAN_TEST_MODE ? 0.6 : 0.06;   // chance each play that the fan shows up when you go to hike
+        const FAN_TEST_MODE = false;   // true = happens a lot (for testing).
+        const FAN_RATE = FAN_TEST_MODE ? 0.6 : 0.10;          // chance each play that the fan shows up (with the football on the field) to swap in the beach ball
+        const FAN_RETURN_RATE = FAN_TEST_MODE ? 0.6 : 0.18;   // chance each play that the fan comes back (while the beach ball is in use) to swap the football back
         const FAN_LINES = ['HERE, TAKE THIS!', 'HERE, THIS WILL HELP!'];
+        const FAN_LINES_BACK = ['OKAY, TIME TO SWAP BACK!', 'I NEED THAT BACK!'];
         const FAN_KEEP_BEACH = ['PRE_SNAP', 'PLAYING', 'BALL_IN_AIR', 'BALL_LOOSE', 'TACKLED', 'PLAY_DEAD', 'DIALOG', 'PAUSED'];
         let fan = null, fanRolled = false;
         function fanBlocksSnap() {   // called when the hike button is pressed: true = swallow the hike
             if (fan) return true;
             if (fanRolled || isIntroScene || isMultiplayer || isFieldGoalPlay || isPAT || isPuntPlay) return false;
             fanRolled = true;
-            if (Math.random() > FAN_RATE) return false;
+            if (Math.random() > (ball.beach ? FAN_RETURN_RATE : FAN_RATE)) return false;
             const L = ball.x, topY = camera.currentY - (canvas.height * 0.5 / (camera.zoom * camera.pitch)) - 3;
             fan = {
                 isFan: true, x: L - 9, y: Math.max(-(FIELD_WIDTH_YARDS / 2 + 10), topY), facing: 1, animTimer: 0, skinTone: '#f2b48a', girth: 1.45, pxSeed: 0.5,
-                hasBall: true, holdBeach: true, hopOffset: 0, mode: 'run', t: 0, swapT: 0, say: null, sayT: 0, tx: L - 1.0, ty: -1.8, spin: 0
+                hasBall: true, toBeach: !ball.beach, holdBeach: !ball.beach, hopOffset: 0, mode: 'run', t: 0, swapT: 0, say: null, sayT: 0, tx: L - 1.0, ty: -1.8, spin: 0
             };
             return true;
         }
@@ -1062,7 +1064,6 @@
             if (gameState === 'PAUSED' || gameState === 'DIALOG') return;
             if (!fan) {
                 if (gameState !== 'PRE_SNAP') fanRolled = false;
-                if (ball.beach && !FAN_KEEP_BEACH.includes(gameState)) ball.beach = false;
                 return;
             }
             if (gameState !== 'PRE_SNAP' || isIntroScene) { fan = null; return; }
@@ -1073,7 +1074,7 @@
                 const sp = 0.2; F.x += dx * Math.min(sp, d); F.y += dy * Math.min(sp, d);
                 if (Math.abs(dx) > 0.05) F.facing = dx > 0 ? 1 : -1;
                 F.animTimer += 0.42; F.hopOffset = Math.abs(Math.sin(F.animTimer)) * 0.11;   // waddle
-                if (d < 8 && !F.say) { F.say = FAN_LINES[Math.floor(Math.random() * FAN_LINES.length)]; F.sayT = 0; }
+                if (d < 8 && !F.say) { { const _L = F.toBeach ? FAN_LINES : FAN_LINES_BACK; F.say = _L[Math.floor(Math.random() * _L.length)]; } F.sayT = 0; }
                 if (d < 0.3) { F.mode = 'talk'; F.t = 0; F.animTimer = 0; F.facing = 1; }
             } else if (F.mode === 'talk') {   // bouncing with excitement, holding the beach ball out
                 F.hopOffset = Math.abs(Math.sin(F.t * 0.28)) * 0.1;
@@ -1081,7 +1082,7 @@
             } else if (F.mode === 'swap') {   // snatch the football, plop the beach ball down
                 F.swapT++;
                 if (F.swapT === 14) {
-                    ball.beach = true; F.holdBeach = false;   // he now holds the real football
+                    ball.beach = F.toBeach; F.holdBeach = !F.toBeach;   // swap: whatever was on the field is now in his hands
                     spawnConfettiBurst(ball.x, ball.y, 14); for (let i = 0; i < 5; i++) spawnDust(ball.x, ball.y, 0.2);
                 }
                 if (F.swapT > 36) { F.mode = 'flee'; F.t = 0; F.say = null; }
@@ -1502,6 +1503,28 @@
             const renderCenterY = canvas.height * 0.5; let worldDy = (sy - renderCenterY) / (camera.zoom * camera.pitch); let y = camera.currentY + worldDy; let dx = (sx - canvas.width / 2) - (worldDy * camera.zoom * camera.skew); let x = camera.currentX + dx / (camera.zoom * X_STRETCH); return { x, y };
         }
 
+
+        // ===================== BEACH BALL PASSING =====================
+        // The beach ball is huge and light: throws fall short, hang in the air, land all over the place, and get blown around in flight.
+        const BEACH_RANGE = 0.68, BEACH_HANG = 1.45, BEACH_SCATTER = 0.34;
+        function beachifyThrow(fromX, fromY) {   // call after ball.destX/destY are set and before the velocity is computed; returns the new hang-time multiplier
+            if (!ball.beach) return 1;
+            let dx = ball.destX - fromX, dy = ball.destY - fromY; const d = Math.hypot(dx, dy) || 0.01;
+            const nd = d * (BEACH_RANGE + Math.random() * 0.3);   // it just doesn't carry
+            const wild = 1.5 + d * BEACH_SCATTER * (0.5 + Math.random());
+            const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * wild;
+            ball.destX = fromX + dx / d * nd + Math.cos(a) * r;
+            ball.destY = Math.max(-(FIELD_WIDTH_YARDS / 2) - 3, Math.min((FIELD_WIDTH_YARDS / 2) + 3, fromY + dy / d * nd + Math.sin(a) * r));
+            ball.beachWind = (Math.random() - 0.5) * 0.0045; ball.beachPhase = Math.random() * 6.28; ball.beachT = 0;
+            return BEACH_HANG;
+        }
+        function beachFlightStep() {   // gusts push it sideways every frame while it is flying
+            if (!ball.beach || ball.z <= 0 || ball.isKicked) return;
+            ball.beachT = (ball.beachT || 0) + 1;
+            const w = Math.sin(ball.beachT * 0.19 + (ball.beachPhase || 0)) * 0.006 + (ball.beachWind || 0);
+            ball.vy += w; ball.vx += Math.cos(ball.beachT * 0.13 + (ball.beachPhase || 0)) * 0.0035;
+        }
+
         function updatePassProjection() {
             let dx = aimStartX - aimCurrentX; let dy = aimStartY - aimCurrentY;
             if (window._mpMirror) dx = -dx;
@@ -1523,6 +1546,7 @@
             qb.hasBall = false; ball.isBadPass = false; ball.destX = projectedDestX; ball.destY = projectedDestY; let hangTime = projectedHangTime;
             passFx.thrown = passType; passFx.trail.length = 0; passFx.throwAt = performance.now(); passFx.throwPos = { x: qb.x, y: qb.y };
             { const _sc = StatsBridge.scatter(qb, Math.hypot(ball.destX - qb.x, ball.destY - qb.y)) * PASS_TYPES[passType].scatter; if (_sc > 0) { const _a = Math.random() * Math.PI * 2, _r = Math.sqrt(Math.random()) * _sc; ball.destX += Math.cos(_a) * _r; ball.destY += Math.sin(_a) * _r; } }
+            hangTime *= beachifyThrow(ball.x, ball.y);
             ball.vx = (ball.destX - ball.x) / hangTime; ball.vy = (ball.destY - ball.y) / hangTime;
             let z0 = 1.2; let zTarget = 1.0; let g = 0.008; ball.vz = ((zTarget - z0) / hangTime) + (g * hangTime / 2) + (g / 2);
             ball.z = z0; ball.isDeadPass = false; ball.pbuMessage = ""; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
@@ -1622,6 +1646,7 @@
 
         const KO_Y = [-21, -17, -13, -9, -4, 4, 9, 13, 17, 21];   // 10 men on a kickoff / punt rush line (+ the kicker or returner = 11)
         function startGame() {
+            ball.beach = false; fan = null; fanRolled = false;
             hideUI(); players = []; ensureRefsExist(); ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0; ball.isKicked = false; flagsOnField = []; penaltyData = null;
             lineOfScrimmage = 0; firstDownLine = 0; offenseDirection = (possession === 'PLAYER') ? -1 : 1;
             isKickReturnPlay = true; isFieldGoalPlay = false; isPAT = false; turnoverThisPlay = false; isPuntPlay = false; down = 1; interceptionAttempted = false;
@@ -1914,7 +1939,7 @@
         }
 
         function setupScrimmage() {
-            gameState = 'PRE_SNAP'; players = []; ball.beach = false; fan = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+            gameState = 'PRE_SNAP'; players = []; fan = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
             isFieldGoalPlay = false; isPuntPlay = false; isPAT = false; interceptionAttempted = false; ensureRefsExist(); flagsOnField = []; penaltyData = null; isRefCam = false; isRefPenaltyZoom = false;
             let dir = offenseDirection; let isPlayerOffense = (dir === -1); 
             
@@ -2263,7 +2288,7 @@
             const mpPass = window._mpPendingPass || (remoteInput && remoteInput.pass);
             if (isMultiplayer && isMpHost && mpPass && p2Player && p2Player.isQB && p2Player.hasBall && !(p2Player.snapT > 0) && gameState === 'PLAYING') {
                 let qb = p2Player;
-                qb.hasBall = false; ball.isBadPass = false; ball.destX = mpPass.x; ball.destY = mpPass.y; let hangTime = Math.max(20, mpPass.ht || 45);
+                qb.hasBall = false; ball.isBadPass = false; ball.destX = mpPass.x; ball.destY = mpPass.y; let hangTime = Math.max(20, mpPass.ht || 45); hangTime *= beachifyThrow(qb.x, qb.y);
                 ball.vx = (ball.destX - ball.x) / hangTime; ball.vy = (ball.destY - ball.y) / hangTime;
                 let z0 = 1.2; let g = 0.008; ball.vz = ((1.0 - z0) / hangTime) + (g * hangTime / 2) + (g / 2);
                 ball.z = z0; ball.isDeadPass = false; ball.pbuMessage = ""; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
@@ -2291,7 +2316,7 @@
 
                 if (gameState === 'BALL_IN_AIR' || gameState === 'BALL_LOOSE' || (gameState === 'PLAY_DEAD' && isFieldGoalPlay)) {
                     ball.prevX = ball.x; ball.prevY = ball.y; ball.prevZ = ball.z;
-                    ball.x += ball.vx; ball.y += ball.vy; ball.z += ball.vz; ball.vz -= 0.008; 
+                    beachFlightStep(); ball.x += ball.vx; ball.y += ball.vy; ball.z += ball.vz; ball.vz -= 0.008; 
                     if (ball.z <= 0) {
                         ball.z = 0; ball.vx *= 0.6; ball.vy *= 0.6; ball.vz = Math.abs(ball.vz) * 0.4; if (ball.isKicked && !isFieldGoalPlay) { let inY = FIELD_WIDTH_YARDS / 2 - 2; if (ball.y > inY) { ball.y = inY; ball.vy = 0; } else if (ball.y < -inY) { ball.y = -inY; ball.vy = 0; } } 
                         if (isPassing && !ball.isDeadPass) { ball.isDeadPass = true; ball.pbuMessage = "INCOMPLETE PASS"; }
@@ -2528,7 +2553,7 @@
                                             if (ball.isBadPass) { let missDist = 3 + Math.random() * 5; let missAngle = Math.random() * Math.PI * 2; leadX += Math.cos(missAngle) * missDist; leadY += Math.sin(missAngle) * missDist; }
                                             ball.destX = leadX; ball.destY = Math.max(-(FIELD_WIDTH_YARDS/2) - 3, Math.min((FIELD_WIDTH_YARDS/2) + 3, leadY));
                                             if (p.st) { const _dx = ball.destX - p.x, _dy = ball.destY - p.y, _d = Math.hypot(_dx, _dy) || 1, _rg = StatsBridge.throwRange(p); if (_d > _rg) { ball.destX = p.x + _dx * _rg / _d; ball.destY = p.y + _dy * _rg / _d; } const _sc = StatsBridge.scatter(p, Math.min(_d, _rg)); if (_sc > 0) { const _a = Math.random() * Math.PI * 2, _r = Math.sqrt(Math.random()) * _sc; ball.destX += Math.cos(_a) * _r; ball.destY += Math.sin(_a) * _r; } }
-                                            let actualDist = Math.sqrt(Math.pow(ball.destX - p.x, 2) + Math.pow(ball.destY - p.y, 2)); hangTime = Math.max(32, actualDist * 2.5 * StatsBridge.hangMul(p));
+                                            let actualDist = Math.sqrt(Math.pow(ball.destX - p.x, 2) + Math.pow(ball.destY - p.y, 2)); hangTime = Math.max(32, actualDist * 2.5 * StatsBridge.hangMul(p)); if (ball.beach) { ball.x = p.x; ball.y = p.y; hangTime *= beachifyThrow(p.x, p.y); }
                                             ball.vx = (ball.destX - p.x) / hangTime; ball.vy = (ball.destY - p.y) / hangTime; let z0 = 1.2; let g = 0.008; ball.vz = ((1.0 - z0) / hangTime) + (g * hangTime / 2) + (g / 2); ball.z = z0; ball.x = p.x; ball.y = p.y; ball.spinAngle = 0; isPassing = true; gameState = 'BALL_IN_AIR'; camera.target = ball;
                                             players.forEach(pl => { pl.isTargetReceiver = false; pl.isIntercepter = false; }); targetWR.isTargetReceiver = true;
                                             let COVERAGE_RADIUS = ball.isBadPass ? 4.5 : 2.6; players.filter(pl => pl.isCPU !== p.isCPU && !pl.isLineman && !pl.isQB).forEach(def => { if (Math.sqrt(Math.pow(def.x - ball.destX, 2) + Math.pow(def.y - ball.destY, 2)) < COVERAGE_RADIUS) def.isIntercepter = true; });
