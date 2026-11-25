@@ -528,7 +528,7 @@
             document.getElementById('sb-label-you').textContent = pTeam.name.substring(0, 3).toUpperCase(); document.getElementById('sb-label-cpu').textContent = cTeam.name.substring(0, 3).toUpperCase();
             document.querySelector('#scoreboard .sb-team.you').style.backgroundColor = hexToRgba(pTeam.c1, 0.5); document.querySelector('#scoreboard .sb-team.cpu').style.backgroundColor = hexToRgba(cTeam.c1, 0.5);
 
-            playerScore = 0; cpuScore = 0; quarter = 1; QUARTER_LENGTH_SECONDS = quickPlayConfig.quarterLength; gameClock = QUARTER_LENGTH_SECONDS; mainClockStarted = false;
+            playerScore = 0; cpuScore = 0; quarter = 1; QUARTER_LENGTH_SECONDS = quickPlayConfig.quarterLength; atvResetGame(); gameClock = QUARTER_LENGTH_SECONDS; mainClockStarted = false;
             isIntroScene = false; introScriptState = 'FINISHED';
             particles = []; hitMarkers = []; stadiumFlashes = [];
             initCoinToss(); updateScoreboard();
@@ -838,7 +838,7 @@
             goofyFrame++;
             goofyPops.forEach(pp => pp.t++); goofyPops = goofyPops.filter(pp => pp.t < 70);
             players.forEach(p => { if (p.starsT > 0) p.starsT--; });
-            if (!GF_LIVE.includes(gameState)) return;
+            if (!GF_LIVE.includes(gameState) && !atvFlyActive()) return;
             goofyTripCheck();
             const live = (gameState !== 'TACKLED' && gameState !== 'PLAY_DEAD');
             const ymax = FIELD_WIDTH_YARDS / 2 - 0.6;
@@ -855,7 +855,7 @@
                     l.a += l.w; if (l.a > 3.1) { l.a = 3.1; l.w *= -0.4; } if (l.a < -3.1) { l.a = -3.1; l.w *= -0.4; }
                 });
                 if (p.x < 0.3) { p.x = 0.3; g.vx = Math.abs(g.vx) * 0.5; } if (p.x > FIELD_LENGTH_YARDS - 0.3) { p.x = FIELD_LENGTH_YARDS - 0.3; g.vx = -Math.abs(g.vx) * 0.5; }
-                if (p.y < -ymax) { p.y = -ymax; g.vy = Math.abs(g.vy) * 0.6; } if (p.y > ymax) { p.y = ymax; g.vy = -Math.abs(g.vy) * 0.6; }
+                if (!p.atvFly) { if (p.y < -ymax) { p.y = -ymax; g.vy = Math.abs(g.vy) * 0.6; } if (p.y > ymax) { p.y = ymax; g.vy = -Math.abs(g.vy) * 0.6; } }
                 if (g.z <= 0) {
                     g.z = 0;
                     if (g.vz < -0.9 && g.bounces < g.maxBounce) { g.bounces++; g.vz = -g.vz * g.rest; g.vx *= 0.85; g.vy *= 0.85; spawnDust(p.x, p.y); spawnDust(p.x, p.y); spawnImpactBurst(p.x, p.y, 4); addScreenShake(0.03); if (g.rg) g.rg.forEach(l => l.w += (Math.random() - 0.5) * 1.8); }
@@ -1109,6 +1109,241 @@
             ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(tx - ts, by + h); ctx.lineTo(tx + ts, by + h); ctx.lineTo(tx, by + h + ts + 2); ctx.fill();
             ctx.fillStyle = '#111827'; ctx.fillText(shown, bx + pad, by + h / 2 + 1);
             ctx.restore();
+        }
+
+        // ===================== FOUR-WHEELER GAG =====================
+        // 1-3 times a game, right as someone is about to hike, 2-3 shirtless rednecks on four-wheelers rip across the field,
+        // hollering, tearing up the turf (the ruts stay for the rest of the game). They weave around the players, but once in
+        // a while one of them nails somebody and sends him flying clean out of the play.
+        const ATV_TEST_MODE = false;   // true = a crew shows up on EVERY snap (for testing)
+        const ATV_HIT_CHANCE = 0.22;   // chance that a crew has somebody who gets plowed
+        const ATV_BODIES = [{ c: '#dc2626', d: '#991b1b', l: '#f87171' }, { c: '#16a34a', d: '#14532d', l: '#4ade80' }, { c: '#eab308', d: '#a16207', l: '#fde047' }, { c: '#556b2f', d: '#2b3517', l: '#8aa04a' }];
+        const ATV_SKINS = [['#e8b79a', '#c98f72'], ['#d9775a', '#b0553b'], ['#c68642', '#9d6429'], ['#f0c8a8', '#cf9f7e'], ['#8d5a3a', '#6b3f26']];
+        const ATV_HAIR = ['#d8b04a', '#5a3a1e', '#b5532a', '#262626', '#b4b8bf'];
+        const ATV_CAPS = ['#b91c1c', '#4d5d2a', '#1d4ed8', '#111827', null];
+        const ATV_SHORTS = ['#3b5b8c', '#556b2f', '#1f2937', '#a8a29e'];
+        const ATV_SHOUTS = ['WHOO HOO!', 'OHH YEAH!'];
+        let atvPlan = null, atvPlayNo = 0, atvRolled = false, atvCrew = null, atvTracks = [], atvBench = [], atvVictim = null;
+        function atvResetGame() {
+            const est = Math.max(8, Math.min(60, Math.round((QUARTER_LENGTH_SECONDS || 180) * 4 / 30))), n = Math.min(1 + Math.floor(Math.random() * 3), est - 2), set = [];
+            while (set.length < n) { const k = 2 + Math.floor(Math.random() * (est - 2)); if (!set.includes(k)) set.push(k); }
+            atvPlan = set; atvPlayNo = 0; atvRolled = false; atvCrew = null; atvTracks = []; atvBench = []; atvVictim = null;
+        }
+        function atvFlyActive() { return !!(atvVictim && atvVictim.atvFly); }
+        function atvOnSnap() {   // the guy who got launched stays out of the play
+            if (atvVictim && atvVictim.atvOut && players.includes(atvVictim)) { players = players.filter(q => q !== atvVictim); atvBench.push(atvVictim); }
+        }
+        function atvBlocksSnap() {   // true = hold the snap (crew is on the field / the victim is still airborne)
+            if (atvCrew) return true;
+            if (isIntroScene || isMultiplayer || gameState !== 'PRE_SNAP') return false;
+            if (atvRolled) return atvFlyActive();
+            atvRolled = true;
+            if (!atvPlan) atvResetGame();
+            atvPlayNo++;
+            if (!ATV_TEST_MODE && !atvPlan.includes(atvPlayNo)) return false;
+            atvSpawn();
+            return !!atvCrew;
+        }
+        function atvSpawn() {
+            const n = Math.random() < 0.45 ? 3 : 2, fw = FIELD_WIDTH_YARDS / 2, cx = camera.currentX, cy = camera.currentY;
+            const halfW = canvas.width / (2 * camera.zoom * X_STRETCH), halfH = canvas.height * 0.5 / (camera.zoom * camera.pitch);
+            const across = Math.random() < 0.6, dirS = Math.random() < 0.5 ? 1 : -1, side = Math.random() < 0.5 ? 1 : -1;
+            const bodies = ATV_BODIES.slice().sort(() => Math.random() - 0.5), crew = [], lane0 = (Math.random() - 0.5) * 16;
+            const clampY = (v, m) => Math.max(-m, Math.min(m, v));
+            for (let i = 0; i < n; i++) {
+                let sx, sy, ex, ey;
+                if (across) {
+                    const ly = clampY(lane0 + (i - (n - 1) / 2) * (6 + Math.random() * 3), fw - 3);
+                    sx = cx - dirS * (halfW + 6 + i * 1.5); ex = cx + dirS * (halfW + 9); sy = ly + (Math.random() - 0.5) * 3; ey = clampY(ly + (Math.random() - 0.5) * 14, fw + 2);
+                } else {
+                    sy = clampY(cy - side * (halfH + 4), fw + 16); ey = -sy; sx = cx + (Math.random() - 0.5) * halfW * 0.8 + (i - 1) * 4; ex = sx + dirS * (0.3 + Math.random() * 0.5) * halfW;
+                }
+                const sk = ATV_SKINS[Math.floor(Math.random() * ATV_SKINS.length)], hr = Math.random() < 0.15 ? null : ATV_HAIR[Math.floor(Math.random() * ATV_HAIR.length)];
+                const h0 = Math.hypot(ex - sx, ey - sy) || 1;
+                crew.push({
+                    isAtv: true, x: sx, y: sy, sx, sy, ex, ey, hx: (ex - sx) / h0, hy: (ey - sy) / h0, spd: 0.29 + Math.random() * 0.07, delay: i * 24 + Math.floor(Math.random() * 14), t: 0, state: 'wait',
+                    body: bodies[i % bodies.length], ph: Math.random() * 6.28, wph: 0, hop: 0, hopCool: 30 + Math.floor(Math.random() * 60), say: null, sayT: 0, sayCd: 14 + Math.floor(Math.random() * 40), hitter: false, hit: false, curL: null, curR: null, lastTx: sx, lastTy: sy,
+                    r: { skin: sk[0], skin2: sk[1], hair: hr, cap: ATV_CAPS[Math.floor(Math.random() * ATV_CAPS.length)], beard: Math.random() < 0.7, tat: Math.random() < 0.6, shorts: ATV_SHORTS[Math.floor(Math.random() * ATV_SHORTS.length)], belly: 0.7 + Math.random() * 0.6 }
+                });
+            }
+            atvVictim = null;
+            if (Math.random() < ATV_HIT_CHANCE) {
+                const pool = players.filter(q => !q.isQB && !q.isKicker && !q.isRef && q !== player && q !== p2Player && !q.hasBall && !q.gf && Math.abs(q.x - cx) < halfW * 0.85 && Math.abs(q.y) < fw - 2);
+                if (pool.length) { atvVictim = pool[Math.floor(Math.random() * pool.length)]; crew[Math.floor(Math.random() * crew.length)].hitter = true; }
+            }
+            atvCrew = crew;
+        }
+        function atvFling(a, v) {
+            const fw = FIELD_WIDTH_YARDS / 2, vz = 5.2, g = 0.13, air = 2 * vz / g, sgn = v.y >= 0 ? 1 : -1;
+            const D = Math.max(6, fw + 7 - Math.abs(v.y));
+            goofyMake(v, { vx: a.hx * 0.15, vy: sgn * D / air * 1.08, vz, g, rest: 0.5, maxBounce: 2, rotV: (a.hx >= 0 ? 1 : -1) * GF_TAU * 3 / air, hits: [], hitsLeft: 0, hitZ: 48, grip: 0.9, ragdoll: true });
+            v.atvFly = true; v.hasBall = false; goofyStars(v, 220);
+            goofyPop(v.x, v.y, 'WHAM!!', '#f87171'); spawnImpactBurst(v.x, v.y, 18); addScreenShake(0.28);
+            for (let i = 0; i < 8; i++) spawnDust(v.x, v.y, 0.3);
+            a.hit = true; a.say = 'OHH YEAH!'; a.sayT = 0; a.sayCd = 60;
+        }
+        function atvTurf(a, n) {
+            const px = -a.hy, py = a.hx;
+            for (let i = 0; i < n; i++) {
+                const s = Math.random() < 0.5 ? -1 : 1, bx = a.x - a.hx * 0.9 + px * 0.42 * s, by = a.y - a.hy * 0.9 + py * 0.42 * s;
+                const col = ['#2f9b44', '#238236', '#166534', '#4ade80', '#5b3a1c', '#7c5a2e'][Math.floor(Math.random() * 6)];
+                particles.push({ type: 'turf', x: bx, y: by, vx: -a.hx * (0.05 + Math.random() * 0.07) + (Math.random() - 0.5) * 0.05, vy: -a.hy * (0.05 + Math.random() * 0.07) + (Math.random() - 0.5) * 0.05, z: 0.1, vz: 0.12 + Math.random() * 0.2, gravity: 0.018, life: 18 + Math.random() * 14, maxLife: 32, size: 3 + Math.random() * 4, color: col });
+            }
+            if (Math.random() < 0.35) spawnDust(a.x - a.hx * 1.0, a.y - a.hy * 1.0, 0.1);
+        }
+        function updateAtv() {
+            if (gameState === 'PAUSED' || gameState === 'DIALOG') return;
+            atvBench.forEach(q => { if (q.starsT > 0) q.starsT--; });
+            const v = atvVictim;
+            if (v && v.atvFly && !v.gf) { v.atvFly = false; v.atvOut = true; v.gfLie = false; v.isMissedTackle = false; goofyStars(v, 400); }
+            if (gameState !== 'PRE_SNAP' || isIntroScene) { atvRolled = false; if (atvCrew) atvCrew = null; return; }
+            if (!atvCrew) return;
+            const fw = FIELD_WIDTH_YARDS / 2; let alive = 0;
+            atvCrew.forEach(a => {
+                if (a.state === 'done') return; alive++;
+                if (a.state === 'wait') { if (--a.delay <= 0) a.state = 'go'; else return; }
+                a.t++;
+                // where is he headed? the hitter lines up his victim, everybody else just crosses the field
+                let tx = a.ex, ty = a.ey;
+                if (a.hitter && v && !a.hit && !v.atvFly) { tx = v.x; ty = v.y; }
+                let dx = tx - a.x, dy = ty - a.y; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+                const wv = (a.hitter && !a.hit) ? 0 : Math.sin(a.t * 0.065 + a.ph) * 0.5;
+                let sx = dx - dy * wv, sy = dy + dx * wv;
+                // steer around the players (and each other) so they don't just mow everybody down
+                players.forEach(q => {
+                    if (q.atvFly || q.gf) return; if (a.hitter && q === v && !a.hit) return;
+                    const rx = a.x - q.x, ry = a.y - q.y, d = Math.hypot(rx, ry);
+                    if (d < 3.4 && d > 0.01) { const k = (3.4 - d) / 3.4 * 2.6 / d; sx += rx * k; sy += ry * k; }
+                });
+                atvCrew.forEach(o => { if (o === a || o.state !== 'go') return; const rx = a.x - o.x, ry = a.y - o.y, d = Math.hypot(rx, ry); if (d < 2.6 && d > 0.01) { const k = (2.6 - d) / 2.6 * 1.4 / d; sx += rx * k; sy += ry * k; } });
+                const want = Math.atan2(sy, sx); let cur = Math.atan2(a.hy, a.hx), df = want - cur; while (df > Math.PI) df -= Math.PI * 2; while (df < -Math.PI) df += Math.PI * 2;
+                cur += Math.max(-0.1, Math.min(0.1, df)); a.hx = Math.cos(cur); a.hy = Math.sin(cur);
+                a.x += a.hx * a.spd; a.y += a.hy * a.spd; a.wph = Math.floor(a.t * 0.9);
+                // bumps
+                if (a.hop > 0) a.hop--; else if (--a.hopCool <= 0) { a.hop = 12; a.hopCool = 40 + Math.floor(Math.random() * 70); }
+                atvTurf(a, 3);
+                // permanent ruts in the turf (two tire lines per machine)
+                if (Math.abs(a.y) < fw + 3.5 && a.x > 0 && a.x < FIELD_LENGTH_YARDS) {
+                    if (!a.curL) { a.curL = []; a.curR = []; atvTracks.push(a.curL, a.curR); a.lastTx = a.x + 99; }
+                    if (Math.hypot(a.x - a.lastTx, a.y - a.lastTy) > 0.35) { const px = -a.hy * 0.4, py = a.hx * 0.4; a.curL.push([a.x + px, a.y + py]); a.curR.push([a.x - px, a.y - py]); a.lastTx = a.x; a.lastTy = a.y; }
+                } else a.curL = a.curR = null;
+                // hollering
+                if (a.say) { if (++a.sayT > 52) { a.say = null; a.sayCd = 35 + Math.floor(Math.random() * 55); } }
+                else if (--a.sayCd <= 0) { a.say = ATV_SHOUTS[Math.floor(Math.random() * ATV_SHOUTS.length)]; a.sayT = 0; }
+                // the hit
+                if (a.hitter && !a.hit && v && !v.atvFly && Math.hypot(v.x - a.x, v.y - a.y) < 1.2) atvFling(a, v);
+                // done once he is past the exit point
+                if ((a.x - a.ex) * (a.ex - a.sx) + (a.y - a.ey) * (a.ey - a.sy) >= 0 || a.t > 520) { a.state = 'done'; a.say = null; a.curL = a.curR = null; }
+            });
+            // bystanders flinch as a machine roars by
+            players.forEach(q => {
+                if (q.atvFly || q.gf) return;
+                let near = false; atvCrew.forEach(a => { if (a.state === 'go' && Math.hypot(a.x - q.x, a.y - q.y) < 3.6) near = true; });
+                if (near) { q.atvHop = true; q.hopOffset = Math.abs(Math.sin(goofyFrame * 0.5 + (q.pxSeed || 0) * 9)) * 0.14; } else if (q.atvHop) { q.atvHop = false; q.hopOffset = 0; }
+            });
+            if (!alive) { atvCrew = null; players.forEach(q => { if (q.atvHop) { q.atvHop = false; q.hopOffset = 0; } }); }
+        }
+        function drawAtvTracks(PPY) {   // in field space: the ruts the machines leave behind
+            if (!atvTracks.length) return;
+            ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const path = () => { ctx.beginPath(); atvTracks.forEach(pl => { if (pl.length < 2) return; ctx.moveTo(pl[0][0] * PPY, pl[0][1] * PPY); for (let i = 1; i < pl.length; i++) ctx.lineTo(pl[i][0] * PPY, pl[i][1] * PPY); }); };
+            path(); ctx.strokeStyle = 'rgba(40,28,10,0.22)'; ctx.lineWidth = PPY * 0.5; ctx.stroke();   // torn-up edge
+            path(); ctx.strokeStyle = 'rgba(70,44,16,0.42)'; ctx.lineWidth = PPY * 0.3; ctx.stroke();   // bare dirt
+            path(); ctx.strokeStyle = 'rgba(25,14,4,0.45)'; ctx.lineWidth = PPY * 0.24; ctx.setLineDash([PPY * 0.1, PPY * 0.13]); ctx.stroke();   // knobby tread
+            ctx.restore();
+        }
+        function drawAtv(a) {
+            if (a.state !== 'go') return;
+            const PPY = camera.zoom, sc = toScreen(a.x, a.y), u = Math.max(0.45, PPY * 0.04 * 2.9 * 1.22) * playerSizeScale;
+            if (sc.x < -220 || sc.x > canvas.width + 220 || sc.y < -320 || sc.y > canvas.height + 220) return;
+            drawPixelShadow(a.x, a.y, PPY * 1.5 / X_STRETCH, PPY * 0.6, PPY, 'rgba(0,0,0,0.34)');
+            const vert = Math.abs(a.hy) > Math.abs(a.hx) * 1.35, view = vert ? (a.hy > 0 ? 'F' : 'B') : 'S';
+            const bob = (Math.abs(Math.sin(a.t * 0.6)) * 0.5 + (a.hop > 0 ? Math.sin(a.hop / 12 * Math.PI) * 2.6 : 0)) * u, B = a.body, r = a.r, S = r.skin, S2 = r.skin2, shout = !!a.say;
+            ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(sc.x), Math.round(sc.y)); if (view === 'S') ctx.scale(a.hx >= 0 ? 1 : -1, 1);
+            const R = (x, y, w, h, c) => { const x0 = Math.round(x * u), x1 = Math.round((x + w) * u), y0 = Math.round(y * u - bob), y1 = Math.round((y + h) * u - bob); ctx.fillStyle = c; ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); };
+            const G = (x, y, w, h, c) => { const x0 = Math.round(x * u), x1 = Math.round((x + w) * u), y0 = Math.round(y * u), y1 = Math.round((y + h) * u); ctx.fillStyle = c; ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); };
+            const tire = (cx, w, h) => { G(cx - w / 2 + 1, -h, w - 2, h, '#0b0b0c'); G(cx - w / 2, -h + 1, w, h - 2, '#0b0b0c'); for (let i = 0; i < Math.floor(w / 2); i++) if (((i + a.wph) & 1)) { G(cx - w / 2 + i * 2, -h, 1, 1, '#33333a'); G(cx - w / 2 + i * 2, -1, 1, 1, '#33333a'); } };
+            const hair = r.hair, cap = r.cap;
+            if (view === 'S') {
+                const Q = (x, y, w, h, c) => R(x, y - 2, w, h, c);   // rider sits a little above the machine
+                tire(-7, 7, 9); tire(7, 7, 9); G(-8, -5, 2, 2, '#9ca3af'); G(6, -5, 2, 2, '#9ca3af'); G(-9, -4, 1, 1, '#5b3a1c'); G(8, -3, 1, 1, '#5b3a1c');
+                R(-12, -11, 3, 1, '#374151'); R(-13, -8, 3, 1, '#6b7280');   // rear rack + tailpipe
+                R(-10, -9, 20, 3, B.d);                                      // frame
+                R(-11, -12, 9, 3, B.c); R(-11, -12, 9, 1, B.l);              // rear fender
+                R(-4, -14, 9, 6, B.c); R(-3, -15, 6, 2, B.l); R(-4, -9, 9, 1, B.d);   // body + tank
+                R(3, -12, 8, 3, B.c); R(4, -13, 6, 1, B.l); R(11, -11, 1, 2, '#fde047'); R(8, -14, 3, 1, '#374151');   // nose, headlight, front rack
+                R(-6, -9, 1, 1, '#4a2f17'); R(0, -8, 2, 1, '#4a2f17'); R(8, -10, 1, 1, '#4a2f17'); R(-9, -11, 1, 1, '#4a2f17');   // mud
+                R(-9, -15, 8, 2, '#18181b'); R(3, -19, 1, 5, '#222'); R(2, -19, 4, 1, '#222');   // seat + handlebars
+                // legs
+                Q(-6, -15, 7, 5, r.shorts); Q(-1, -13, 5, 3, r.shorts); Q(1, -11, 2, 5, S); Q(0, -7, 4, 2, '#3f2a14'); Q(1, -10, 1, 3, S2);
+                // torso, leaning into the throttle
+                for (let k = 0; k < 8; k++) Q(-5 + k * 0.4, -16 - k, 6, 1, S);
+                for (let k = 0; k < 8; k++) Q(-5 + k * 0.4, -16 - k, 1, 1, S2);
+                Q(-1, -18, 4 * r.belly, 4, S); Q(-1, -14.5, 3.6 * r.belly, 0.8, S2); Q(-1 + 3.3 * r.belly, -16, 1, 1, S2);   // beer belly + belly button
+                Q(-1, -21, 3, 1, '#2a1a10'); Q(0, -20, 1, 1, '#2a1a10'); Q(2, -20, 1, 1, '#2a1a10');   // chest hair
+                if (r.tat) { Q(-4, -20, 2, 3, '#3f6b5a'); Q(-3, -19, 1, 1, '#1f3a2f'); }
+                // head
+                Q(0, -22, 3, 1, S2); Q(-1, -28, 5, 6, S);
+                if (hair) { Q(-4, -28, 3, 7, hair); Q(-3, -21, 2, 2, hair); Q(-1, -29, 5, 1, hair); }
+                if (cap) { Q(-1, -30, 6, 2, cap); Q(4, -29, 3, 1, cap); Q(-1, -28, 1, 1, cap); }
+                Q(1, -26, 4, 1, '#0b0b0c'); Q(1, -26, 1, 1, '#64748b'); Q(4, -25, 1, 1, S2);
+                if (r.beard) { Q(0, -24, 4, 2, hair || '#5a3a1e'); Q(-1, -26, 1, 3, hair || '#5a3a1e'); }
+                if (shout) { Q(2, -23.5, 2, 1.5, '#0b0b0c'); Q(2, -23.5, 1, 1, '#eab308'); } else Q(2, -23, 2, 1, S2);
+                // arms: one on the bars; the other flung up in the air when he hollers
+                Q(0, -21, 2, 4, S); Q(2, -18, 2, 3, S); Q(3, -15, 2, 2, S); Q(4, -14, 2, 1, S2);
+                if (shout) { Q(-2, -23, 2, 3, S); Q(-3, -27, 2, 5, S); Q(-4, -31, 2, 5, S); Q(-5, -34, 4, 3, S2); if (r.tat) Q(-3, -26, 2, 1, '#3f6b5a'); }
+                else { Q(-1, -21, 2, 4, S); Q(1, -18, 2, 3, S); Q(2, -16, 2, 2, S2); }
+            } else {
+                const fr = view === 'F', pw = 3.4;
+                tire(-8, pw + 0.6, 7); tire(8, pw + 0.6, 7);
+                R(-8, -10, 16, 5, B.c); R(-8, -6, 16, 1, B.d); R(-4, -11, 8, 2, B.l); R(-5, -13, 10, 3, B.c);
+                if (fr) { R(-6, -9, 3, 2, '#fde047'); R(3, -9, 3, 2, '#fde047'); R(-1, -8, 2, 1, '#6b7280'); } else { R(-7, -9, 2, 1, '#ef4444'); R(5, -9, 2, 1, '#ef4444'); }
+                R(-9, -14, 18, 1, '#222'); R(-10, -15, 2, 2, '#111'); R(8, -15, 2, 2, '#111'); R(-6, -8, 1, 1, '#4a2f17'); R(4, -7, 2, 1, '#4a2f17');
+                // legs + boots
+                R(-5, -18, 4, 7, r.shorts); R(1, -18, 4, 7, r.shorts); R(-6, -12, 2, 5, S); R(4, -12, 2, 5, S); R(-7, -8, 4, 2, '#3f2a14'); R(3, -8, 4, 2, '#3f2a14');
+                // torso
+                R(-4, -27, 8, 10, S); R(-4, -27, 1, 10, S2); R(3, -27, 1, 10, S2);
+                if (fr) { R(-3.2 * r.belly, -22, 6.4 * r.belly, 4, S); R(-3.2 * r.belly, -18.4, 6.4 * r.belly, 0.8, S2); R(0, -20, 1, 1, S2); R(-3, -26, 6, 2, '#2a1a10'); R(-1, -24, 2, 1, '#2a1a10'); }
+                else { R(-3, -26, 6, 3, r.skin2 === '#b0553b' ? '#c2543a' : S2); R(-1, -21, 2, 1, S2); }
+                if (r.tat) { R(-5, -25, 2, 3, '#3f6b5a'); R(-4, -24, 1, 1, '#1f3a2f'); }
+                // arms out to the grips (or one up when hollering)
+                R(-7, -27, 3, 2, S); R(-7, -25, 2, 7, S); R(-8, -19, 3, 4, S2);
+                if (shout) { R(4, -29, 2, 3, S); R(5, -34, 2, 6, S); R(4, -36, 4, 2, S2); } else { R(4, -27, 3, 2, S); R(5, -25, 2, 7, S); R(5, -19, 3, 4, S2); }
+                // head
+                R(-1, -28, 2, 1, S2); R(-3, -34, 6, 6, S);
+                if (fr) {
+                    if (hair) { R(-4, -34, 1, 6, hair); R(3, -34, 1, 6, hair); R(-3, -35, 6, 1, hair); }
+                    if (cap) { R(-3, -36, 6, 2, cap); R(-3, -34, 6, 1, B.d === cap ? '#000' : '#00000055'); }
+                    R(-3, -32, 6, 1, '#0b0b0c'); R(-3, -32, 1, 1, '#64748b'); R(0, -31, 1, 1, S2);
+                    if (r.beard) { R(-2, -30, 4, 2, hair || '#5a3a1e'); }
+                    if (shout) { R(-1, -30, 2, 1.6, '#0b0b0c'); R(0, -30, 1, 1, '#eab308'); } else R(-1, -29, 2, 1, S2);
+                } else {
+                    R(-3, -34, 6, 6, hair || S); if (hair) { R(-4, -34, 1, 8, hair); R(3, -34, 1, 8, hair); R(-3, -28, 6, 3, hair); R(-2, -25, 4, 1, hair); }
+                    if (cap) { R(-3, -36, 6, 3, cap); R(-1, -33, 2, 1, '#ffffff66'); } else if (!hair) R(-3, -34, 6, 2, S2);
+                }
+            }
+            ctx.restore();
+        }
+        function drawAtvBubbles() {
+            if (!atvCrew) return;
+            atvCrew.forEach(a => {
+                if (a.state !== 'go' || !a.say) return;
+                const sc = toScreen(a.x, a.y), spx = Math.max(0.45, camera.zoom * 0.04 * 2.9 * 1.22) * playerSizeScale;
+                if (sc.x < -50 || sc.x > canvas.width + 50 || sc.y < -50 || sc.y > canvas.height + 120) return;
+                const fs = Math.max(10, Math.round(spx * 3.6)), txt = a.say;
+                ctx.save(); ctx.font = fs + 'px "Press Start 2P", monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+                const pad = fs * 0.7, w = ctx.measureText(txt).width + pad * 2, h = fs + pad * 2;
+                const bx = Math.max(8, Math.min(canvas.width - w - 8, sc.x - w / 2)), by = Math.max(8, sc.y - 38 * spx - h);
+                const pop = Math.min(1, 0.55 + a.sayT / 8 * 0.45), cx0 = bx + w / 2, cy0 = by + h;
+                ctx.translate(cx0, cy0); ctx.scale(pop, pop); ctx.translate(-cx0, -cy0);
+                ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(bx + 4, by + 4, w, h);
+                ctx.fillStyle = '#000'; ctx.fillRect(bx - 3, by - 3, w + 6, h + 6); ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, w, h);
+                const tx = Math.max(bx + 10, Math.min(bx + w - 10, sc.x)), ts = Math.max(6, fs * 0.6);
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.moveTo(tx - ts - 3, by + h + 2); ctx.lineTo(tx + ts + 3, by + h + 2); ctx.lineTo(tx, by + h + ts + 6); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(tx - ts, by + h); ctx.lineTo(tx + ts, by + h); ctx.lineTo(tx, by + h + ts + 2); ctx.fill();
+                ctx.fillStyle = '#7f1d1d'; ctx.fillText(txt, bx + pad, by + h / 2 + 1);
+                ctx.restore();
+            });
         }
 
         const keys = {}; let spacePressed = false; window.addEventListener('keydown', (e) => { keys[e.code] = true; }); window.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -1646,7 +1881,7 @@
 
         const KO_Y = [-21, -17, -13, -9, -4, 4, 9, 13, 17, 21];   // 10 men on a kickoff / punt rush line (+ the kicker or returner = 11)
         function startGame() {
-            ball.beach = false; fan = null; fanRolled = false;
+            ball.beach = false; fan = null; fanRolled = false; atvResetGame();
             hideUI(); players = []; ensureRefsExist(); ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0; ball.isKicked = false; flagsOnField = []; penaltyData = null;
             lineOfScrimmage = 0; firstDownLine = 0; offenseDirection = (possession === 'PLAYER') ? -1 : 1;
             isKickReturnPlay = true; isFieldGoalPlay = false; isPAT = false; turnoverThisPlay = false; isPuntPlay = false; down = 1; interceptionAttempted = false;
@@ -1939,7 +2174,7 @@
         }
 
         function setupScrimmage() {
-            gameState = 'PRE_SNAP'; players = []; fan = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+            gameState = 'PRE_SNAP'; players = []; fan = null; atvBench = []; atvVictim = null; atvCrew = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
             isFieldGoalPlay = false; isPuntPlay = false; isPAT = false; interceptionAttempted = false; ensureRefsExist(); flagsOnField = []; penaltyData = null; isRefCam = false; isRefPenaltyZoom = false;
             let dir = offenseDirection; let isPlayerOffense = (dir === -1); 
             
@@ -1970,7 +2205,7 @@
 
             if (!isPlayerOffense && (isMpHost || !isMultiplayer)) {
                 if (!isMultiplayer) {
-                    setTimeout(() => { if (gameState === 'PRE_SNAP' && !isMultiplayer) { gameState = 'PLAYING'; let qb = players.find(p => p.isQB); if (qb) { qb.hasBall = true; startSnap(qb); } hud.innerHTML = ""; hideUI(); } }, 2500); 
+                    const _cpuHike = () => { if (gameState !== 'PRE_SNAP' || isMultiplayer) return; if (atvBlocksSnap()) { setTimeout(_cpuHike, 250); return; } atvOnSnap(); gameState = 'PLAYING'; let qb = players.find(p => p.isQB); if (qb) { qb.hasBall = true; startSnap(qb); } hud.innerHTML = ""; hideUI(); }; setTimeout(_cpuHike, 2500); 
                 }
             }
         }
@@ -1987,7 +2222,7 @@
             const d = Math.hypot(qb.x - ball.x, qb.y - ball.y);
             qb.snapDur = Math.max(9, Math.min(24, Math.round(6 + d * 1.8))); qb.snapT = qb.snapDur; qb.snapFrom = { x: ball.x, y: ball.y };
         }
-        function snapBall() { gameState = 'PLAYING'; isAimingPass = false; aimPointerId = null; players.forEach(p => { p.tackleSpotX = undefined; p.tackleTimer = 0; p.gf = null; p.gfLie = false; p.starsT = 0; }); goofyPops = []; let qb = players.find(p => p.isQB && (offenseDirection === -1 ? !p.isCPU : p.isCPU)); if (qb) { qb.hasBall = true; startSnap(qb); } hud.innerHTML = ""; hideUI(); mainClockStarted = true;
+        function snapBall() { atvOnSnap(); gameState = 'PLAYING'; isAimingPass = false; aimPointerId = null; players.forEach(p => { p.tackleSpotX = undefined; p.tackleTimer = 0; p.gf = null; p.gfLie = false; p.starsT = 0; }); goofyPops = []; let qb = players.find(p => p.isQB && (offenseDirection === -1 ? !p.isCPU : p.isCPU)); if (qb) { qb.hasBall = true; startSnap(qb); } hud.innerHTML = ""; hideUI(); mainClockStarted = true;
             handoffState = null; const _pl = (offenseDirection === -1) ? selectedPlay : cpuSelectedPlay;
             if (qb && _pl && !isPassPlay(_pl) && _pl !== 'PUNT' && _pl !== 'FIELD_GOAL') { const rb = players.find(p => p.isRB && p.isCPU === qb.isCPU); if (rb) handoffState = { qb, rb, t: 0 }; } }
 
@@ -2170,7 +2405,7 @@
         function update() {
             ensureRefsExist(); updateScreenShake(); updateParticles();
             if (hitStopTimer > 0) { hitStopTimer--; return; }
-            updateGoofy(); updateBrawl(); updateFan();
+            updateGoofy(); updateBrawl(); updateFan(); updateAtv();
 
             let hideControls = gameState === 'PAUSED' || gameState === 'DIALOG' || gameState === 'PLAY_CALL' || gameState === 'COIN_TOSS' || gameState === 'KICK_CHOICE' || gameState === 'FLIPPING' || gameState === 'GAME_OVER' || (isIntroScene && introScriptState !== 'SCRIPTED_RUN' && introScriptState !== 'PRE_SNAP_WAIT');
             let mc = document.getElementById('mobile-controls');
@@ -2250,7 +2485,7 @@
                     let canSnap = true; if (isIntroScene) canSnap = false; 
                     
                     if (gameState === 'PRE_SNAP' && canSnap) {
-                        if (offenseDirection === -1 && isP1) { if (!fanBlocksSnap()) snapBall(); }
+                        if (offenseDirection === -1 && isP1) { if (!atvBlocksSnap() && !fanBlocksSnap()) snapBall(); }
                         if (offenseDirection === 1 && isP2) snapBall(); 
                     }
                     else if (gameState === 'KICK_POWER') { 
@@ -4046,6 +4281,7 @@ const PXS = (function () {
             { ctx.fillStyle = '#1a6b27'; ctx.fillRect(0, fieldTop, 120 * PPY, fieldHeight); } }
             if (fieldLogoImg && fieldLogoImg !== true) { ctx.save(); let logoSize = 22 * PPY; ctx.translate(60 * PPY, 0); ctx.scale((window._mpMirror ? 1 : -1) / X_STRETCH, 1); ctx.globalAlpha = 0.6; ctx.drawImage(fieldLogoImg, -logoSize/2, -logoSize/2, logoSize, logoSize); ctx.restore(); }
 
+            drawAtvTracks(PPY);
             if (['PRE_SNAP', 'PLAYING', 'TACKLED', 'PLAY_DEAD', 'PENALTY_SEQUENCE'].includes(gameState) && lineOfScrimmage > 0 && !isPAT) {
                 let blx = lineOfScrimmage * PPY; ctx.lineWidth = Math.max(1.5, PPY * 0.045); ctx.strokeStyle = 'rgba(59, 130, 246, 0.75)'; ctx.beginPath(); ctx.moveTo(blx, fieldTop); ctx.lineTo(blx, fieldTop + fieldHeight); ctx.stroke();
                 let ylx = firstDownLine * PPY; ctx.strokeStyle = 'rgba(234, 179, 8, 0.8)'; ctx.beginPath(); ctx.moveTo(ylx, fieldTop); ctx.lineTo(ylx, fieldTop + fieldHeight); ctx.stroke();
@@ -4117,10 +4353,11 @@ const PXS = (function () {
                 return R;
             };
 
-            let allEntities = [...players, ...refs, ...(fan ? [fan] : [])];
+            let allEntities = [...players, ...refs, ...atvBench, ...(fan ? [fan] : []), ...(atvCrew || [])];
             allEntities.sort((a, b) => a.y - b.y);
 
             allEntities.forEach(p => {
+                if (p.isAtv) return;
                 // Active player highlighting
                 let isActivePlayerForClient = false;
                 if (!isMultiplayer && p === player) isActivePlayerForClient = true;
@@ -4146,7 +4383,7 @@ const PXS = (function () {
                 if (p.isDiving && p.diveTimer < 20) shadowSize -= Math.sin((p.diveTimer / 20) * Math.PI) * (PPY * 0.45);
                 else if (p.isLunging) { let lt = Math.min(1, (p.lungeTimer || 0) / 12); shadowSize -= Math.sin(lt * Math.PI) * (PPY * 0.3); } 
                 else if (p.hasBall && gameState === 'TACKLED') { let t = Math.min(1, (p.tackleTimer || 0) / 15); shadowSize -= Math.sin(t * Math.PI) * (PPY * 0.3); }
-                if (p.gf && GF_LIVE.includes(gameState)) shadowSize *= Math.max(0.45, 1 - p.gf.z / 70);
+                if (p.gf && (GF_LIVE.includes(gameState) || p.atvFly)) shadowSize *= Math.max(0.45, 1 - p.gf.z / 70);
                 shadowSize *= p.isRef ? refSizeScale : playerSizeScale;
                 if (shadowSize > 0) drawPixelShadow(p.x, p.y, shadowSize / X_STRETCH, shadowSize, PPY, 'rgba(0,0,0,0.32)');
             });
@@ -4178,6 +4415,7 @@ const PXS = (function () {
             drawGrounds(FAR_T, 0);
             drawSideline(-1);
             allEntities.forEach(p => {
+                if (p.isAtv) { drawAtv(p); return; }
                 let pScreen = toScreen(p.x, p.y); let pScale = camera.zoom * 0.04; 
                 ctx.lineWidth = 3; ctx.strokeStyle = '#000000';
                 
@@ -4278,7 +4516,7 @@ const PXS = (function () {
                 else if (refSignal) { aB1 = aB2 = 0.15; kn1 = kn2 = 0; }
                 else if (isMovingNow) { aB1 = aB2 = 1.15; runLegs(); leanA = 0.14; bobPx = Math.round(Math.abs(Math.sin(tAnim)) * 1.2); }
                 else { let id = PXS.idle(p.pxSeed); armAngle1 = id.armA1; armAngle2 = id.armA2; legAngle1 = id.legA1; legAngle2 = id.legA2; aB1 = id.armB1; aB2 = id.armB2; kn1 = id.legK1; kn2 = id.legK2; plantPose = true; breathPx = (Math.floor(Date.now() / 520 + p.pxSeed * 9) % 2 === 0) ? 0 : 1; }
-                const gfOn = !!p.gf && GF_LIVE.includes(gameState);
+                const gfOn = !!p.gf && (GF_LIVE.includes(gameState) || !!p.atvFly);
                 if (gfOn) { const fl = p.gf.t * 0.6, sw = Math.sin(fl); plantPose = false; pitchQ = 0; leanA = 0; bobPx = 0; breathPx = 0; divePitch = 0; groundDrop = 0; diveHeight = p.gf.z;
                     armAngle1 = -Math.PI * 0.8 + sw * 0.7; armAngle2 = -Math.PI * 0.8 - sw * 0.7; legAngle1 = sw * 0.9; legAngle2 = -sw * 0.9; aB1 = aB2 = 0.5; kn1 = 0.9 + 0.5 * sw; kn2 = 0.9 - 0.5 * sw;
                     if (p.gf.rg) { const R = p.gf.rg; armAngle1 = R[0].a; armAngle2 = R[1].a; legAngle1 = R[2].a; legAngle2 = R[3].a; aB1 = 0.3 + Math.min(1.4, Math.abs(R[0].w) * 2); aB2 = 0.3 + Math.min(1.4, Math.abs(R[1].w) * 2); kn1 = 0.3 + Math.min(1.5, Math.abs(R[2].w) * 2.5); kn2 = 0.3 + Math.min(1.5, Math.abs(R[3].w) * 2.5); }
@@ -4344,7 +4582,7 @@ const PXS = (function () {
                 if (_bc && gameState === 'PLAYING') _arrow(_bc, '#facc15');
                 if (_me && _me !== _bc && players.includes(_me)) _arrow(_me, '#38bdf8');
             }
-            drawFanBubble();
+            drawFanBubble(); drawAtvBubbles();
             drawSideline(1);
             drawGrounds(0, NEAR_T);
             drawStands(1);
