@@ -1124,10 +1124,84 @@
         const ATV_SHORTS = ['#3b5b8c', '#556b2f', '#1f2937', '#a8a29e'];
         const ATV_SHOUTS = ['WHOO HOO!', 'OHH YEAH!'];
         let atvPlan = null, atvPlayNo = 0, atvRolled = false, atvCrew = null, atvTracks = [], atvBench = [], atvVictim = null;
+        // ---- permanent tire ruts: painted into their own pixel layer (3x finer than the field art, the same grain as the sprites) ----
+        // They only exist on the grass inside the running track, and every rut is run on past the edge of that grass along the machine's
+        // heading (both when it arrives and when it leaves), so you never see a trail begin or end out in the open.
+        const RUT = { X0: -16, X1: 136, SX: FPXX * 3, SY: FPXY * 3, Y0: 0, Y1: 0, W: 0, H: 0, cv: null, g: null, img: null, d32: null, pri: null, dirty: null, any: false };
+        const RUT_R = 29.2, RUT_R2 = RUT_R * RUT_R;   // the infield grass = everything within 29.2 yd of the track's centre rectangle
+        const rutHex = s => { const n = parseInt(s.slice(1), 16); return ((255 << 24) | ((n & 255) << 16) | (n & 0xff00) | (n >> 16)) >>> 0; };
+        const RUT_C = {
+            lug: ['#2a1a0c', '#2f1e0f'].map(rutHex), floor: ['#5a4023', '#634728', '#5a4023', '#6d4f2d'].map(rutHex), pebble: rutHex('#7e6038'),
+            wallLit: ['#8e6e40', '#7f6137'].map(rutHex), wallMid: ['#5c4223', '#684b29'].map(rutHex), wallDk: ['#3a2512', '#44301a'].map(rutHex),
+            bermLit: ['#b38d57', '#a8804d', '#9b7645'].map(rutHex), bermMid: ['#8d6b3e', '#846336'].map(rutHex), bermDk: ['#5f4325', '#6b4c29'].map(rutHex), clod: ['#47301a', '#c39c62'].map(rutHex),
+            deb: ['#7a5a30', '#5b3f20', '#1a5e2a', '#3fae55', '#a3814d', '#2f7d3f'].map(rutHex), press: ['#1c6a2d', '#18602a'].map(rutHex)
+        };
+        function atvH(x, y) { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+        function atvRutInit() {
+            if (RUT.cv) return RUT;
+            RUT.Y0 = -24 - 80 / RUT.SY; RUT.Y1 = 24 + 80 / RUT.SY;
+            RUT.W = Math.ceil((RUT.X1 - RUT.X0) * RUT.SX); RUT.H = Math.ceil((RUT.Y1 - RUT.Y0) * RUT.SY);
+            RUT.cv = document.createElement('canvas'); RUT.cv.width = RUT.W; RUT.cv.height = RUT.H; RUT.g = RUT.cv.getContext('2d');
+            RUT.img = RUT.g.createImageData(RUT.W, RUT.H); RUT.d32 = new Uint32Array(RUT.img.data.buffer); RUT.pri = new Uint8Array(RUT.W * RUT.H);
+            return RUT;
+        }
+        function atvRutClear() { if (!RUT.cv) return; RUT.d32.fill(0); RUT.pri.fill(0); RUT.g.clearRect(0, 0, RUT.W, RUT.H); RUT.dirty = null; RUT.any = false; }
+        // one straight stretch of one tire's rut, painted pixel by pixel: dug-out floor with chevron tread, shaded walls, a heaped-up berm of loose dirt, then torn / flattened grass
+        function atvRutSeg(x0, y0, x1, y1, s0) {
+            const R = RUT, C = RUT_C, dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy); if (len < 1e-4) return;
+            const HW = 0.48, OUT = HW * 2.4;
+            { const mx = (x0 + x1) / 2 - 60, my = (y0 + y1) / 2, qx = Math.max(Math.abs(mx) - 44, 0), qy = Math.max(Math.abs(my) - 5, 0), rr = RUT_R + OUT + len / 2 + 0.5; if (qx * qx + qy * qy > rr * rr) return; }
+            const ux = dx / len, uy = dy / len, nx = -uy, ny = ux, nL = nx * -0.55 + ny * -0.83;   // light comes from the upper left of the screen
+            const pa = Math.max(0, Math.floor((Math.min(x0, x1) - OUT - R.X0) * R.SX)), pb = Math.min(R.W - 1, Math.ceil((Math.max(x0, x1) + OUT - R.X0) * R.SX));
+            const qa = Math.max(0, Math.floor((Math.min(y0, y1) - OUT - R.Y0) * R.SY)), qb = Math.min(R.H - 1, Math.ceil((Math.max(y0, y1) + OUT - R.Y0) * R.SY));
+            let hit = false;
+            for (let py = qa; py <= qb; py++) {
+                const wy = R.Y0 + (py + 0.5) / R.SY, qy = Math.max(Math.abs(wy) - 5, 0), ry = wy - y0;
+                for (let px = pa; px <= pb; px++) {
+                    const wx = R.X0 + (px + 0.5) / R.SX, qx = Math.max(Math.abs(wx - 60) - 44, 0);
+                    if (qx * qx + qy * qy > RUT_R2) continue;   // off the grass: no marks on the track / walkways
+                    const rx = wx - x0, proj = rx * ux + ry * uy; if (proj < -0.03 || proj > len + 0.03) continue;
+                    const l = rx * nx + ry * ny, al = Math.abs(l); if (al > OUT) continue;
+                    const u = al / HW, s = s0 + proj, f = -(l < 0 ? -1 : 1) * nL, h = atvH(px, py);
+                    let c, pr;
+                    if (u <= 1) {
+                        pr = 3;
+                        if (u > 0.74) c = f > 0.22 ? C.wallLit[h < 0.5 ? 0 : 1] : f < -0.22 ? C.wallDk[h < 0.5 ? 0 : 1] : C.wallMid[h < 0.5 ? 0 : 1];
+                        else { let q = (s * 2.3 + u * 0.7) % 1; if (q < 0) q += 1; c = h > 0.94 ? C.pebble : (q < 0.5 ? C.lug[h < 0.5 ? 0 : 1] : C.floor[(h * 4) | 0]); }
+                    } else if (u <= 1.5) {
+                        pr = 2; c = h > 0.84 ? C.clod[atvH(py, px) < 0.7 ? 0 : 1] : (f > 0.12 ? C.bermLit[(h * 3.5) | 0] : f < -0.12 ? C.bermDk[(h * 2.4) | 0] : C.bermMid[(h * 2.4) | 0]);
+                    } else {
+                        const t = (2.4 - u) / 0.9, pd = 0.5 * t; pr = 1;
+                        if (h < pd * 0.6) c = C.deb[(atvH(py + 7, px + 3) * 6) | 0];
+                        else if (h < pd * 0.6 + 0.3 * t) c = C.press[h < 0.5 ? 0 : 1];
+                        else continue;
+                    }
+                    const i = py * R.W + px; if (pr < R.pri[i]) continue;
+                    R.pri[i] = pr; R.d32[i] = c; hit = true;
+                }
+            }
+            if (hit) { R.any = true; const d = R.dirty; R.dirty = d ? [Math.min(d[0], pa), Math.min(d[1], qa), Math.max(d[2], pb), Math.max(d[3], qb)] : [pa, qa, pb, qb]; }
+        }
+        // called every frame for each machine: lays both tire ruts (rear axle). final = he's leaving, so run the ruts on along his heading
+        function atvRutStep(a, final) {
+            atvRutInit();
+            const ox = -a.hy, oy = a.hx, TW = 1.25, bx = a.x - a.hx * 0.55, by = a.y - a.hy * 0.55;
+            const L = [bx + ox * TW, by + oy * TW], Rr = [bx - ox * TW, by - oy * TW];
+            const lay = (P, d0, d1, s0) => atvRutSeg(P[0] + a.hx * d0, P[1] + a.hy * d0, P[0] + a.hx * d1, P[1] + a.hy * d1, s0);
+            if (!a.rutP) {   // first frame: the ruts arrive from off the field, so paint them backwards along his heading
+                for (let k = 34; k >= 0; k--) { lay(L, -(k + 1) * 3, -k * 3, -(k + 1) * 3); lay(Rr, -(k + 1) * 3, -k * 3, -(k + 1) * 3); }
+                a.rutP = [L, Rr]; a.rutS = 0; return;
+            }
+            const dl = Math.hypot(L[0] - a.rutP[0][0], L[1] - a.rutP[0][1]);
+            atvRutSeg(a.rutP[0][0], a.rutP[0][1], L[0], L[1], a.rutS); atvRutSeg(a.rutP[1][0], a.rutP[1][1], Rr[0], Rr[1], a.rutS);
+            a.rutS += dl; a.rutP = [L, Rr];
+            if (final) for (let k = 0; k < 35; k++) { lay(L, k * 3, (k + 1) * 3, a.rutS + k * 3); lay(Rr, k * 3, (k + 1) * 3, a.rutS + k * 3); }
+        }
+        function atvDropCrew() { if (atvCrew) atvCrew.forEach(a => { if (a.state === 'go' && a.rutP) atvRutStep(a, true); }); atvCrew = null; }
         function atvResetGame() {
             const est = Math.max(8, Math.min(60, Math.round((QUARTER_LENGTH_SECONDS || 180) * 4 / 30))), n = Math.min(1 + Math.floor(Math.random() * 3), est - 2), set = [];
             while (set.length < n) { const k = 2 + Math.floor(Math.random() * (est - 2)); if (!set.includes(k)) set.push(k); }
-            atvPlan = set; atvPlayNo = 0; atvRolled = false; atvCrew = null; atvTracks = []; atvBench = []; atvVictim = null;
+            atvPlan = set; atvPlayNo = 0; atvRolled = false; atvCrew = null; atvTracks = []; atvRutClear(); atvBench = []; atvVictim = null;
         }
         function atvFlyActive() { return !!(atvVictim && atvVictim.atvFly); }
         function atvOnSnap() {   // the guy who got launched stays out of the play
@@ -1186,7 +1260,7 @@
             const px = -a.hy, py = a.hx;
             for (let i = 0; i < n; i++) {
                 const s = Math.random() < 0.5 ? -1 : 1, bx = a.x - a.hx * 0.9 + px * 0.42 * s, by = a.y - a.hy * 0.9 + py * 0.42 * s;
-                const col = ['#2f9b44', '#238236', '#166534', '#4ade80', '#5b3a1c', '#7c5a2e'][Math.floor(Math.random() * 6)];
+                const col = ['#2f9b44', '#238236', '#166534', '#5b3a1c', '#7c5a2e', '#4a3017', '#8a6a3c'][Math.floor(Math.random() * 6)];
                 particles.push({ type: 'turf', x: bx, y: by, vx: -a.hx * (0.05 + Math.random() * 0.07) + (Math.random() - 0.5) * 0.05, vy: -a.hy * (0.05 + Math.random() * 0.07) + (Math.random() - 0.5) * 0.05, z: 0.1, vz: 0.12 + Math.random() * 0.2, gravity: 0.018, life: 18 + Math.random() * 14, maxLife: 32, size: 3 + Math.random() * 4, color: col });
             }
             if (Math.random() < 0.35) spawnDust(a.x - a.hx * 1.0, a.y - a.hy * 1.0, 0.1);
@@ -1196,7 +1270,7 @@
             atvBench.forEach(q => { if (q.starsT > 0) q.starsT--; });
             const v = atvVictim;
             if (v && v.atvFly && !v.gf) { v.atvFly = false; v.atvOut = true; v.gfLie = false; v.isMissedTackle = false; goofyStars(v, 400); }
-            if (gameState !== 'PRE_SNAP' || isIntroScene) { atvRolled = false; if (atvCrew) atvCrew = null; return; }
+            if (gameState !== 'PRE_SNAP' || isIntroScene) { atvRolled = false; atvDropCrew(); return; }
             if (!atvCrew) return;
             const fw = FIELD_WIDTH_YARDS / 2; let alive = 0;
             atvCrew.forEach(a => {
@@ -1221,19 +1295,16 @@
                 a.x += a.hx * a.spd; a.y += a.hy * a.spd; a.wph = Math.floor(a.t * 0.9);
                 // bumps
                 if (a.hop > 0) a.hop--; else if (--a.hopCool <= 0) { a.hop = 12; a.hopCool = 40 + Math.floor(Math.random() * 70); }
-                atvTurf(a, 3);
+                atvTurf(a, 4);
                 // permanent ruts in the turf (two tire lines per machine)
-                if (Math.abs(a.y) < fw + 3.5 && a.x > 0 && a.x < FIELD_LENGTH_YARDS) {
-                    if (!a.curL) { a.curL = []; a.curR = []; atvTracks.push(a.curL, a.curR); a.lastTx = a.x + 99; }
-                    if (Math.hypot(a.x - a.lastTx, a.y - a.lastTy) > 0.35) { const px = -a.hy * 0.4, py = a.hx * 0.4; a.curL.push([a.x + px, a.y + py]); a.curR.push([a.x - px, a.y - py]); a.lastTx = a.x; a.lastTy = a.y; }
-                } else a.curL = a.curR = null;
+                atvRutStep(a, false);
                 // hollering
                 if (a.say) { if (++a.sayT > 52) { a.say = null; a.sayCd = 35 + Math.floor(Math.random() * 55); } }
                 else if (--a.sayCd <= 0) { a.say = ATV_SHOUTS[Math.floor(Math.random() * ATV_SHOUTS.length)]; a.sayT = 0; }
                 // the hit
                 if (a.hitter && !a.hit && v && !v.atvFly && Math.hypot(v.x - a.x, v.y - a.y) < 1.2) atvFling(a, v);
                 // done once he is past the exit point
-                if ((a.x - a.ex) * (a.ex - a.sx) + (a.y - a.ey) * (a.ey - a.sy) >= 0 || a.t > 520) { a.state = 'done'; a.say = null; a.curL = a.curR = null; }
+                if ((a.x - a.ex) * (a.ex - a.sx) + (a.y - a.ey) * (a.ey - a.sy) >= 0 || a.t > 520) { atvRutStep(a, true); a.state = 'done'; a.say = null; }
             });
             // bystanders flinch as a machine roars by
             players.forEach(q => {
@@ -1243,85 +1314,137 @@
             });
             if (!alive) { atvCrew = null; players.forEach(q => { if (q.atvHop) { q.atvHop = false; q.hopOffset = 0; } }); }
         }
-        function drawAtvTracks(PPY) {   // in field space: the ruts the machines leave behind
-            if (!atvTracks.length) return;
-            ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            const path = () => { ctx.beginPath(); atvTracks.forEach(pl => { if (pl.length < 2) return; ctx.moveTo(pl[0][0] * PPY, pl[0][1] * PPY); for (let i = 1; i < pl.length; i++) ctx.lineTo(pl[i][0] * PPY, pl[i][1] * PPY); }); };
-            path(); ctx.strokeStyle = 'rgba(40,28,10,0.22)'; ctx.lineWidth = PPY * 0.5; ctx.stroke();   // torn-up edge
-            path(); ctx.strokeStyle = 'rgba(70,44,16,0.42)'; ctx.lineWidth = PPY * 0.3; ctx.stroke();   // bare dirt
-            path(); ctx.strokeStyle = 'rgba(25,14,4,0.45)'; ctx.lineWidth = PPY * 0.24; ctx.setLineDash([PPY * 0.1, PPY * 0.13]); ctx.stroke();   // knobby tread
+        function drawAtvTracks(PPY) {   // in field space: the ruts the machines leave behind (one pre-painted pixel layer)
+            const R = RUT; if (!R.any) return;
+            if (R.dirty) { const d = R.dirty; R.g.putImageData(R.img, 0, 0, d[0], d[1], d[2] - d[0] + 1, d[3] - d[1] + 1); R.dirty = null; }
+            ctx.save(); ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(R.cv, R.X0 * PPY, R.Y0 * PPY, (R.X1 - R.X0) * PPY, (R.Y1 - R.Y0) * PPY);
             ctx.restore();
         }
         function drawAtv(a) {
             if (a.state !== 'go') return;
-            const PPY = camera.zoom, sc = toScreen(a.x, a.y), u = Math.max(0.45, PPY * 0.04 * 2.9 * 1.22) * playerSizeScale;
-            if (sc.x < -220 || sc.x > canvas.width + 220 || sc.y < -320 || sc.y > canvas.height + 220) return;
-            drawPixelShadow(a.x, a.y, PPY * 1.5 / X_STRETCH, PPY * 0.6, PPY, 'rgba(0,0,0,0.34)');
+            const PPY = camera.zoom, sc = toScreen(a.x, a.y), u = Math.max(0.45, PPY * 0.04 * 2.9 * 1.22) * playerSizeScale * 0.8;
+            if (sc.x < -280 || sc.x > canvas.width + 280 || sc.y < -380 || sc.y > canvas.height + 240) return;
+            drawPixelShadow(a.x, a.y, PPY * 1.9 / X_STRETCH, PPY * 0.75, PPY, 'rgba(0,0,0,0.36)');
             const vert = Math.abs(a.hy) > Math.abs(a.hx) * 1.35, view = vert ? (a.hy > 0 ? 'F' : 'B') : 'S';
-            const bob = (Math.abs(Math.sin(a.t * 0.6)) * 0.5 + (a.hop > 0 ? Math.sin(a.hop / 12 * Math.PI) * 2.6 : 0)) * u, B = a.body, r = a.r, S = r.skin, S2 = r.skin2, shout = !!a.say;
+            const bob = (Math.abs(Math.sin(a.t * 0.6)) * 0.5 + (a.hop > 0 ? Math.sin(a.hop / 12 * Math.PI) * 2.6 : 0)) * u;
+            const B = a.body, r = a.r, S = r.skin, S2 = r.skin2, shout = !!a.say, OL = '#17110b', hair = r.hair, cap = r.cap, bcol = hair || '#5a3a1e', SH = r.shorts;
+            const flap = Math.round(Math.sin(a.t * 0.55 + a.ph)), wind = Math.round(Math.sin(a.t * 0.4 + a.ph * 2)), wr = a.wph * 0.35;
             ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(Math.round(sc.x), Math.round(sc.y)); if (view === 'S') ctx.scale(a.hx >= 0 ? 1 : -1, 1);
-            const R = (x, y, w, h, c) => { const x0 = Math.round(x * u), x1 = Math.round((x + w) * u), y0 = Math.round(y * u - bob), y1 = Math.round((y + h) * u - bob); ctx.fillStyle = c; ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); };
-            const G = (x, y, w, h, c) => { const x0 = Math.round(x * u), x1 = Math.round((x + w) * u), y0 = Math.round(y * u), y1 = Math.round((y + h) * u); ctx.fillStyle = c; ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); };
-            const tire = (cx, w, h) => { G(cx - w / 2 + 1, -h, w - 2, h, '#0b0b0c'); G(cx - w / 2, -h + 1, w, h - 2, '#0b0b0c'); for (let i = 0; i < Math.floor(w / 2); i++) if (((i + a.wph) & 1)) { G(cx - w / 2 + i * 2, -h, 1, 1, '#33333a'); G(cx - w / 2 + i * 2, -1, 1, 1, '#33333a'); } };
-            const hair = r.hair, cap = r.cap;
+            // everything is queued as rects, then drawn twice: first all of them 1 unit fatter in dark brown (a clean outline round the whole machine), then the real colours
+            const ops = [];
+            const P = (x, y, w, h, c, fx, nl) => { ops.push([x, y, w, h, c, fx, nl]); };
+            const disc = (cx, cy, rad, c, fx, nl) => { const n = Math.floor(rad); for (let dy = -n; dy <= n; dy++) { const hw = Math.sqrt(rad * rad - dy * dy + 0.25); P(cx - hw, cy + dy - 0.5, hw * 2, 1, c, fx, nl); } };
+            const wheel = (cx, cy, rad, far) => {   // side-on wheel: knobby tyre, bright rim, spinning
+                disc(cx, cy, rad, far ? '#09090b' : '#121216', true);
+                disc(cx, cy, rad * 0.58, far ? '#4b5563' : '#d1d5db', true, true);
+                if (!far) { disc(cx, cy, rad * 0.36, '#6b7280', true, true); P(cx - 0.8, cy - 0.8, 1.6, 1.6, '#f3f4f6', true, true); }
+                for (let k = 0; k < 8; k++) { const an = k * Math.PI / 4 + wr; P(cx + Math.cos(an) * (rad + 0.35) - 1, cy + Math.sin(an) * (rad + 0.35) - 1, 2, 2, far ? '#17171c' : '#2a2a32', true); }
+                if (!far) { const an = wr + 0.4; P(cx + Math.cos(an) * rad * 0.34 - 0.5, cy + Math.sin(an) * rad * 0.34 - 0.5, 1.1, 1.1, '#111827', true, true); }
+            };
+            const tireF = (cx, top, w, h, far) => {   // front / back view tyre: tall block with scrolling tread bars
+                P(cx - w / 2, top, w, h, far ? '#08080a' : '#111114', true);
+                for (let i = 0; i < Math.floor(h / 2.4); i++) P(cx - w / 2, top + ((i * 2.4 + a.wph * 0.8) % h), w, 1, far ? '#222228' : '#34343c', true, true);
+                P(cx - w / 2, top, 1, h, '#2b2b32', true, true);
+            };
+            const beer = (x, y) => { P(x, y, 3, 5, '#e5e7eb'); P(x, y + 2, 3, 1.2, '#dc2626', 0, 1); P(x, y - 1, 3, 1, '#9ca3af', 0, 1); };
             if (view === 'S') {
-                const Q = (x, y, w, h, c) => R(x, y - 2, w, h, c);   // rider sits a little above the machine
-                tire(-7, 7, 9); tire(7, 7, 9); G(-8, -5, 2, 2, '#9ca3af'); G(6, -5, 2, 2, '#9ca3af'); G(-9, -4, 1, 1, '#5b3a1c'); G(8, -3, 1, 1, '#5b3a1c');
-                R(-12, -11, 3, 1, '#374151'); R(-13, -8, 3, 1, '#6b7280');   // rear rack + tailpipe
-                R(-10, -9, 20, 3, B.d);                                      // frame
-                R(-11, -12, 9, 3, B.c); R(-11, -12, 9, 1, B.l);              // rear fender
-                R(-4, -14, 9, 6, B.c); R(-3, -15, 6, 2, B.l); R(-4, -9, 9, 1, B.d);   // body + tank
-                R(3, -12, 8, 3, B.c); R(4, -13, 6, 1, B.l); R(11, -11, 1, 2, '#fde047'); R(8, -14, 3, 1, '#374151');   // nose, headlight, front rack
-                R(-6, -9, 1, 1, '#4a2f17'); R(0, -8, 2, 1, '#4a2f17'); R(8, -10, 1, 1, '#4a2f17'); R(-9, -11, 1, 1, '#4a2f17');   // mud
-                R(-9, -15, 8, 2, '#18181b'); R(3, -19, 1, 5, '#222'); R(2, -19, 4, 1, '#222');   // seat + handlebars
-                // legs
-                Q(-6, -15, 7, 5, r.shorts); Q(-1, -13, 5, 3, r.shorts); Q(1, -11, 2, 5, S); Q(0, -7, 4, 2, '#3f2a14'); Q(1, -10, 1, 3, S2);
-                // torso, leaning into the throttle
-                for (let k = 0; k < 8; k++) Q(-5 + k * 0.4, -16 - k, 6, 1, S);
-                for (let k = 0; k < 8; k++) Q(-5 + k * 0.4, -16 - k, 1, 1, S2);
-                Q(-1, -18, 4 * r.belly, 4, S); Q(-1, -14.5, 3.6 * r.belly, 0.8, S2); Q(-1 + 3.3 * r.belly, -16, 1, 1, S2);   // beer belly + belly button
-                Q(-1, -21, 3, 1, '#2a1a10'); Q(0, -20, 1, 1, '#2a1a10'); Q(2, -20, 1, 1, '#2a1a10');   // chest hair
-                if (r.tat) { Q(-4, -20, 2, 3, '#3f6b5a'); Q(-3, -19, 1, 1, '#1f3a2f'); }
-                // head
-                Q(0, -22, 3, 1, S2); Q(-1, -28, 5, 6, S);
-                if (hair) { Q(-4, -28, 3, 7, hair); Q(-3, -21, 2, 2, hair); Q(-1, -29, 5, 1, hair); }
-                if (cap) { Q(-1, -30, 6, 2, cap); Q(4, -29, 3, 1, cap); Q(-1, -28, 1, 1, cap); }
-                Q(1, -26, 4, 1, '#0b0b0c'); Q(1, -26, 1, 1, '#64748b'); Q(4, -25, 1, 1, S2);
-                if (r.beard) { Q(0, -24, 4, 2, hair || '#5a3a1e'); Q(-1, -26, 1, 3, hair || '#5a3a1e'); }
-                if (shout) { Q(2, -23.5, 2, 1.5, '#0b0b0c'); Q(2, -23.5, 1, 1, '#eab308'); } else Q(2, -23, 2, 1, S2);
-                // arms: one on the bars; the other flung up in the air when he hollers
-                Q(0, -21, 2, 4, S); Q(2, -18, 2, 3, S); Q(3, -15, 2, 2, S); Q(4, -14, 2, 1, S2);
-                if (shout) { Q(-2, -23, 2, 3, S); Q(-3, -27, 2, 5, S); Q(-4, -31, 2, 5, S); Q(-5, -34, 4, 3, S2); if (r.tat) Q(-3, -26, 2, 1, '#3f6b5a'); }
-                else { Q(-1, -21, 2, 4, S); Q(1, -18, 2, 3, S); Q(2, -16, 2, 2, S2); }
-            } else {
-                const fr = view === 'F', pw = 3.4;
-                tire(-8, pw + 0.6, 7); tire(8, pw + 0.6, 7);
-                R(-8, -10, 16, 5, B.c); R(-8, -6, 16, 1, B.d); R(-4, -11, 8, 2, B.l); R(-5, -13, 10, 3, B.c);
-                if (fr) { R(-6, -9, 3, 2, '#fde047'); R(3, -9, 3, 2, '#fde047'); R(-1, -8, 2, 1, '#6b7280'); } else { R(-7, -9, 2, 1, '#ef4444'); R(5, -9, 2, 1, '#ef4444'); }
-                R(-9, -14, 18, 1, '#222'); R(-10, -15, 2, 2, '#111'); R(8, -15, 2, 2, '#111'); R(-6, -8, 1, 1, '#4a2f17'); R(4, -7, 2, 1, '#4a2f17');
+                P(-20, -52, 1, 32, '#9ca3af'); P(-28, -53 + flap, 8, 4, '#f97316'); P(-28, -53 + flap, 8, 1, '#fdba74', 0, 1);   // whip pole + orange safety flag
+                wheel(-8.5, -8.5, 6, true); wheel(13.5, -8.5, 6, true);                   // far-side wheels peek out behind
+                P(-12, -12, 26, 3, '#2d3036'); P(-2, -10, 10, 2, '#1f2227');             // chassis + skid plate
+                // far arm first, behind the torso
+                P(1, -38, 4, 4, S2); P(3, -36, 4, 4, S2); P(5, -34, 4, 4, S2); P(7, -32, 4, 3, S2);
+                wheel(-11, -6.5, 6.5, false); wheel(11, -6.5, 6.5, false);               // near wheels
+                P(-19, -17, 14, 3, B.c); P(-19, -17, 14, 1, B.l); P(-20, -15, 2, 4, B.c); P(-18, -14, 12, 1, B.d);   // rear fender
+                P(-19, -20, 10, 1, '#4b5563'); P(-18, -20, 1, 3, '#4b5563'); P(-10, -20, 1, 3, '#4b5563');             // rear rack
+                P(-18, -27, 9, 7, '#2563eb'); P(-18, -28, 9, 2, '#f3f4f6'); P(-15, -30, 3, 2, '#9ca3af'); P(-16, -24, 5, 2, '#e5e7eb', 0, 1);   // cooler strapped to the rack
+                P(-6, -21, 13, 9, B.c); P(-6, -21, 13, 1, B.l); P(-5, -22, 8, 1, B.l); P(-6, -13, 13, 1, B.d); P(-5, -17, 11, 1.4, '#f8fafc', 0, 1);   // body + tank + stripe
+                P(5, -17, 14, 3, B.c); P(5, -17, 14, 1, B.l); P(17, -15, 3, 4, B.c); P(7, -14, 11, 1, B.d);              // front fender + nose
+                P(19, -16, 2, 3, '#fef9c3'); P(20, -16, 1, 3, '#ffffff', 0, 1);                                         // headlight
+                P(8, -21, 10, 1, '#4b5563'); P(9, -21, 1, 4, '#4b5563'); P(17, -21, 1, 5, '#4b5563');                   // front rack
+                P(-9, -24, 11, 3, '#1f1f24'); P(-9, -24, 11, 1, '#3b3b46', 0, 1);                                       // seat
+                P(8, -30, 2, 9, '#2d3036'); P(6, -31, 6, 2, '#0f0f12'); P(11, -31, 2, 3, '#0f0f12');                    // steering
+                P(-25, -14, 7, 2, '#a3a3ab'); P(-26, -14, 1, 2, '#18181b');                                             // exhaust
+                for (let k = 0; k < 3; k++) { const dd = (a.t + k * 3) % 9; P(-28 - dd * 1.2, -15 - dd * 0.5, 1.5 + dd * 0.3, 1.5 + dd * 0.3, 'rgba(210,210,215,' + (0.55 - dd * 0.055).toFixed(2) + ')', 0, 1); }
+                P(-9, -12, 2, 1, '#4a2f17', 0, 1); P(3, -13, 3, 1, '#4a2f17', 0, 1); P(13, -14, 1, 1, '#4a2f17', 0, 1); P(-15, -16, 2, 1, '#4a2f17', 0, 1); P(0, -19, 1, 1, '#4a2f17', 0, 1);   // mud
+                // rider: cut-off shorts, shin, boot
+                P(-8, -30, 13, 7, SH); P(-8, -24, 13, 1, 'rgba(0,0,0,0.25)', 0, 1); P(-8, -30, 13, 1, 'rgba(255,255,255,0.18)', 0, 1);
+                P(3, -24, 5, 10, S); P(3, -24, 1.5, 10, S2, 0, 1); P(2, -15, 8, 4, '#3f2a14'); P(2, -12, 8, 1, '#18110a', 0, 1);
+                // torso leaning into the throttle, beer belly, chest hair, tattoo
+                for (let k = 0; k < 10; k++) P(-7 + k * 0.5, -31 - k, 9, 1.02, S);
+                for (let k = 0; k < 10; k++) P(-7 + k * 0.5, -31 - k, 1.8, 1.02, S2, 0, 1);
+                P(1.5, -33, 2.4 * r.belly + 1, 6, S); P(1.5, -27.5, 2.4 * r.belly + 1, 1, S2, 0, 1); P(3.2, -30.5, 1, 1, S2, 0, 1);
+                P(3.5, -38, 3, 1, '#2a1a10', 0, 1); P(4.5, -37, 1, 1, '#2a1a10', 0, 1);
+                if (r.tat) { P(-4, -37, 2, 3, '#3f6b5a', 0, 1); P(-3, -36, 1, 1, '#1f3a2f', 0, 1); }
+                // near arm: on the grip, or up in the air with a beer when he hollers
+                if (shout) { P(0.5, -40, 4, 3, S); P(0, -44, 4, 4, S); P(-0.5, -48, 4, 4, S); P(-1, -51, 5, 3, S2); beer(-0.5, -56); }
+                else { P(0, -39, 4, 4, S); P(2, -37, 4, 4, S); P(4, -35, 4, 4, S); P(6, -33, 4, 4, S); P(8, -31, 4, 3, S2); }
+                // head: mullet in the wind, cap, shades, beard
+                P(2.5, -42, 4, 3, S2);
+                if (hair) { P(-3 - wind, -48, 5 + wind, 9, hair); P(-5 - wind, -44, 3, 6, hair); }
+                P(2, -48, 8, 8, S);
+                if (cap) { P(1.5, -52, 9, 4, cap); P(1.5, -52, 9, 1, 'rgba(255,255,255,0.35)', 0, 1); P(9.5, -49, 5, 1.6, cap); } else if (hair) P(2, -50, 8, 2, hair);
+                P(6.5, -45, 4.5, 2, '#0b0b0c'); P(6.5, -45, 1, 1, '#94a3b8', 0, 1); P(3, -45, 4, 1, '#0b0b0c');
+                P(10, -43, 1.6, 2, S2);
+                if (r.beard) { P(5, -41, 6, 3, bcol); P(3, -43, 2, 4, bcol); }
+                if (!hair && !cap) P(3, -48, 6, 1, 'rgba(255,255,255,0.35)', 0, 1);
+                P(7, -42, 4, 1, bcol);
+                if (shout) { P(8, -41, 3, 2, '#0b0b0c'); P(9, -41, 1, 1, '#eab308', 0, 1); } else P(8, -40.5, 3, 1, S2, 0, 1);
+            } else if (view === 'F') {
+                P(14, -66, 1, 42, '#9ca3af'); P(7, -67 + flap, 7, 4, '#f97316'); P(7, -67 + flap, 7, 1, '#fdba74', 0, 1);   // whip + flag
+                tireF(-11.5, -15, 6, 12, true); tireF(11.5, -15, 6, 12, true);          // rear tyres peek out higher behind
+                P(-10, -12, 20, 3, '#2d3036');
+                tireF(-11.5, -12, 7, 12); tireF(11.5, -12, 7, 12);                      // big front tyres
+                P(-16, -16, 9, 3, B.c); P(-16, -16, 9, 1, B.l); P(7, -16, 9, 3, B.c); P(7, -16, 9, 1, B.l);   // fenders
+                P(-8, -20, 16, 9, B.c); P(-8, -20, 16, 1, B.l); P(-8, -12, 16, 1, B.d); P(-5, -23, 10, 4, B.c); P(-5, -23, 10, 1, B.l);   // nose + hood
+                P(-7, -19, 4, 3, '#fef9c3'); P(3, -19, 4, 3, '#fef9c3'); P(-6, -19, 1, 1, '#fff', 0, 1); P(4, -19, 1, 1, '#fff', 0, 1);
+                P(-2, -17, 4, 3, '#374151'); P(-1, -16, 2, 1, '#6b7280', 0, 1);
+                P(-9, -11, 18, 2, '#4b5563'); P(-9, -24, 18, 1, '#4b5563');
+                P(-8, -29, 16, 3, '#4a2f17', 0, 1);
                 // legs + boots
-                R(-5, -18, 4, 7, r.shorts); R(1, -18, 4, 7, r.shorts); R(-6, -12, 2, 5, S); R(4, -12, 2, 5, S); R(-7, -8, 4, 2, '#3f2a14'); R(3, -8, 4, 2, '#3f2a14');
-                // torso
-                R(-4, -27, 8, 10, S); R(-4, -27, 1, 10, S2); R(3, -27, 1, 10, S2);
-                if (fr) { R(-3.2 * r.belly, -22, 6.4 * r.belly, 4, S); R(-3.2 * r.belly, -18.4, 6.4 * r.belly, 0.8, S2); R(0, -20, 1, 1, S2); R(-3, -26, 6, 2, '#2a1a10'); R(-1, -24, 2, 1, '#2a1a10'); }
-                else { R(-3, -26, 6, 3, r.skin2 === '#b0553b' ? '#c2543a' : S2); R(-1, -21, 2, 1, S2); }
-                if (r.tat) { R(-5, -25, 2, 3, '#3f6b5a'); R(-4, -24, 1, 1, '#1f3a2f'); }
-                // arms out to the grips (or one up when hollering)
-                R(-7, -27, 3, 2, S); R(-7, -25, 2, 7, S); R(-8, -19, 3, 4, S2);
-                if (shout) { R(4, -29, 2, 3, S); R(5, -34, 2, 6, S); R(4, -36, 4, 2, S2); } else { R(4, -27, 3, 2, S); R(5, -25, 2, 7, S); R(5, -19, 3, 4, S2); }
+                P(-7, -32, 6, 8, SH); P(1, -32, 6, 8, SH); P(-9, -24, 3, 9, S); P(6, -24, 3, 9, S); P(-9, -24, 1, 9, S2, 0, 1); P(8, -24, 1, 9, S2, 0, 1); P(-10, -16, 5, 3, '#3f2a14'); P(5, -16, 5, 3, '#3f2a14');
+                // torso, belly, chest hair, tattoo
+                P(-6, -45, 12, 14, S); P(-6, -45, 1, 14, S2, 0, 1); P(5, -45, 1, 14, S2, 0, 1);
+                { const bw = 6.4 * r.belly + 1.6; P(-bw / 2, -38, bw, 5, S); P(-bw / 2, -33.5, bw, 1, S2, 0, 1); P(0, -36, 1, 1, S2, 0, 1); }
+                P(-3, -44, 6, 2, '#2a1a10', 0, 1); P(-1, -42, 2, 1, '#2a1a10', 0, 1);
+                if (r.tat) { P(-5.5, -44, 2, 4, '#3f6b5a', 0, 1); P(-5, -43, 1, 1, '#1f3a2f', 0, 1); }
+                // handlebars + arms
+                P(-13, -31, 26, 2, '#0f0f12'); P(-13, -32, 3, 4, '#222'); P(10, -32, 3, 4, '#222');
+                P(-9, -45, 4, 3, S); P(-10, -43, 3, 7, S); P(-11, -37, 3, 7, S); P(-12, -31, 4, 3, S2);
+                if (shout) { P(5, -46, 4, 3, S); P(6, -50, 3, 5, S); P(7, -55, 3, 6, S); P(6.5, -58, 4, 3, S2); beer(7, -63); }
+                else { P(5, -45, 4, 3, S); P(7, -43, 3, 7, S); P(8, -37, 3, 7, S); P(8, -31, 4, 3, S2); }
                 // head
-                R(-1, -28, 2, 1, S2); R(-3, -34, 6, 6, S);
-                if (fr) {
-                    if (hair) { R(-4, -34, 1, 6, hair); R(3, -34, 1, 6, hair); R(-3, -35, 6, 1, hair); }
-                    if (cap) { R(-3, -36, 6, 2, cap); R(-3, -34, 6, 1, B.d === cap ? '#000' : '#00000055'); }
-                    R(-3, -32, 6, 1, '#0b0b0c'); R(-3, -32, 1, 1, '#64748b'); R(0, -31, 1, 1, S2);
-                    if (r.beard) { R(-2, -30, 4, 2, hair || '#5a3a1e'); }
-                    if (shout) { R(-1, -30, 2, 1.6, '#0b0b0c'); R(0, -30, 1, 1, '#eab308'); } else R(-1, -29, 2, 1, S2);
-                } else {
-                    R(-3, -34, 6, 6, hair || S); if (hair) { R(-4, -34, 1, 8, hair); R(3, -34, 1, 8, hair); R(-3, -28, 6, 3, hair); R(-2, -25, 4, 1, hair); }
-                    if (cap) { R(-3, -36, 6, 3, cap); R(-1, -33, 2, 1, '#ffffff66'); } else if (!hair) R(-3, -34, 6, 2, S2);
-                }
+                P(-2, -47, 4, 3, S2); P(-4, -55, 8, 8, S);
+                if (hair) { P(-5, -55, 1, 9, hair); P(4, -55, 1, 9, hair); }
+                if (cap) { P(-5, -59, 10, 4, cap); P(-5, -56, 10, 1.5, 'rgba(0,0,0,0.38)', 0, 1); } else if (hair) P(-4, -57, 8, 2, hair);
+                P(-4, -52, 8, 2, '#0b0b0c'); P(-4, -52, 1, 1, '#94a3b8', 0, 1); P(-0.5, -50, 1.5, 2, S2);
+                if (r.beard) P(-3, -48, 6, 3, bcol);
+                P(-2.5, -49.5, 5, 1, bcol);
+                if (shout) { P(-1.5, -48.5, 3, 2, '#0b0b0c'); P(0, -48.5, 1, 1, '#eab308', 0, 1); } else P(-1.5, -48.5, 3, 1, S2, 0, 1);
+            } else {
+                P(14, -68, 1, 44, '#9ca3af'); P(7, -69 + flap, 7, 4, '#f97316'); P(7, -69 + flap, 7, 1, '#fdba74', 0, 1);
+                tireF(-11.5, -15, 6, 12, true); tireF(11.5, -15, 6, 12, true);          // far (front) tyres
+                P(-10, -12, 20, 3, '#2d3036');
+                P(-8, -21, 16, 9, B.c); P(-8, -21, 16, 1, B.l); P(-8, -13, 16, 1, B.d);
+                // rider from behind: shorts, back, arms out to the bars, mullet, cap
+                P(-7, -37, 14, 6, SH); P(-7, -32, 14, 1, 'rgba(0,0,0,0.25)', 0, 1);
+                P(-6, -51, 12, 15, S); P(-6, -51, 1, 15, S2, 0, 1); P(5, -51, 1, 15, S2, 0, 1); P(-0.5, -50, 1, 14, S2, 0, 1);
+                if (r.tat) { P(-4, -48, 4, 4, '#3f6b5a', 0, 1); P(-3, -47, 2, 2, '#1f3a2f', 0, 1); }
+                P(-10, -49, 4, 3, S); P(-12, -47, 3, 8, S); P(-13, -40, 4, 3, S2);
+                if (shout) { P(6, -52, 3, 5, S); P(7, -57, 3, 6, S); P(6.5, -60, 4, 3, S2); beer(7, -65); } else { P(6, -49, 4, 3, S); P(9, -47, 3, 8, S); P(9, -40, 4, 3, S2); }
+                P(-2, -53, 4, 3, S2); P(-4, -60, 8, 9, hair || S); P(-5, -57, 1, 2, S2, 0, 1); P(4, -57, 1, 2, S2, 0, 1);
+                if (hair) { P(-4 + wind, -52, 8, 5, hair); P(-3 + wind, -47, 6, 2, hair); }
+                if (cap) { P(-5, -64, 10, 5, cap); P(-5, -64, 10, 1, 'rgba(255,255,255,0.3)', 0, 1); P(-2, -60, 4, 1, 'rgba(0,0,0,0.4)', 0, 1); }
+                // rack, cooler, rear fenders, rear tyres, tail lights, exhaust
+                P(-9, -22, 18, 1, '#4b5563'); P(-6, -29, 12, 7, '#2563eb'); P(-6, -30, 12, 2, '#f3f4f6'); P(-2, -32, 4, 2, '#9ca3af'); P(-4, -26, 5, 2, '#e5e7eb', 0, 1);
+                tireF(-11.5, -12, 7, 12); tireF(11.5, -12, 7, 12);
+                P(-16, -17, 9, 3, B.c); P(-16, -17, 9, 1, B.l); P(7, -17, 9, 3, B.c); P(7, -17, 9, 1, B.l);
+                P(-7, -18, 3, 2, '#ef4444'); P(4, -18, 3, 2, '#ef4444'); P(-2, -17, 4, 2, '#f8fafc', 0, 1);
+                P(8, -14, 5, 2, '#a3a3ab'); P(12, -14, 1, 2, '#18181b'); P(-9, -11, 18, 2, '#4b5563');
             }
+            const rect = (x, y, w, h, c, fx) => { const yo = fx ? 0 : bob, x0 = Math.round(x * u), x1 = Math.round((x + w) * u), y0 = Math.round(y * u - yo), y1 = Math.round((y + h) * u - yo); ctx.fillStyle = c; ctx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)); };
+            for (let i = 0; i < ops.length; i++) { const o = ops[i]; if (!o[6]) rect(o[0] - 1, o[1] - 1, o[2] + 2, o[3] + 2, OL, o[5]); }
+            for (let i = 0; i < ops.length; i++) { const o = ops[i]; rect(o[0], o[1], o[2], o[3], o[4], o[5]); }
             ctx.restore();
         }
         function drawAtvBubbles() {
@@ -2174,7 +2297,7 @@
         }
 
         function setupScrimmage() {
-            gameState = 'PRE_SNAP'; players = []; fan = null; atvBench = []; atvVictim = null; atvCrew = null; ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
+            gameState = 'PRE_SNAP'; players = []; fan = null; atvBench = []; atvVictim = null; atvDropCrew(); ball.x = lineOfScrimmage; ball.y = 0; ball.z = 0; ball.vx = 0; ball.vy = 0; ball.vz = 0;
             isFieldGoalPlay = false; isPuntPlay = false; isPAT = false; interceptionAttempted = false; ensureRefsExist(); flagsOnField = []; penaltyData = null; isRefCam = false; isRefPenaltyZoom = false;
             let dir = offenseDirection; let isPlayerOffense = (dir === -1); 
             
