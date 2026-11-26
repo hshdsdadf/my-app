@@ -1127,19 +1127,17 @@
         // ---- permanent tire ruts: painted into their own pixel layer (3x finer than the field art, the same grain as the sprites) ----
         // They only exist on the grass inside the running track, and every rut is run on past the edge of that grass along the machine's
         // heading (both when it arrives and when it leaves), so you never see a trail begin or end out in the open.
-        const RUT = { X0: -16, X1: 136, SX: FPXX * 3, SY: FPXY * 3, Y0: 0, Y1: 0, W: 0, H: 0, cv: null, g: null, img: null, d32: null, pri: null, dirty: null, any: false };
+        const RUT = { X0: -16, X1: 136, SX: FPXX, SY: FPXY, Y0: 0, Y1: 0, W: 0, H: 0, cv: null, g: null, img: null, d32: null, pri: null, dirty: null, any: false };
         const RUT_R = 29.2, RUT_R2 = RUT_R * RUT_R;   // the infield grass = everything within 29.2 yd of the track's centre rectangle
-        const rutHex = s => { const n = parseInt(s.slice(1), 16); return ((255 << 24) | ((n & 255) << 16) | (n & 0xff00) | (n >> 16)) >>> 0; };
+        const rutHex = s => { const n = parseInt(s.slice(1), 16); return ((228 << 24) | ((n & 255) << 16) | (n & 0xff00) | (n >> 16)) >>> 0; };
         const RUT_C = {
-            lug: ['#2a1a0c', '#2f1e0f'].map(rutHex), floor: ['#5a4023', '#634728', '#5a4023', '#6d4f2d'].map(rutHex), pebble: rutHex('#7e6038'),
-            wallLit: ['#8e6e40', '#7f6137'].map(rutHex), wallMid: ['#5c4223', '#684b29'].map(rutHex), wallDk: ['#3a2512', '#44301a'].map(rutHex),
-            bermLit: ['#b38d57', '#a8804d', '#9b7645'].map(rutHex), bermMid: ['#8d6b3e', '#846336'].map(rutHex), bermDk: ['#5f4325', '#6b4c29'].map(rutHex), clod: ['#47301a', '#c39c62'].map(rutHex),
-            deb: ['#7a5a30', '#5b3f20', '#1a5e2a', '#3fae55', '#a3814d', '#2f7d3f'].map(rutHex), press: ['#1c6a2d', '#18602a'].map(rutHex)
+            floorA: rutHex('#4a3320'), floorB: rutHex('#573b23'), wallLit: rutHex('#7f6038'), wallDk: rutHex('#2f1f10'), wallMid: rutHex('#5a4024'),
+            bermLit: rutHex('#96754a'), bermMid: rutHex('#755833'), bermDk: rutHex('#4d351b'), flat: rutHex('#1d5a2b'), dirt: rutHex('#755833')
         };
         function atvH(x, y) { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
         function atvRutInit() {
             if (RUT.cv) return RUT;
-            RUT.Y0 = -24 - 80 / RUT.SY; RUT.Y1 = 24 + 80 / RUT.SY;
+            RUT.Y0 = -24 - 22 / RUT.SY; RUT.Y1 = 24 + 22 / RUT.SY;
             RUT.W = Math.ceil((RUT.X1 - RUT.X0) * RUT.SX); RUT.H = Math.ceil((RUT.Y1 - RUT.Y0) * RUT.SY);
             RUT.cv = document.createElement('canvas'); RUT.cv.width = RUT.W; RUT.cv.height = RUT.H; RUT.g = RUT.cv.getContext('2d');
             RUT.img = RUT.g.createImageData(RUT.W, RUT.H); RUT.d32 = new Uint32Array(RUT.img.data.buffer); RUT.pri = new Uint8Array(RUT.W * RUT.H);
@@ -1149,7 +1147,7 @@
         // one straight stretch of one tire's rut, painted pixel by pixel: dug-out floor with chevron tread, shaded walls, a heaped-up berm of loose dirt, then torn / flattened grass
         function atvRutSeg(x0, y0, x1, y1, s0) {
             const R = RUT, C = RUT_C, dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy); if (len < 1e-4) return;
-            const HW = 0.48, OUT = HW * 2.4;
+            const HW = 0.45, OUT = HW * 2.2;
             { const mx = (x0 + x1) / 2 - 60, my = (y0 + y1) / 2, qx = Math.max(Math.abs(mx) - 44, 0), qy = Math.max(Math.abs(my) - 5, 0), rr = RUT_R + OUT + len / 2 + 0.5; if (qx * qx + qy * qy > rr * rr) return; }
             const ux = dx / len, uy = dy / len, nx = -uy, ny = ux, nL = nx * -0.55 + ny * -0.83;   // light comes from the upper left of the screen
             const pa = Math.max(0, Math.floor((Math.min(x0, x1) - OUT - R.X0) * R.SX)), pb = Math.min(R.W - 1, Math.ceil((Math.max(x0, x1) + OUT - R.X0) * R.SX));
@@ -1166,15 +1164,14 @@
                     let c, pr;
                     if (u <= 1) {
                         pr = 3;
-                        if (u > 0.74) c = f > 0.22 ? C.wallLit[h < 0.5 ? 0 : 1] : f < -0.22 ? C.wallDk[h < 0.5 ? 0 : 1] : C.wallMid[h < 0.5 ? 0 : 1];
-                        else { let q = (s * 2.3 + u * 0.7) % 1; if (q < 0) q += 1; c = h > 0.94 ? C.pebble : (q < 0.5 ? C.lug[h < 0.5 ? 0 : 1] : C.floor[(h * 4) | 0]); }
-                    } else if (u <= 1.5) {
-                        pr = 2; c = h > 0.84 ? C.clod[atvH(py, px) < 0.7 ? 0 : 1] : (f > 0.12 ? C.bermLit[(h * 3.5) | 0] : f < -0.12 ? C.bermDk[(h * 2.4) | 0] : C.bermMid[(h * 2.4) | 0]);
+                        if (u > 0.72) c = f > 0.22 ? C.wallLit : f < -0.22 ? C.wallDk : C.wallMid;
+                        else { let q = (s * 1.5) % 1; if (q < 0) q += 1; c = q < 0.5 ? C.floorA : C.floorB; }
+                    } else if (u <= 1.45) {
+                        pr = 2; c = f > 0.12 ? C.bermLit : f < -0.12 ? C.bermDk : C.bermMid;
                     } else {
-                        const t = (2.4 - u) / 0.9, pd = 0.5 * t; pr = 1;
-                        if (h < pd * 0.6) c = C.deb[(atvH(py + 7, px + 3) * 6) | 0];
-                        else if (h < pd * 0.6 + 0.3 * t) c = C.press[h < 0.5 ? 0 : 1];
-                        else continue;
+                        const t = (2.2 - u) / 0.75; pr = 1;
+                        if (t <= 0) continue;
+                        if (h < 0.16 * t) c = C.flat; else if (h < 0.26 * t) c = C.dirt; else continue;
                     }
                     const i = py * R.W + px; if (pr < R.pri[i]) continue;
                     R.pri[i] = pr; R.d32[i] = c; hit = true;
